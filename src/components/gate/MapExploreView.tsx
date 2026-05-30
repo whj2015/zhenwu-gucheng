@@ -75,7 +75,7 @@ function buildMapData(nodes: RuinsNode[]): MapData {
 
     const states: CellState[] = Array(9).fill('fog');
 
-    const start = Math.floor(Math.random() * 9);
+    const start = Math.floor(Math.random() * 3);
     states[start] = grid[start] !== null ? 'ready' : 'empty';
 
     return { grid, initialStates: states };
