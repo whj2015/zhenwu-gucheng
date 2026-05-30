@@ -63,9 +63,9 @@ export default function MainUI() {
                          <div className="-rotate-45 font-bold text-orange-500 text-xl font-serif">武</div>
                      </div>
                      <div className="flex flex-col overflow-hidden">
-                         <span className="text-xs text-slate-500 uppercase tracking-widest font-bold">Zhenwu City</span>
-                         <span className="text-lg font-serif italic text-slate-200 tracking-tighter truncate">镇武孤城 {getVersionDisplay()}</span>
-                     </div>
+                        <span className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-widest font-bold leading-tight">Zhenwu City</span>
+                        <span className="text-base sm:text-lg font-serif italic text-slate-200 tracking-tight leading-snug">镇武孤城 {getVersionDisplay()}</span>
+                    </div>
                 </div>
                 <nav className="flex-1 px-4 py-8 space-y-3 overflow-y-auto">
                     {tabs.map((t) => {
