@@ -64,18 +64,23 @@ function distributeNodesToGrid(nodes: RuinsNode[]): (RuinsNode | null)[] {
 }
 
 function initCellStates(grid: (RuinsNode | null)[]): CellState[] {
-    const states: CellState[] = Array(9).fill('hidden' as CellState);
+    const states: CellState[] = Array(9).fill(null as unknown as CellState);
+
+    grid.forEach((node, i) => {
+        states[i] = node ? 'hidden' : 'revealed-empty';
+    });
 
     const startPositions: GridPos[] = [0, 1, 2, 3, 5, 6, 7].filter(p => grid[p] !== null);
     const startPos = startPositions.length > 0
         ? startPositions[Math.floor(Math.random() * startPositions.length)]
-        : 4;
+        : grid.findIndex(n => n !== null);
 
-    states[startPos] = 'active';
-
-    getNeighbors(startPos).forEach(n => {
-        if (states[n] === 'hidden') states[n] = grid[n] ? 'active' : 'revealed-empty';
-    });
+    if (startPos >= 0 && grid[startPos]) {
+        states[startPos] = 'active';
+        getNeighbors(startPos).forEach(n => {
+            if (states[n] === 'hidden') states[n] = grid[n] ? 'active' : 'revealed-empty';
+        });
+    }
 
     return states;
 }
