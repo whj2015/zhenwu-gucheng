@@ -203,7 +203,7 @@ export default function MainUI() {
 
 function TopResourceBar() {
     const { resources, buildings } = useGameStore();
-    
+
     const houseLvl = buildings.houseLevel || 1;
     const farmLvl = buildings.farmLevel || 1;
     const woodLvl = buildings.lumberCampLevel || 1;
@@ -216,35 +216,36 @@ function TopResourceBar() {
     const woodRate = Math.floor(woodLvl * 1.5 * 60);
 
     return (
-        <div className="flex gap-2 sm:gap-3 lg:gap-6 overflow-x-auto custom-scrollbar py-1 max-w-[35vw] sm:max-w-[40vw] lg:max-w-none">
-            <ResourceItem label="人口" value={`${pop}/${maxPop}`} color="text-indigo-200" dotColor="bg-indigo-500" sub="税赋之源" compact />
-            <ResourceItem label="粮草" value={resources.food} color="text-emerald-200" dotColor="bg-emerald-500" sub={`+${foodRate}/m`} compact />
-            <ResourceItem label="木材" value={resources.wood} color="text-orange-200" dotColor="bg-orange-700" sub={`+${woodRate}/m`} compact />
-            <ResourceItem label="兵饷" value={resources.bingxiang} color="text-amber-200" dotColor="bg-amber-500" sub={`+${bingxiangRate}/m`} compact hideOnMobile />
-            <ResourceItem label="铁锭" value={resources.iron} color="text-slate-200" dotColor="bg-slate-400" sub="" hideOnMobile />
-            <ResourceItem label="陨铁" value={resources.meteorite} color="text-cyan-200" dotColor="bg-cyan-400" sub="" hideOnMobile />
+        <div className="grid grid-cols-3 gap-1 sm:gap-2 lg:flex lg:gap-6 lg:overflow-visible py-0.5">
+            <ResourceItem label="人口" value={`${pop}/${maxPop}`} color="text-indigo-200" dotColor="bg-indigo-500" icon="👥" />
+            <ResourceItem label="粮草" value={resources.food} color="text-emerald-200" dotColor="bg-emerald-500" sub={`+${foodRate}/m`} icon="🌾" />
+            <ResourceItem label="木材" value={resources.wood} color="text-orange-200" dotColor="bg-orange-700" sub={`+${woodRate}/m`} icon="🪵" />
+            <ResourceItem label="兵饷" value={resources.bingxiang} color="text-amber-200" dotColor="bg-amber-500" sub={`+${bingxiangRate}/m`} icon="💰" />
+            <ResourceItem label="铁锭" value={resources.iron} color="text-slate-200" dotColor="bg-slate-400" icon="⚙️" />
+            <ResourceItem label="陨铁" value={resources.meteorite} color="text-cyan-200" dotColor="bg-cyan-400" icon="☄️" />
         </div>
     );
 }
 
-function ResourceItem({ label, value, color, dotColor, sub, compact, hideOnMobile }: {
+function ResourceItem({ label, value, color, dotColor, sub, icon }: {
     label: string;
     value: number | string;
     color: string;
     dotColor: string;
-    sub: string;
-    compact?: boolean;
-    hideOnMobile?: boolean;
+    sub?: string;
+    icon: string;
 }) {
     return (
-        <div className={cn("flex flex-col items-end whitespace-nowrap", hideOnMobile && "hidden md:flex")}>
-             <div className="flex items-center gap-1 sm:gap-1.5">
-                 <div className={cn("w-1.5 h-1.5 sm:w-2 sm:h-2 lg:w-3 lg:h-3 rounded-full", dotColor)}></div>
-                 <span className={cn("font-mono", compact ? "text-[10px] sm:text-xs" : "text-sm", color)}>
+        <div className="flex flex-col items-center sm:items-end whitespace-nowrap px-0.5 sm:px-2">
+             <div className="flex items-center gap-0.5 sm:gap-1.5">
+                 <span className="text-[10px] sm:text-xs hidden sm:inline">{icon}</span>
+                 <div className={cn("w-1 h-1 sm:w-1.5 sm:h-1.5 lg:w-2 lg:h-2 rounded-full", dotColor)}></div>
+                 <span className={cn("font-mono text-[9px] sm:text-xs", color)}>
                      {typeof value === 'number' ? Math.floor(value).toLocaleString() : value}
                  </span>
              </div>
-             {sub && <span className="text-[8px] sm:text-[9px] lg:text-[10px] text-slate-500">{sub}</span>}
+             <span className="text-[7px] sm:text-[8px] lg:text-[10px] text-slate-500 mt-px">{label}</span>
+             {sub && <span className="text-[6px] sm:text-[7px] text-slate-600 leading-none hidden lg:block">{sub}</span>}
         </div>
     );
 }
