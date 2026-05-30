@@ -1,5 +1,5 @@
 /* Extracted from GatePanel.tsx - MapExploreView - Fog of War Edition */
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useGameStore } from '../../store';
 import { simulateBattle } from '../../engine/ruins';
 import { HERO_TEMPLATES, ENEMY_TEMPLATES, POSITION_CONFIG } from '../../data';
@@ -222,18 +222,22 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
     const { ruinsRun, updateRun, heroes, addResources, healParty } = useGameStore();
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
-    const mapData = useMemo<MapData | null>(() => {
-        if (!ruinsRun) return null;
-        return buildMapData(ruinsRun.nodes);
-    }, [ruinsRun]);
+    const gridRef = useRef<(RuinsNode | null)[] | null>(null);
+    const [cellStates, setCellStates] = useState<CellState[]>(Array(9).fill('fog'));
+    const [ready, setReady] = useState(false);
 
-    const [cellStates, setCellStates] = useState<CellState[]>(() =>
-        mapData ? [...mapData.initialStates] : Array(9).fill('fog')
-    );
+    if (!ruinsRun) return null;
 
-    const enemyGrid = mapData?.grid ?? Array(9).fill(null);
+    if (gridRef.current === null && !ready) {
+        const mapData = buildMapData(ruinsRun.nodes);
+        gridRef.current = mapData.grid;
+        setCellStates(mapData.initialStates);
+        setReady(true);
+    }
 
-    if (!ruinsRun || !mapData) return null;
+    if (!ready || gridRef.current === null) return null;
+
+    const enemyGrid = gridRef.current;
 
     const spreadFrom = useCallback((pos: GridPos) => {
         setCellStates(prev => {
