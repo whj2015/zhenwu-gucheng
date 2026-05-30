@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useGameStore } from '../store';
-import { Building, Hammer, Map, Users, Tent, HeartPulse, Store, Settings, Package } from 'lucide-react';
+import { Building, Hammer, Map, Users, Tent, HeartPulse, Store, Settings, Package, ScrollText } from 'lucide-react';
 import { cn } from '../utils';
 import CityPanel from './CityPanel';
 import ForgePanel from './ForgePanel';
@@ -10,6 +10,8 @@ import BarracksPanel from './BarracksPanel';
 import HospitalPanel from './HospitalPanel';
 import MarketPanel from './MarketPanel';
 import WarehousePanel from './WarehousePanel';
+import UpdateLog from './UpdateLog';
+import { getVersionDisplay } from '../version';
 
 type Tab = 'city' | 'hospital' | 'market' | 'forge' | 'heroes' | 'gate' | 'barracks' | 'warehouse';
 
@@ -18,6 +20,7 @@ export default function MainUI() {
     const { tick, claimOffline, lastTickTime } = useGameStore();
     const [offlineModal, setOfflineModal] = useState<{ amount: number } | null>(null);
     const [resetModal, setResetModal] = useState(false);
+    const [updateLogModal, setUpdateLogModal] = useState(false);
 
     useEffect(() => {
         const now = Date.now();
@@ -61,7 +64,7 @@ export default function MainUI() {
                      </div>
                      <div className="flex flex-col overflow-hidden">
                          <span className="text-xs text-slate-500 uppercase tracking-widest font-bold">Zhenwu City</span>
-                         <span className="text-lg font-serif italic text-slate-200 tracking-tighter truncate">镇武孤城 V0.1</span>
+                         <span className="text-lg font-serif italic text-slate-200 tracking-tighter truncate">镇武孤城 {getVersionDisplay()}</span>
                      </div>
                 </div>
                 <nav className="flex-1 px-4 py-8 space-y-3 overflow-y-auto">
@@ -87,9 +90,14 @@ export default function MainUI() {
                 </nav>
                 <div className="p-4 border-t border-white/5 text-[10px] text-slate-600 font-mono tracking-widest uppercase flex justify-between items-center">
                     <span>Project Zhenwu</span>
-                    <button onClick={() => setResetModal(true)} className="hover:text-red-500 transition-colors p-1" title="重置游戏进度">
-                        <Settings className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setUpdateLogModal(true)} className="hover:text-orange-500 transition-colors p-1" title="查看更新公告">
+                            <ScrollText className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => setResetModal(true)} className="hover:text-red-500 transition-colors p-1" title="重置游戏进度">
+                            <Settings className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
              </aside>
 
@@ -106,9 +114,14 @@ export default function MainUI() {
                           </h2>
                       </div>
                       <TopResourceBar />
-                      <button onClick={() => setResetModal(true)} className="lg:hidden text-slate-500 hover:text-red-500 transition-colors p-1.5 shrink-0" title="重置游戏进度">
-                          <Settings className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                          <button onClick={() => setUpdateLogModal(true)} className="text-slate-500 hover:text-orange-500 transition-colors p-1.5 shrink-0" title="查看更新公告">
+                              <ScrollText className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => setResetModal(true)} className="lg:hidden text-slate-500 hover:text-red-500 transition-colors p-1.5 shrink-0" title="重置游戏进度">
+                              <Settings className="w-4 h-4" />
+                          </button>
+                      </div>
                   </header>
 
                   {/* Content scroll area — optimized for mobile with proper padding for bottom nav */}
@@ -196,6 +209,11 @@ export default function MainUI() {
                         </div>
                     </div>
                 </div>
+             )}
+
+             {/* Update Log Modal */}
+             {updateLogModal && (
+                <UpdateLog onClose={() => setUpdateLogModal(false)} />
              )}
         </div>
     );
