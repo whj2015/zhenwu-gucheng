@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
 
 interface ErrorBoundaryProps {
@@ -46,6 +46,6 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
                 </div>
             );
         }
-        return (this as any).props.children;
+        return this.props.children;
     }
 }
