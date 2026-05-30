@@ -12,6 +12,11 @@ export function formatTime(ms: number) {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-export function generateId() {
-  return Math.random().toString(36).substring(2, 9);
+export function generateId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID().replace(/-/g, '').substring(0, 7);
+  }
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).substring(2, 9);
+  return `${timestamp}${randomPart}`.substring(0, 7);
 }

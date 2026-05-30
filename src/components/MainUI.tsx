@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback, memo } from 'react';
 import { useGameStore } from '../store';
 import { Building, Hammer, Map, Users, Tent, HeartPulse, Store, Settings, Package, ScrollText } from 'lucide-react';
 import { cn } from '../utils';
@@ -17,10 +17,18 @@ type Tab = 'city' | 'hospital' | 'market' | 'forge' | 'heroes' | 'gate' | 'barra
 
 export default function MainUI() {
     const [activeTab, setActiveTab] = useState<Tab>('city');
-    const { tick, claimOffline, lastTickTime } = useGameStore();
+    const tick = useGameStore((state) => state.tick);
+    const claimOffline = useGameStore((state) => state.claimOffline);
+    const lastTickTime = useGameStore((state) => state.lastTickTime);
     const [offlineModal, setOfflineModal] = useState<{ amount: number } | null>(null);
     const [resetModal, setResetModal] = useState(false);
     const [updateLogModal, setUpdateLogModal] = useState(false);
+
+    const tickRef = useRef(tick);
+    tickRef.current = tick;
+
+    const claimOfflineRef = useRef(claimOffline);
+    claimOfflineRef.current = claimOffline;
 
     useEffect(() => {
         const now = Date.now();
@@ -30,17 +38,17 @@ export default function MainUI() {
             const capMins = Math.min(offlineMins, 12 * 60);
             const gains = capMins * 48;
             setOfflineModal({ amount: Math.floor(gains) });
-            claimOffline(Math.floor(gains));
+            claimOfflineRef.current(Math.floor(gains));
         }
 
         const interval = setInterval(() => {
-            tick();
+            tickRef.current();
         }, 1000);
 
         return () => clearInterval(interval);
-    }, []);
+    }, [lastTickTime]);
 
-    const tabs = [
+    const tabs = useMemo(() => [
         { id: 'city', label: '主城署', icon: Building },
         { id: 'hospital', label: '医馆', icon: HeartPulse },
         { id: 'market', label: '集市', icon: Store },
@@ -49,7 +57,32 @@ export default function MainUI() {
         { id: 'heroes', label: '门客', icon: Users },
         { id: 'warehouse', label: '库房', icon: Package },
         { id: 'gate', label: '城门', icon: Map },
-    ] as const;
+    ] as const, []);
+
+    const handleTabChange = useCallback((tabId: Tab) => {
+        setActiveTab(tabId);
+    }, []);
+
+    const handleUpdateLogModal = useCallback(() => {
+        setUpdateLogModal(true);
+    }, []);
+
+    const handleResetModal = useCallback(() => {
+        setResetModal(true);
+    }, []);
+
+    const handleCloseOfflineModal = useCallback(() => {
+        setOfflineModal(null);
+    }, []);
+
+    const handleConfirmReset = useCallback(() => {
+        useGameStore.getState().resetGame();
+        setResetModal(false);
+    }, []);
+
+    const handleCloseUpdateLog = useCallback(() => {
+        setUpdateLogModal(false);
+    }, []);
 
     return (
         <div className="flex w-full h-screen bg-[#0d0f12] text-slate-200 font-sans overflow-hidden relative select-none">
@@ -72,13 +105,13 @@ export default function MainUI() {
                         const Icon = t.icon;
                         const isActive = activeTab === t.id;
                         return (
-                            <button 
+                            <button
                                 key={t.id}
-                                onClick={() => setActiveTab(t.id)}
+                                onClick={() => handleTabChange(t.id)}
                                 className={cn(
                                     "w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all outline-none mobile-touch-target",
-                                    isActive 
-                                        ? "bg-orange-600/10 border border-orange-500/30 text-orange-500 shadow-sm" 
+                                    isActive
+                                        ? "bg-orange-600/10 border border-orange-500/30 text-orange-500 shadow-sm"
                                         : "border border-transparent hover:bg-white/5 text-slate-400 hover:text-slate-200 opacity-80 hover:opacity-100"
                                 )}
                             >
@@ -91,10 +124,10 @@ export default function MainUI() {
                 <div className="p-4 border-t border-white/5 text-[10px] text-slate-600 font-mono tracking-widest uppercase flex justify-between items-center">
                     <span>Project Zhenwu</span>
                     <div className="flex items-center gap-2">
-                        <button onClick={() => setUpdateLogModal(true)} className="hover:text-orange-500 transition-colors p-1" title="查看更新公告">
+                        <button onClick={handleUpdateLogModal} className="hover:text-orange-500 transition-colors p-1" title="查看更新公告">
                             <ScrollText className="w-4 h-4" />
                         </button>
-                        <button onClick={() => setResetModal(true)} className="hover:text-red-500 transition-colors p-1" title="重置游戏进度">
+                        <button onClick={handleResetModal} className="hover:text-red-500 transition-colors p-1" title="重置游戏进度">
                             <Settings className="w-4 h-4" />
                         </button>
                     </div>
@@ -115,10 +148,10 @@ export default function MainUI() {
                       </div>
                       <TopResourceBar />
                       <div className="flex items-center gap-1.5">
-                          <button onClick={() => setUpdateLogModal(true)} className="text-slate-500 hover:text-orange-500 transition-colors p-1.5 shrink-0" title="查看更新公告">
+                          <button onClick={handleUpdateLogModal} className="text-slate-500 hover:text-orange-500 transition-colors p-1.5 shrink-0" title="查看更新公告">
                               <ScrollText className="w-4 h-4" />
                           </button>
-                          <button onClick={() => setResetModal(true)} className="lg:hidden text-slate-500 hover:text-red-500 transition-colors p-1.5 shrink-0" title="重置游戏进度">
+                          <button onClick={handleResetModal} className="lg:hidden text-slate-500 hover:text-red-500 transition-colors p-1.5 shrink-0" title="重置游戏进度">
                               <Settings className="w-4 h-4" />
                           </button>
                       </div>
@@ -145,7 +178,7 @@ export default function MainUI() {
                               return (
                                   <button
                                       key={t.id}
-                                      onClick={() => setActiveTab(t.id)}
+                                      onClick={() => handleTabChange(t.id)}
                                       className={cn(
                                           "flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 rounded-lg transition-all min-w-0 flex-1 max-w-[16%] mobile-touch-target",
                                           isActive
@@ -173,8 +206,8 @@ export default function MainUI() {
                              <span className="text-slate-400 text-sm">获得兵饷</span>
                              <span className="text-amber-400 font-mono font-bold">+{offlineModal.amount}</span>
                         </div>
-                        <button 
-                            onClick={() => setOfflineModal(null)}
+                        <button
+                            onClick={handleCloseOfflineModal}
                             className="relative z-10 w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg transition-all shadow-[0_4px_15px_rgba(234,88,12,0.3)]"
                         >
                             收入库中
@@ -191,17 +224,14 @@ export default function MainUI() {
                         <h3 className="text-xl font-bold mb-4 text-red-100 tracking-wide font-serif relative z-10">破釜沉舟</h3>
                         <p className="text-slate-300 mb-6 relative z-10 text-sm">将军，此举将散尽家财，解散大军，回到初入孤城之时，您确定要如此吗？</p>
                         <div className="flex space-x-4 relative z-10">
-                            <button 
+                            <button
                                 onClick={() => setResetModal(false)}
                                 className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white font-bold rounded-lg transition-all"
                             >
                                 收回成命
                             </button>
-                            <button 
-                                onClick={() => {
-                                    useGameStore.getState().resetGame();
-                                    setResetModal(false);
-                                }}
+                            <button
+                                onClick={handleConfirmReset}
                                 className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-all shadow-[0_4px_15px_rgba(220,38,38,0.3)]"
                             >
                                 确定重置
@@ -213,39 +243,13 @@ export default function MainUI() {
 
              {/* Update Log Modal */}
              {updateLogModal && (
-                <UpdateLog onClose={() => setUpdateLogModal(false)} />
+                <UpdateLog onClose={handleCloseUpdateLog} />
              )}
         </div>
     );
 }
 
-function TopResourceBar() {
-    const { resources, buildings } = useGameStore();
-
-    const houseLvl = buildings.houseLevel || 1;
-    const farmLvl = buildings.farmLevel || 1;
-    const woodLvl = buildings.lumberCampLevel || 1;
-
-    const maxPop = houseLvl * 100;
-    const pop = Math.floor(resources.population || 100);
-
-    const bingxiangRate = Math.floor(pop * 0.01 * 60);
-    const foodRate = Math.floor(farmLvl * 2 * 60);
-    const woodRate = Math.floor(woodLvl * 1.5 * 60);
-
-    return (
-        <div className="flex items-center gap-1 sm:gap-2 lg:gap-6 lg:overflow-visible overflow-x-auto">
-            <ResourceItem label="人口" value={`${pop}/${maxPop}`} color="text-indigo-200" dotColor="bg-indigo-500" icon="👤" />
-            <ResourceItem label="粮草" value={resources.food} color="text-emerald-200" dotColor="bg-emerald-500" sub={`+${foodRate}/m`} icon="🌾" />
-            <ResourceItem label="木材" value={resources.wood} color="text-orange-200" dotColor="bg-orange-700" sub={`+${woodRate}/m`} icon="🪵" />
-            <ResourceItem label="兵饷" value={resources.bingxiang} color="text-amber-200" dotColor="bg-amber-500" sub={`+${bingxiangRate}/m`} icon="🪙" />
-            <ResourceItem label="铁锭" value={resources.iron} color="text-slate-200" dotColor="bg-slate-400" icon="⛏️" />
-            <ResourceItem label="陨铁" value={resources.meteorite} color="text-cyan-200" dotColor="bg-cyan-400" icon="✨" />
-        </div>
-    );
-}
-
-function ResourceItem({ label, value, color, dotColor, sub, icon }: {
+const ResourceItem = memo(function ResourceItem({ label, value, color, dotColor, sub, icon }: {
     label: string;
     value: number | string;
     color: string;
@@ -253,18 +257,53 @@ function ResourceItem({ label, value, color, dotColor, sub, icon }: {
     sub?: string;
     icon: string;
 }) {
+    const displayValue = useMemo(() => typeof value === 'number' ? Math.floor(value).toLocaleString() : value, [value]);
+
     return (
         <div className="flex items-center gap-0.5 sm:gap-1.5 sm:flex-col sm:items-end whitespace-nowrap shrink-0">
              <div className="flex items-center gap-0.5 sm:gap-1.5">
                  <span className="text-[10px] hidden sm:inline">{icon}</span>
                  <div className={cn("w-1.5 h-1.5 sm:w-1 sm:h-1.5 lg:w-2 lg:h-2 rounded-full shrink-0", dotColor)}></div>
                  <span className={cn("font-mono text-[9px] sm:text-xs", color)}>
-                     {typeof value === 'number' ? Math.floor(value).toLocaleString() : value}
+                     {displayValue}
                  </span>
                  <span className="text-[7px] text-slate-500 sm:hidden">{label}</span>
              </div>
              <span className="text-[8px] lg:text-[10px] text-slate-500 hidden sm:inline">{label}</span>
              {sub && <span className="text-[6px] sm:text-[7px] text-slate-600 leading-none hidden lg:block">{sub}</span>}
+        </div>
+    );
+});
+
+function TopResourceBar() {
+    const resources = useGameStore((state) => state.resources);
+    const buildings = useGameStore((state) => state.buildings);
+
+    const resourceData = useMemo(() => {
+        const houseLvl = buildings.houseLevel || 1;
+        const farmLvl = buildings.farmLevel || 1;
+        const woodLvl = buildings.lumberCampLevel || 1;
+
+        const maxPop = houseLvl * 100;
+        const pop = Math.floor(resources.population || 100);
+
+        return {
+            pop,
+            maxPop,
+            bingxiangRate: Math.floor(pop * 0.01 * 60),
+            foodRate: Math.floor(farmLvl * 2 * 60),
+            woodRate: Math.floor(woodLvl * 1.5 * 60)
+        };
+    }, [resources, buildings]);
+
+    return (
+        <div className="flex items-center gap-1 sm:gap-2 lg:gap-6 lg:overflow-visible overflow-x-auto">
+            <ResourceItem label="人口" value={`${resourceData.pop}/${resourceData.maxPop}`} color="text-indigo-200" dotColor="bg-indigo-500" icon="👤" />
+            <ResourceItem label="粮草" value={resources.food} color="text-emerald-200" dotColor="bg-emerald-500" sub={`+${resourceData.foodRate}/m`} icon="🌾" />
+            <ResourceItem label="木材" value={resources.wood} color="text-orange-200" dotColor="bg-orange-700" sub={`+${resourceData.woodRate}/m`} icon="🪵" />
+            <ResourceItem label="兵饷" value={resources.bingxiang} color="text-amber-200" dotColor="bg-amber-500" sub={`+${resourceData.bingxiangRate}/m`} icon="🪙" />
+            <ResourceItem label="铁锭" value={resources.iron} color="text-slate-200" dotColor="bg-slate-400" icon="⛏️" />
+            <ResourceItem label="陨铁" value={resources.meteorite} color="text-cyan-200" dotColor="bg-cyan-400" icon="✨" />
         </div>
     );
 }

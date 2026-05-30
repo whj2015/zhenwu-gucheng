@@ -1,6 +1,5 @@
-import React from 'react';
 import { useGameStore } from '../store';
-import { ScrollText, Coins, Users, Home, Wheat, Axe, ArrowUpCircle } from 'lucide-react';
+import { Coins, Users, Home, Wheat, Axe, ArrowUpCircle } from 'lucide-react';
 import { cn } from '../utils';
 
 export default function CityPanel() {
@@ -17,7 +16,6 @@ export default function CityPanel() {
     const farmCost = { wood: 50 * farmLvl, iron: 10 * farmLvl };
     const woodCost = { food: 50 * woodLvl, iron: 10 * woodLvl };
 
-    const popGrowth = pop < maxPop ? 0.5 : 0;
     const bingxiangRate = pop * 0.01;
     const foodRate = farmLvl * 2;
     const woodRate = woodLvl * 1.5;
