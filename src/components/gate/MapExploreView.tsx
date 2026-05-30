@@ -1,5 +1,5 @@
 /* Extracted from GatePanel.tsx - MapExploreView - Fog of War Edition */
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, Fragment, type ReactNode } from 'react';
 import { useGameStore } from '../../store';
 import { simulateBattle } from '../../engine/ruins';
 import { HERO_TEMPLATES, ENEMY_TEMPLATES, POSITION_CONFIG } from '../../data';
@@ -81,7 +81,7 @@ function buildMapData(nodes: RuinsNode[]): MapData {
     return { grid, initialStates: states };
 }
 
-function CellBase({ children, className }: { children: React.ReactNode; className?: string }) {
+function CellBase({ children, className }: { children: ReactNode; className?: string }) {
     return (
         <div className={cn(
             CELL_SIZE,
@@ -212,9 +212,9 @@ function ReadyCell({ node, onClick, isHovered, onHover, onLeave }: {
             isHovered ? cn(st.hover, "scale-110 z-10") : ("hover:" + st.hover)
         )}>
             <span className="text-base sm:text-lg leading-none mb-0.5">{info.icon}</span>
-            {(node.type === 'battle' || node.type === 'boss') && (node as any).enemies && (
+            {(node.type === 'battle' || node.type === 'boss') ? ((node as any).enemies ? (
                 <span className="text-[8px] font-mono text-slate-500 leading-none">x{(node as any).enemies.length}</span>
-            )}
+            ) : null) : null}
             {isHovered && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-black/95 backdrop-blur-md border border-white/10 rounded-lg p-2 z-30 animate-in fade-in zoom-in-95 duration-150 shadow-xl">
                     <div className={cn("font-serif text-xs font-bold mb-0.5", info.color)}>{info.name}</div>
@@ -320,7 +320,7 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
         }
     }, [handleReadyNodeAction, spreadFrom]);
 
-    const renderEnemyCell = useCallback((pos: GridPos): React.ReactNode => {
+    const renderEnemyCell = useCallback((pos: GridPos): ReactNode => {
         const rr = useGameStore.getState().ruinsRun;
         if (!rr) return null;
         const states = rr.fogStates as CellState[];
@@ -328,26 +328,26 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
         const node = rr.grid?.[pos] ?? null;
 
         if (state !== 'fog' && !isRowAccessible(pos, states)) {
-            return <React.Fragment key={pos}><LockedCell /></React.Fragment>;
+            return <Fragment key={pos}><LockedCell /></Fragment>;
         }
 
         switch (state) {
             case 'fog':
-                return <React.Fragment key={pos}><FogCell /></React.Fragment>;
+                return <Fragment key={pos}><FogCell /></Fragment>;
             case 'empty':
-                return <React.Fragment key={pos}><EmptyCell onClick={() => handleCellClick(pos)} /></React.Fragment>;
+                return <Fragment key={pos}><EmptyCell onClick={() => handleCellClick(pos)} /></Fragment>;
             case 'done':
-                return <React.Fragment key={pos}><DoneCell onClick={() => handleCellClick(pos)} /></React.Fragment>;
+                return <Fragment key={pos}><DoneCell onClick={() => handleCellClick(pos)} /></Fragment>;
             case 'ready':
-                return <React.Fragment key={pos}>{node ? (
+                return <Fragment key={pos}>{node ? (
                     <ReadyCell node={node} onClick={() => handleCellClick(pos)}
                         isHovered={hoveredNodeId === node.id}
                         onHover={() => setHoveredNodeId(node.id)}
                         onLeave={() => setHoveredNodeId(null)}
                     />
-                ) : <EmptyCell onClick={() => handleCellClick(pos)} />}</React.Fragment>;
+                ) : <EmptyCell onClick={() => handleCellClick(pos)} />}</Fragment>;
             default:
-                return <React.Fragment key={pos}><EmptyCell onClick={() => handleCellClick(pos)} /></React.Fragment>;
+                return <Fragment key={pos}><EmptyCell onClick={() => handleCellClick(pos)} /></Fragment>;
         }
     }, [hoveredNodeId, handleCellClick]);
 
@@ -381,7 +381,7 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                     <div className={cn("grid grid-cols-3", GAP)}>
                         {ROWS.map(row => COLS.map(col => {
                             const posKey = `${row}-${col}` as PositionKey;
-                            return <React.Fragment key={posKey}><PartyCell heroId={ruinsRun.party[posKey]} position={posKey} /></React.Fragment>;
+                            return <Fragment key={posKey}><PartyCell heroId={ruinsRun.party[posKey]} position={posKey} /></Fragment>;
                         }))}
                     </div>
                 </div>

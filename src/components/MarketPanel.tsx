@@ -1,8 +1,8 @@
-import React from 'react';
 import { useGameStore } from '../store';
 import { cn } from '../utils';
-import { Store, ArrowRightLeft, ArrowUpCircle, Gift } from 'lucide-react';
+import { Store, ArrowUpCircle } from 'lucide-react';
 import { GameState } from '../types';
+import { TradeCard } from './TradeCard';
 
 interface TradeOption {
     id: string;
@@ -36,7 +36,10 @@ const MARKET_BENEFITS = [
 ];
 
 export default function MarketPanel() {
-    const { resources, tradeResource, buildings, upgradeBuilding } = useGameStore();
+    const resources = useGameStore((state) => state.resources);
+    const tradeResource = useGameStore((state) => state.tradeResource);
+    const buildings = useGameStore((state) => state.buildings);
+    const upgradeBuilding = useGameStore((state) => state.upgradeBuilding);
 
     const mktLvl = buildings.marketLevel || 1;
     const bonusRate = (mktLvl - 1) * 8;
@@ -82,78 +85,18 @@ export default function MarketPanel() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-5 overflow-y-auto flex-1 custom-scrollbar pr-1 pb-2">
-                {allTrades.map(opt => {
-                    const canAfford = resources[opt.fromType] >= opt.fromAmount;
-                    const fromLabel = getResourceLabel(opt.fromType);
-                    const toLabel = getResourceLabel(opt.toType);
-                    const isUnlocked = !opt.requireLevel || opt.requireLevel <= mktLvl;
-                    const bonusTo = mktLvl >= 2 && opt.toType !== 'bingxiang' ? Math.floor(opt.toAmount * bonusRate / 100) : 0;
-
-                    return (
-                        <div key={opt.id} className={cn(
-                            "bg-black/40 border rounded-xl p-3 sm:p-4 lg:p-5 relative overflow-hidden group",
-                            isUnlocked ? "border-white/10" : "border-white/5 opacity-50"
-                        )}>
-                           <div className="absolute -top-10 -right-10 w-28 h-28 sm:w-32 sm:h-32 bg-white/5 blur-3xl pointer-events-none rounded-full group-hover:bg-amber-500/10 transition-colors"></div>
-
-                           <div className="flex items-center justify-between mb-2 sm:mb-3">
-                               <h3 className="text-xs sm:text-sm lg:text-base font-serif text-slate-200">{opt.label}</h3>
-                               {!isUnlocked && (
-                                   <span className="text-[9px] sm:text-[10px] bg-slate-800/80 text-slate-400 px-1.5 sm:px-2 py-0.5 rounded font-mono">
-                                       需集市 Lv.{opt.requireLevel}
-                                   </span>
-                               )}
-                           </div>
-
-                           <div className="flex items-center justify-between bg-black/60 p-2 sm:p-2.5 lg:p-3 rounded-lg border border-white/5 mb-3 sm:mb-4">
-                               <div className="text-center flex-1 min-w-0">
-                                    <div className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-widest mb-1">消耗</div>
-                                    <div className="font-mono text-sm sm:text-base lg:text-lg text-red-300 truncate">-{opt.fromAmount} <span className="text-[10px] sm:text-xs text-slate-400">{fromLabel}</span></div>
-                               </div>
-                               <div className="px-1.5 sm:px-2 lg:px-3 text-slate-600 shrink-0">
-                                   <ArrowRightLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
-                               </div>
-                               <div className="text-center flex-1 min-w-0">
-                                    <div className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-widest mb-1">获得</div>
-                                    <div className={cn("font-mono text-sm sm:text-base lg:text-lg", opt.iconColor)}>
-                                        +{opt.toAmount}{bonusTo > 0 && <span className="text-emerald-400 ml-0.5">(+{bonusTo})</span>}
-                                        <span className="text-[10px] sm:text-xs text-slate-400">{toLabel}</span>
-                                    </div>
-                                    {bonusTo > 0 && (
-                                        <div className="text-[8px] sm:text-[9px] text-emerald-400/70 mt-0.5">含集市加成 +{bonusRate}%</div>
-                                    )}
-                               </div>
-                           </div>
-
-                           <button
-                                onClick={() => tradeResource(opt.fromType, opt.toType, opt.fromAmount, opt.toAmount)}
-                                disabled={!canAfford || !isUnlocked}
-                                className={cn(
-                                    "w-full py-2 sm:py-2.5 rounded-lg font-bold tracking-widest text-[10px] sm:text-sm transition-all flex items-center justify-center gap-1 sm:gap-1.5 mobile-touch-target",
-                                    isUnlocked && canAfford
-                                        ? "bg-amber-900/40 hover:bg-amber-800/60 border border-amber-500/50 text-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.1)]"
-                                        : "bg-white/5 border border-white/10 text-slate-500 cursor-not-allowed"
-                                )}
-                            >
-                               {!isUnlocked ? <Gift className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : null}
-                               确认交易
-                           </button>
-                        </div>
-                    );
-                })}
+                {allTrades.map(opt => (
+                    <TradeCard
+                        key={opt.id}
+                        opt={opt}
+                        resources={resources}
+                        mktLvl={mktLvl}
+                        bonusRate={bonusRate}
+                        tradeResource={tradeResource}
+                    />
+                ))}
             </div>
         </div>
     );
 }
 
-function getResourceLabel(key: keyof GameState['resources']) {
-    const map: Record<keyof GameState['resources'], string> = {
-        bingxiang: '兵饷',
-        iron: '铁锭',
-        meteorite: '陨铁',
-        food: '粮草',
-        wood: '木材',
-        population: '人口'
-    };
-    return map[key] || key;
-}

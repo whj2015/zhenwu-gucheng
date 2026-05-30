@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo, useCallback, memo } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useGameStore } from '../store';
 import { Building, Hammer, Map, Users, Tent, HeartPulse, Store, Settings, Package, ScrollText } from 'lucide-react';
 import { cn } from '../utils';
@@ -11,6 +11,8 @@ import HospitalPanel from './HospitalPanel';
 import MarketPanel from './MarketPanel';
 import WarehousePanel from './WarehousePanel';
 import UpdateLog from './UpdateLog';
+import { ResourceItem } from './ResourceItem';
+import { TabButton } from './TabButton';
 import { getVersionDisplay } from '../version';
 
 type Tab = 'city' | 'hospital' | 'market' | 'forge' | 'heroes' | 'gate' | 'barracks' | 'warehouse';
@@ -101,25 +103,14 @@ export default function MainUI() {
                     </div>
                 </div>
                 <nav className="flex-1 px-4 py-8 space-y-3 overflow-y-auto">
-                    {tabs.map((t) => {
-                        const Icon = t.icon;
-                        const isActive = activeTab === t.id;
-                        return (
-                            <button
-                                key={t.id}
-                                onClick={() => handleTabChange(t.id)}
-                                className={cn(
-                                    "w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all outline-none mobile-touch-target",
-                                    isActive
-                                        ? "bg-orange-600/10 border border-orange-500/30 text-orange-500 shadow-sm"
-                                        : "border border-transparent hover:bg-white/5 text-slate-400 hover:text-slate-200 opacity-80 hover:opacity-100"
-                                )}
-                            >
-                                <Icon className="w-5 h-5 shrink-0" />
-                                <span className="font-medium tracking-wide">{t.label}</span>
-                            </button>
-                        );
-                    })}
+                    {tabs.map((t) => (
+                        <TabButton
+                            key={t.id}
+                            t={t}
+                            isActive={activeTab === t.id}
+                            onClick={() => handleTabChange(t.id)}
+                        />
+                    ))}
                 </nav>
                 <div className="p-4 border-t border-white/5 text-[10px] text-slate-600 font-mono tracking-widest uppercase flex justify-between items-center">
                     <span>Project Zhenwu</span>
@@ -172,25 +163,15 @@ export default function MainUI() {
                   {/* Mobile Bottom Tab Bar - optimized layout */}
                   <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-black/95 backdrop-blur-xl border-t border-white/10 safe-bottom">
                       <div className="flex justify-around items-center h-14 sm:h-16 px-0.5">
-                          {tabs.map((t) => {
-                              const Icon = t.icon;
-                              const isActive = activeTab === t.id;
-                              return (
-                                  <button
-                                      key={t.id}
-                                      onClick={() => handleTabChange(t.id)}
-                                      className={cn(
-                                          "flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 rounded-lg transition-all min-w-0 flex-1 max-w-[16%] mobile-touch-target",
-                                          isActive
-                                              ? "text-orange-500"
-                                              : "text-slate-500 hover:text-slate-300"
-                                      )}
-                                  >
-                                      <Icon className={cn("w-5 h-5", isActive && "stroke-[2.5]")}/>
-                                      <span className={cn("text-[8px] sm:text-[9px] font-medium truncate w-full text-center leading-tight", isActive && "font-bold")}>{t.label}</span>
-                                  </button>
-                              );
-                          })}
+                          {tabs.map((t) => (
+                              <TabButton
+                                  key={t.id}
+                                  t={t}
+                                  isActive={activeTab === t.id}
+                                  onClick={() => handleTabChange(t.id)}
+                                  variant="mobile"
+                              />
+                          ))}
                       </div>
                   </nav>
              </main>
@@ -248,32 +229,6 @@ export default function MainUI() {
         </div>
     );
 }
-
-const ResourceItem = memo(function ResourceItem({ label, value, color, dotColor, sub, icon }: {
-    label: string;
-    value: number | string;
-    color: string;
-    dotColor: string;
-    sub?: string;
-    icon: string;
-}) {
-    const displayValue = useMemo(() => typeof value === 'number' ? Math.floor(value).toLocaleString() : value, [value]);
-
-    return (
-        <div className="flex items-center gap-0.5 sm:gap-1.5 sm:flex-col sm:items-end whitespace-nowrap shrink-0">
-             <div className="flex items-center gap-0.5 sm:gap-1.5">
-                 <span className="text-[10px] hidden sm:inline">{icon}</span>
-                 <div className={cn("w-1.5 h-1.5 sm:w-1 sm:h-1.5 lg:w-2 lg:h-2 rounded-full shrink-0", dotColor)}></div>
-                 <span className={cn("font-mono text-[9px] sm:text-xs", color)}>
-                     {displayValue}
-                 </span>
-                 <span className="text-[7px] text-slate-500 sm:hidden">{label}</span>
-             </div>
-             <span className="text-[8px] lg:text-[10px] text-slate-500 hidden sm:inline">{label}</span>
-             {sub && <span className="text-[6px] sm:text-[7px] text-slate-600 leading-none hidden lg:block">{sub}</span>}
-        </div>
-    );
-});
 
 function TopResourceBar() {
     const resources = useGameStore((state) => state.resources);

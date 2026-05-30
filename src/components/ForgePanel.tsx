@@ -1,13 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useGameStore } from '../store';
 import { CRAFTING_TEMPLATES, FORGE_UPGRADE_COSTS } from '../data';
 import { Hammer, ArrowUpCircle, Clock, Sparkles, Shield, Sword, Crosshair, Star } from 'lucide-react';
 import { formatTime } from '../utils';
 import { cn } from '../utils';
+import { CraftingCard } from './CraftingCard';
 
-const TYPE_ICONS: Record<string, React.ReactNode> = {
-    weapon: <Sword className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />,
-    armor: <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
+const WeaponIcon = () => <Sword className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />;
+const ArmorIcon = () => <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />;
+
+export const TYPE_ICONS: Record<string, React.ComponentType> = {
+  weapon: WeaponIcon,
+  armor: ArmorIcon,
 };
 
 const QUALITY_COLORS: Record<string, string> = {
@@ -17,7 +21,12 @@ const QUALITY_COLORS: Record<string, string> = {
 };
 
 export default function ForgePanel() {
-    const { buildings, resources, startCrafting, claimCrafting, crafting, upgradeForge } = useGameStore();
+    const buildings = useGameStore((state) => state.buildings);
+    const resources = useGameStore((state) => state.resources);
+    const startCrafting = useGameStore((state) => state.startCrafting);
+    const claimCrafting = useGameStore((state) => state.claimCrafting);
+    const crafting = useGameStore((state) => state.crafting);
+    const upgradeForge = useGameStore((state) => state.upgradeForge);
     const lvl = buildings.forgeLevel;
     const upgradeCost = FORGE_UPGRADE_COSTS[(lvl + 1) as unknown as keyof typeof FORGE_UPGRADE_COSTS];
     const canUpgrade = upgradeCost && resources.bingxiang >= upgradeCost.bingxiang && resources.meteorite >= upgradeCost.meteorite;
@@ -81,74 +90,52 @@ export default function ForgePanel() {
              </div>
 
              {/* Available Blueprints */}
-             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 lg:gap-4">
-                 {Object.entries(CRAFTING_TEMPLATES).map(([id, t]) => {
-                     const maxStats = t.baseStats[lvl];
-                     if (!maxStats) return null;
-                     const canAfford = resources.bingxiang >= t.costBingxiang && resources.iron >= t.costIron;
-                     const isBusy = !!crafting.task;
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 lg:gap-4">
+                {Object.entries(CRAFTING_TEMPLATES).map(([id, t]) => {
+                    const maxStats = t.baseStats[lvl];
+                    if (!maxStats) return null;
+                    const canAfford = resources.bingxiang >= t.costBingxiang && resources.iron >= t.costIron;
+                    const isBusy = !!crafting.task;
 
-                     return (
-                         <div key={id} className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 lg:p-5 flex flex-col relative overflow-hidden group">
-                              <div className={cn(
-                                  "absolute -top-4 -right-4 w-20 w-24 sm:w-24 blur-2xl group-hover:bg-orange-500/20 transition-all pointer-events-none",
-                                  t.type === 'weapon' ? "bg-orange-500/5" : "bg-blue-500/5"
-                              )}></div>
-                              <div className="flex justify-between items-start relative z-10">
-                                  <div className="w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-black/40 border border-white/10 rounded-lg flex items-center justify-center mb-2 sm:mb-3">
-                                      {TYPE_ICONS[t.type]}
-                                  </div>
-                                  <div className="text-right">
-                                      <span className="text-[9px] sm:text-[10px] text-slate-500 block uppercase tracking-wide">时长</span>
-                                      <span className="text-[10px] sm:text-xs font-mono text-slate-300">{formatTime(t.durationMs)}</span>
-                                  </div>
-                              </div>
-                              <h3 className="text-sm sm:text-base font-bold text-slate-200 relative z-10">{t.name}</h3>
-                              <span className="text-[9px] sm:text-[10px] text-slate-500 mb-1.5 sm:mb-2 relative z-10 inline-block px-1 sm:px-1.5 py-0.5 bg-white/5 rounded border border-white/5">
-                                  {t.type === 'weapon' ? '兵器' : '铠甲'}
-                              </span>
-                              <p className="text-[10px] sm:text-xs text-emerald-300/80 relative z-10 font-mono">
-                                  {maxStats.attack > 0 ? `攻 +${maxStats.attack}` : ''}{maxStats.defense > 0 ? `防 +${maxStats.defense}` : ''}
-                              </p>
-                              {(t as any).desc && (
-                                  <p className="text-[10px] sm:text-[11px] text-slate-500 mt-1 relative z-10 leading-relaxed">{(t as any).desc}</p>
-                              )}
-
-                              <div className="mt-auto pt-2.5 sm:pt-3 border-t border-white/5 relative z-10">
-                                  <div className="flex gap-2 sm:gap-3 mb-2.5 sm:mb-3 text-[10px] sm:text-xs font-mono">
-                                      <span className={cn(resources.bingxiang < t.costBingxiang ? 'text-red-400' : 'text-amber-200')}>饷 {t.costBingxiang}</span>
-                                      <span className={cn(resources.iron < t.costIron ? 'text-red-400' : 'text-slate-300')}>铁 {t.costIron}</span>
-                                  </div>
-                                  <button
-                                     onClick={() => startCrafting(id)}
-                                     disabled={!canAfford || isBusy}
-                                     className="w-full py-2 sm:py-2.5 bg-white/5 border border-white/20 hover:bg-white/10 text-white font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-[10px] sm:text-xs mobile-touch-target"
-                                  >
-                                      锻造
-                                  </button>
-                              </div>
-                         </div>
-                     );
-                 })}
-             </div>
+                    return (
+                        <CraftingCard
+                            key={id}
+                            id={id}
+                            t={t}
+                            lvl={lvl}
+                            resources={resources}
+                            canAfford={canAfford}
+                            isBusy={isBusy}
+                            startCrafting={startCrafting}
+                        />
+                    );
+                })}
+            </div>
         </div>
     );
 }
 
 function ActiveTask() {
-    const { crafting, claimCrafting } = useGameStore();
+    const crafting = useGameStore((state) => state.crafting);
+    const claimCrafting = useGameStore((state) => state.claimCrafting);
     const task = crafting.task;
     const [timeLeft, setTimeLeft] = useState(0);
 
     useEffect(() => {
         if (!task?.endTime) return;
-        const calc = () => {
+
+        let animationFrameId: number;
+        const update = () => {
             const rem = task.endTime - Date.now();
             setTimeLeft(Math.max(0, rem));
+
+            if (rem > 0) {
+                animationFrameId = requestAnimationFrame(update);
+            }
         };
-        calc();
-        const int = setInterval(calc, 200);
-        return () => clearInterval(int);
+
+        update();
+        return () => cancelAnimationFrame(animationFrameId);
     }, [task?.endTime]);
 
     if (!task) return null;
