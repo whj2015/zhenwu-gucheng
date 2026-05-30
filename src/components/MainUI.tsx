@@ -73,7 +73,7 @@ export default function MainUI() {
                                 key={t.id}
                                 onClick={() => setActiveTab(t.id)}
                                 className={cn(
-                                    "w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all outline-none",
+                                    "w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all outline-none mobile-touch-target",
                                     isActive 
                                         ? "bg-orange-600/10 border border-orange-500/30 text-orange-500 shadow-sm" 
                                         : "border border-transparent hover:bg-white/5 text-slate-400 hover:text-slate-200 opacity-80 hover:opacity-100"
@@ -95,24 +95,24 @@ export default function MainUI() {
 
              {/* Main Content Area */}
              <main className="flex-1 flex flex-col relative overflow-hidden z-10 min-h-0">
-                  {/* Header */}
-                  <header className="shrink-0 bg-black/40 border-b border-white/10 backdrop-blur-md flex items-center px-4 lg:px-8 justify-between gap-3 h-14 lg:h-16">
-                      <div className="flex items-center gap-3 min-w-0">
-                          <div className="lg:hidden w-8 h-8 bg-orange-600/20 border border-orange-500/50 flex items-center justify-center rounded-sm rotate-45 shrink-0">
-                              <div className="-rotate-45 font-bold text-orange-500 text-sm font-serif">武</div>
+                  {/* Header - optimized for mobile */}
+                  <header className="shrink-0 bg-black/40 border-b border-white/10 backdrop-blur-md flex items-center px-3 sm:px-4 lg:px-8 justify-between gap-2 h-12 sm:h-14 lg:h-16">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                          <div className="lg:hidden w-7 h-7 sm:w-8 sm:h-8 bg-orange-600/20 border border-orange-500/50 flex items-center justify-center rounded-sm rotate-45 shrink-0">
+                              <div className="-rotate-45 font-bold text-orange-500 text-xs sm:text-sm font-serif">武</div>
                           </div>
-                          <h2 className="text-base lg:text-lg font-serif italic text-slate-200 tracking-tighter truncate">
+                          <h2 className="text-sm sm:text-base lg:text-lg font-serif italic text-slate-200 tracking-tighter truncate">
                               {tabs.find(t => t.id === activeTab)?.label}
                           </h2>
                       </div>
                       <TopResourceBar />
-                      <button onClick={() => setResetModal(true)} className="lg:hidden text-slate-500 hover:text-red-500 transition-colors p-1 shrink-0" title="重置游戏进度">
+                      <button onClick={() => setResetModal(true)} className="lg:hidden text-slate-500 hover:text-red-500 transition-colors p-1.5 shrink-0" title="重置游戏进度">
                           <Settings className="w-4 h-4" />
                       </button>
                   </header>
 
-                  {/* Content scroll area — accounts for bottom nav on mobile */}
-                  <div className="flex-1 overflow-y-auto relative pb-20 lg:pb-8 p-4 lg:p-8">
+                  {/* Content scroll area — optimized for mobile with proper padding for bottom nav */}
+                  <div className="flex-1 overflow-y-auto relative mobile-scroll custom-scrollbar pb-24 lg:pb-8 p-3 sm:p-4 lg:p-8">
                        {activeTab === 'city' && <CityPanel />}
                        {activeTab === 'hospital' && <HospitalPanel />}
                        {activeTab === 'market' && <MarketPanel />}
@@ -123,9 +123,9 @@ export default function MainUI() {
                        {activeTab === 'gate' && <GatePanel />}
                   </div>
 
-                  {/* Mobile Bottom Tab Bar */}
-                  <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-black/90 backdrop-blur-xl border-t border-white/10 safe-bottom">
-                      <div className="flex justify-around items-center h-16 px-1">
+                  {/* Mobile Bottom Tab Bar - optimized layout */}
+                  <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-black/95 backdrop-blur-xl border-t border-white/10 safe-bottom">
+                      <div className="flex justify-around items-center h-14 sm:h-16 px-0.5">
                           {tabs.map((t) => {
                               const Icon = t.icon;
                               const isActive = activeTab === t.id;
@@ -134,14 +134,14 @@ export default function MainUI() {
                                       key={t.id}
                                       onClick={() => setActiveTab(t.id)}
                                       className={cn(
-                                          "flex flex-col items-center justify-center gap-0.5 py-1.5 px-2 rounded-lg transition-all min-w-0 flex-1 max-w-[72px]",
+                                          "flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 rounded-lg transition-all min-w-0 flex-1 max-w-[16%] mobile-touch-target",
                                           isActive
                                               ? "text-orange-500"
                                               : "text-slate-500 hover:text-slate-300"
                                       )}
                                   >
                                       <Icon className={cn("w-5 h-5", isActive && "stroke-[2.5]")}/>
-                                      <span className={cn("text-[9px] font-medium truncate w-full text-center", isActive && "font-bold")}>{t.label}</span>
+                                      <span className={cn("text-[8px] sm:text-[9px] font-medium truncate w-full text-center leading-tight", isActive && "font-bold")}>{t.label}</span>
                                   </button>
                               );
                           })}
@@ -216,7 +216,7 @@ function TopResourceBar() {
     const woodRate = Math.floor(woodLvl * 1.5 * 60);
 
     return (
-        <div className="flex gap-3 lg:gap-6 overflow-x-auto custom-scrollbar py-1.5 max-w-[40vw] lg:max-w-none">
+        <div className="flex gap-2 sm:gap-3 lg:gap-6 overflow-x-auto custom-scrollbar py-1 max-w-[35vw] sm:max-w-[40vw] lg:max-w-none">
             <ResourceItem label="人口" value={`${pop}/${maxPop}`} color="text-indigo-200" dotColor="bg-indigo-500" sub="税赋之源" compact />
             <ResourceItem label="粮草" value={resources.food} color="text-emerald-200" dotColor="bg-emerald-500" sub={`+${foodRate}/m`} compact />
             <ResourceItem label="木材" value={resources.wood} color="text-orange-200" dotColor="bg-orange-700" sub={`+${woodRate}/m`} compact />
@@ -227,24 +227,24 @@ function TopResourceBar() {
     );
 }
 
-function ResourceItem({ label, value, color, dotColor, sub, compact, hideOnMobile }: { 
-    label: string; 
-    value: number | string; 
-    color: string; 
-    dotColor: string; 
+function ResourceItem({ label, value, color, dotColor, sub, compact, hideOnMobile }: {
+    label: string;
+    value: number | string;
+    color: string;
+    dotColor: string;
     sub: string;
     compact?: boolean;
     hideOnMobile?: boolean;
 }) {
     return (
-        <div className={cn("flex flex-col items-end whitespace-nowrap", hideOnMobile && "hidden lg:flex")}>
-             <div className="flex items-center gap-1.5">
-                 <div className={cn("w-2 h-2 lg:w-3 lg:h-3 rounded-full", dotColor)}></div>
-                 <span className={cn("font-mono", compact ? "text-xs" : "text-sm", color)}>
+        <div className={cn("flex flex-col items-end whitespace-nowrap", hideOnMobile && "hidden md:flex")}>
+             <div className="flex items-center gap-1 sm:gap-1.5">
+                 <div className={cn("w-1.5 h-1.5 sm:w-2 sm:h-2 lg:w-3 lg:h-3 rounded-full", dotColor)}></div>
+                 <span className={cn("font-mono", compact ? "text-[10px] sm:text-xs" : "text-sm", color)}>
                      {typeof value === 'number' ? Math.floor(value).toLocaleString() : value}
                  </span>
              </div>
-             {sub && <span className="text-[9px] lg:text-[10px] text-slate-500">{sub}</span>}
+             {sub && <span className="text-[8px] sm:text-[9px] lg:text-[10px] text-slate-500">{sub}</span>}
         </div>
     );
 }
