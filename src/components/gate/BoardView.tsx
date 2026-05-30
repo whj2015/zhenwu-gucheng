@@ -37,7 +37,7 @@ const RESOURCE_LABELS: Record<string, string> = {
 };
 
 export default function BoardView() {
-    const { questState, turnInQuest, checkAndRefreshQuests, acceptQuest } = useGameStore();
+    const { questState, turnInQuest, checkAndRefreshQuests, acceptQuest, resources } = useGameStore();
 
     useEffect(() => {
         checkAndRefreshQuests();
@@ -51,15 +51,23 @@ export default function BoardView() {
         .filter(([, q]) => q.category === 'weekly')
         .sort((a, b) => a[1].difficulty - b[1].difficulty);
 
+    const getQuestProgress = (questId: string, template: QuestTemplate) => {
+        if (template.requireType === 'resource' && template.resourceKey) {
+            return resources[template.resourceKey as keyof typeof resources] || 0;
+        }
+        return questState.progress[questId] || 0;
+    };
+
     const renderQuestCard = ([questId, template]: [string, QuestTemplate]) => {
         const isCompleted = template.category === 'daily'
             ? questState.completedDailyIds.includes(questId)
             : questState.completedWeeklyIds.includes(questId);
         
         const isAccepted = questState.acceptedIds?.includes(questId) || false;
+        const isResourceQuest = template.requireType === 'resource';
         
-        const progress = questState.progress[questId] || 0;
-        const canTurnIn = !isCompleted && isAccepted && progress >= template.amount;
+        const progress = getQuestProgress(questId, template);
+        const canTurnIn = !isCompleted && (isResourceQuest || isAccepted) && progress >= template.amount;
         const progressPct = Math.min(100, (progress / template.amount) * 100);
 
         return (
@@ -135,8 +143,12 @@ export default function BoardView() {
                             onClick={() => turnInQuest(questId)}
                             className="w-full sm:w-auto px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold tracking-widest text-[10px] sm:text-[11px] bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 transition-all mobile-touch-target"
                         >
-                            领取奖励
+                            提交任务
                         </button>
+                    ) : isResourceQuest ? (
+                        <span className="text-[10px] sm:text-[11px] text-slate-500 font-mono flex items-center gap-1">
+                            库存不足
+                        </span>
                     ) : isAccepted ? (
                         <span className="text-[10px] sm:text-[11px] text-slate-500 font-mono flex items-center gap-1">
                             <Target className="w-3 h-3" /> 进行中...
