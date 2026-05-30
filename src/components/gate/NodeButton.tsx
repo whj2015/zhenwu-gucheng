@@ -19,7 +19,7 @@ export default function NodeButton({
     const isInteractive = node.revealed && !node.completed;
     
     const style = cn(
-        "relative w-18 h-18 rounded-2xl flex items-center justify-center transition-all duration-200 shrink-0",
+        "relative w-14 h-14 lg:w-18 lg:h-18 rounded-2xl flex items-center justify-center transition-all duration-200 shrink-0",
         !node.revealed && "bg-white/[0.03] border border-white/5 opacity-30 cursor-default scale-90",
         node.completed && "bg-white/[0.04] border border-white/5 opacity-40 cursor-default scale-90",
         isInteractive && node.type === 'battle' && "bg-black/60 border border-cyan-500/40 hover:border-cyan-400 hover:scale-110 cursor-pointer shadow-[0_0_20px_rgba(34,211,238,0.15)]",
@@ -37,10 +37,10 @@ export default function NodeButton({
             onMouseLeave={() => onHover(null)}
             disabled={!isInteractive}
         >
-            {node.type === 'battle' && <Sword className="w-7 h-7 text-slate-300" />}
-            {node.type === 'boss' && <Skull className="w-9 h-9 text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]" />}
-            {node.type === 'camp' && <Tent className="w-7 h-7 text-emerald-400" />}
-            {node.type === 'armory' && <Archive className="w-7 h-7 text-violet-400" />}
+            {node.type === 'battle' && <Sword className="w-5 h-5 lg:w-7 lg:h-7 text-slate-300" />}
+            {node.type === 'boss' && <Skull className="w-7 h-7 lg:w-9 lg:h-9 text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]" />}
+            {node.type === 'camp' && <Tent className="w-5 h-5 lg:w-7 lg:h-7 text-emerald-400" />}
+            {node.type === 'armory' && <Archive className="w-5 h-5 lg:w-7 lg:h-7 text-violet-400" />}
 
             {isInteractive && (
                 <div className="absolute inset-0 rounded-2xl border animate-ping opacity-10 pointer-events-none"

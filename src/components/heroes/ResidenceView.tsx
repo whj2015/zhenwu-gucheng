@@ -5,13 +5,7 @@ import { HERO_TEMPLATES } from '../../data';
 import { Users } from 'lucide-react';
 import { cn } from '../../utils';
 import HeroDetail from './HeroDetail';
-
-function HeroIcon({ icon, name, className }: { icon: string | null; name: string; className?: string }) {
-    if (icon) {
-        return <img src={icon} alt={name} className={cn("object-cover rounded", className)} />;
-    }
-    return <span className={cn("font-serif font-bold", className)}>{name.charAt(0)}</span>;
-}
+import HeroIcon from '../HeroIcon';
 
 export default function ResidenceView() {
     const { heroes } = useGameStore();
@@ -35,9 +29,9 @@ export default function ResidenceView() {
     }
 
     return (
-        <div className="h-full flex gap-8">
+        <div className="h-full flex flex-col lg:flex-row gap-4 lg:gap-8">
             {/* Hero List side */}
-            <div className="w-80 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="w-full lg:w-80 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar max-h-[35vh] lg:max-h-none">
                 {heroes.map(h => {
                     const t = HERO_TEMPLATES[h.templateId];
                     const maxHp = t.attributes.physique * 10;
@@ -47,13 +41,13 @@ export default function ResidenceView() {
                         key={h.id}
                         onClick={() => setSelectedHero(h.id)}
                         className={cn(
-                            "w-full text-left p-3 rounded-lg border transition-all flex gap-4",
+                            "w-full text-left p-2.5 lg:p-3 rounded-lg border transition-all flex gap-4",
                             isSelected 
                                 ? "bg-white/10 border-orange-500/50 shadow-md" 
                                 : "bg-white/5 border-white/5 hover:border-white/20"
                         )}
                         >
-                            <div className={cn("w-12 h-12 rounded border overflow-hidden flex items-center justify-center", isSelected ? "bg-orange-900/30 border-orange-500/50" : "bg-black/40 border-white/10")}>
+                            <div className={cn("w-10 h-10 lg:w-12 lg:h-12 rounded border overflow-hidden flex items-center justify-center", isSelected ? "bg-orange-900/30 border-orange-500/50" : "bg-black/40 border-white/10")}>
                                 <HeroIcon icon={t.icon} name={t.name} className="w-full h-full flex items-center justify-center text-lg" />
                             </div>
                             <div className="flex-1">
@@ -81,7 +75,7 @@ export default function ResidenceView() {
             </div>
 
             {/* Hero Details & Equipment */}
-            <div className="flex-1 bg-black/40 border border-white/5 rounded-xl p-8 flex flex-col relative overflow-y-auto custom-scrollbar">
+            <div className="flex-1 bg-black/40 border border-white/5 rounded-xl p-4 lg:p-8 flex flex-col relative overflow-y-auto custom-scrollbar">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-slate-500/5 blur-3xl pointer-events-none"></div>
                 {selectedHero && <HeroDetail heroId={selectedHero} />}
             </div>

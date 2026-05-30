@@ -20,13 +20,11 @@ export default function MainUI() {
     const [resetModal, setResetModal] = useState(false);
 
     useEffect(() => {
-        // Calculate offline time on mount
         const now = Date.now();
         const deltaMs = now - lastTickTime;
         const offlineMins = Math.floor(deltaMs / 60000);
-        if (offlineMins >= 10) { // More than 10 mins offline
-            const capMins = Math.min(offlineMins, 12 * 60); // 12 hours cap
-            // 80% efficiency: 60/min * 0.8 = 48/min
+        if (offlineMins >= 10) {
+            const capMins = Math.min(offlineMins, 12 * 60);
             const gains = capMins * 48;
             setOfflineModal({ amount: Math.floor(gains) });
             claimOffline(Math.floor(gains));
@@ -52,12 +50,11 @@ export default function MainUI() {
 
     return (
         <div className="flex w-full h-screen bg-[#0d0f12] text-slate-200 font-sans overflow-hidden relative select-none">
-             {/* Background Atmosphere */}
              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,#1e293b_0%,transparent_70%)] opacity-40 pointer-events-none"></div>
              <div className="absolute bottom-0 right-0 w-96 h-96 bg-orange-900/10 blur-[120px] rounded-full pointer-events-none"></div>
 
-             {/* Sidebar Navigation */}
-             <aside className="w-64 bg-black/60 border-r border-white/5 flex flex-col shrink-0 relative z-10 backdrop-blur-md">
+             {/* Desktop Sidebar — hidden on mobile */}
+             <aside className="hidden lg:flex w-64 bg-black/60 border-r border-white/5 flex-col shrink-0 relative z-10 backdrop-blur-md flex-col">
                 <div className="p-6 border-b border-white/5 flex items-center gap-4">
                      <div className="w-10 h-10 bg-orange-600/20 border border-orange-500/50 flex items-center justify-center rounded-sm rotate-45 shrink-0">
                          <div className="-rotate-45 font-bold text-orange-500 text-xl font-serif">武</div>
@@ -67,7 +64,7 @@ export default function MainUI() {
                          <span className="text-lg font-serif italic text-slate-200 tracking-tighter truncate">镇武孤城 V0.1</span>
                      </div>
                 </div>
-                <nav className="flex-1 px-4 py-8 space-y-3">
+                <nav className="flex-1 px-4 py-8 space-y-3 overflow-y-auto">
                     {tabs.map((t) => {
                         const Icon = t.icon;
                         const isActive = activeTab === t.id;
@@ -82,7 +79,7 @@ export default function MainUI() {
                                         : "border border-transparent hover:bg-white/5 text-slate-400 hover:text-slate-200 opacity-80 hover:opacity-100"
                                 )}
                             >
-                                <Icon className="w-5 h-5" />
+                                <Icon className="w-5 h-5 shrink-0" />
                                 <span className="font-medium tracking-wide">{t.label}</span>
                             </button>
                         );
@@ -90,21 +87,32 @@ export default function MainUI() {
                 </nav>
                 <div className="p-4 border-t border-white/5 text-[10px] text-slate-600 font-mono tracking-widest uppercase flex justify-between items-center">
                     <span>Project Zhenwu</span>
-                    <button onClick={() => setResetModal(true)} className="hover:text-red-500 transition-colors" title="重置游戏进度">
+                    <button onClick={() => setResetModal(true)} className="hover:text-red-500 transition-colors p-1" title="重置游戏进度">
                         <Settings className="w-4 h-4" />
                     </button>
                 </div>
              </aside>
 
              {/* Main Content Area */}
-             <main className="flex-1 flex flex-col relative overflow-hidden z-10">
-                  <header className="h-16 bg-black/40 border-b border-white/10 backdrop-blur-md flex items-center px-8 justify-between shrink-0">
-                      <h2 className="text-lg font-serif italic text-slate-200 tracking-tighter">
-                          {tabs.find(t => t.id === activeTab)?.label}
-                      </h2>
+             <main className="flex-1 flex flex-col relative overflow-hidden z-10 min-h-0">
+                  {/* Header */}
+                  <header className="shrink-0 bg-black/40 border-b border-white/10 backdrop-blur-md flex items-center px-4 lg:px-8 justify-between gap-3 h-14 lg:h-16">
+                      <div className="flex items-center gap-3 min-w-0">
+                          <div className="lg:hidden w-8 h-8 bg-orange-600/20 border border-orange-500/50 flex items-center justify-center rounded-sm rotate-45 shrink-0">
+                              <div className="-rotate-45 font-bold text-orange-500 text-sm font-serif">武</div>
+                          </div>
+                          <h2 className="text-base lg:text-lg font-serif italic text-slate-200 tracking-tighter truncate">
+                              {tabs.find(t => t.id === activeTab)?.label}
+                          </h2>
+                      </div>
                       <TopResourceBar />
+                      <button onClick={() => setResetModal(true)} className="lg:hidden text-slate-500 hover:text-red-500 transition-colors p-1 shrink-0" title="重置游戏进度">
+                          <Settings className="w-4 h-4" />
+                      </button>
                   </header>
-                  <div className="flex-1 overflow-y-auto p-8 relative">
+
+                  {/* Content scroll area — accounts for bottom nav on mobile */}
+                  <div className="flex-1 overflow-y-auto relative pb-20 lg:pb-8 p-4 lg:p-8">
                        {activeTab === 'city' && <CityPanel />}
                        {activeTab === 'hospital' && <HospitalPanel />}
                        {activeTab === 'market' && <MarketPanel />}
@@ -114,12 +122,37 @@ export default function MainUI() {
                        {activeTab === 'warehouse' && <WarehousePanel />}
                        {activeTab === 'gate' && <GatePanel />}
                   </div>
+
+                  {/* Mobile Bottom Tab Bar */}
+                  <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-black/90 backdrop-blur-xl border-t border-white/10 safe-bottom">
+                      <div className="flex justify-around items-center h-16 px-1">
+                          {tabs.map((t) => {
+                              const Icon = t.icon;
+                              const isActive = activeTab === t.id;
+                              return (
+                                  <button
+                                      key={t.id}
+                                      onClick={() => setActiveTab(t.id)}
+                                      className={cn(
+                                          "flex flex-col items-center justify-center gap-0.5 py-1.5 px-2 rounded-lg transition-all min-w-0 flex-1 max-w-[72px]",
+                                          isActive
+                                              ? "text-orange-500"
+                                              : "text-slate-500 hover:text-slate-300"
+                                      )}
+                                  >
+                                      <Icon className={cn("w-5 h-5", isActive && "stroke-[2.5]")}/>
+                                      <span className={cn("text-[9px] font-medium truncate w-full text-center", isActive && "font-bold")}>{t.label}</span>
+                                  </button>
+                              );
+                          })}
+                      </div>
+                  </nav>
              </main>
 
              {/* Offline Modal */}
              {offlineModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md">
-                    <div className="bg-[#0d0f12] border border-white/10 p-8 rounded-xl max-w-sm w-full shadow-2xl relative overflow-hidden">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+                    <div className="bg-[#0d0f12] border border-white/10 p-6 lg:p-8 rounded-xl max-w-sm w-full shadow-2xl relative overflow-hidden">
                         <div className="absolute -top-4 -right-4 w-24 h-24 bg-orange-500/10 blur-2xl pointer-events-none"></div>
                         <h3 className="text-xl font-bold mb-4 text-orange-100 tracking-wide font-serif relative z-10">离线纪事</h3>
                         <p className="text-slate-300 mb-6 relative z-10 text-sm">将军不在营中之时，将士们已为您筹集了物资。</p>
@@ -139,8 +172,8 @@ export default function MainUI() {
 
              {/* Reset Modal */}
              {resetModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md">
-                    <div className="bg-[#0d0f12] border border-white/10 p-8 rounded-xl max-w-sm w-full shadow-2xl relative overflow-hidden">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+                    <div className="bg-[#0d0f12] border border-white/10 p-6 lg:p-8 rounded-xl max-w-sm w-full shadow-2xl relative overflow-hidden">
                         <div className="absolute -top-4 -right-4 w-24 h-24 bg-red-500/10 blur-2xl pointer-events-none"></div>
                         <h3 className="text-xl font-bold mb-4 text-red-100 tracking-wide font-serif relative z-10">破釜沉舟</h3>
                         <p className="text-slate-300 mb-6 relative z-10 text-sm">将军，此举将散尽家财，解散大军，回到初入孤城之时，您确定要如此吗？</p>
@@ -183,25 +216,35 @@ function TopResourceBar() {
     const woodRate = Math.floor(woodLvl * 1.5 * 60);
 
     return (
-        <div className="flex space-x-6 overflow-x-auto custom-scrollbar pb-2 pt-2">
-            <ResourceItem label="人口" value={`${pop}/${maxPop}`} color="text-indigo-200" dotColor="bg-indigo-500 shadow-[0_0_8px_#6366f1]" sub="税赋之源" />
-            <ResourceItem label="粮草" value={resources.food} color="text-emerald-200" dotColor="bg-emerald-500 shadow-[0_0_8px_#10b981]" sub={`产出: +${foodRate}/m`} />
-            <ResourceItem label="木材" value={resources.wood} color="text-orange-200" dotColor="bg-orange-700 shadow-[0_0_8px_#c2410c]" sub={`产出: +${woodRate}/m`} />
-            <ResourceItem label="兵饷" value={resources.bingxiang} color="text-amber-200" dotColor="bg-amber-500 shadow-[0_0_8px_#f59e0b]" sub={`纳捐: +${bingxiangRate}/m`} />
-            <ResourceItem label="铁锭" value={resources.iron} color="text-slate-200" dotColor="bg-slate-400" sub="探索获取" />
-            <ResourceItem label="陨铁" value={resources.meteorite} color="text-cyan-200" dotColor="bg-cyan-400 shadow-[0_0_8px_#22d3ee]" sub="稀有矿藏" />
+        <div className="flex gap-3 lg:gap-6 overflow-x-auto custom-scrollbar py-1.5 max-w-[40vw] lg:max-w-none">
+            <ResourceItem label="人口" value={`${pop}/${maxPop}`} color="text-indigo-200" dotColor="bg-indigo-500" sub="税赋之源" compact />
+            <ResourceItem label="粮草" value={resources.food} color="text-emerald-200" dotColor="bg-emerald-500" sub={`+${foodRate}/m`} compact />
+            <ResourceItem label="木材" value={resources.wood} color="text-orange-200" dotColor="bg-orange-700" sub={`+${woodRate}/m`} compact />
+            <ResourceItem label="兵饷" value={resources.bingxiang} color="text-amber-200" dotColor="bg-amber-500" sub={`+${bingxiangRate}/m`} compact hideOnMobile />
+            <ResourceItem label="铁锭" value={resources.iron} color="text-slate-200" dotColor="bg-slate-400" sub="" hideOnMobile />
+            <ResourceItem label="陨铁" value={resources.meteorite} color="text-cyan-200" dotColor="bg-cyan-400" sub="" hideOnMobile />
         </div>
     );
 }
 
-function ResourceItem({ label, value, color, dotColor, sub }: { label: string; value: number | string; color: string; dotColor: string; sub: string }) {
+function ResourceItem({ label, value, color, dotColor, sub, compact, hideOnMobile }: { 
+    label: string; 
+    value: number | string; 
+    color: string; 
+    dotColor: string; 
+    sub: string;
+    compact?: boolean;
+    hideOnMobile?: boolean;
+}) {
     return (
-        <div className="flex flex-col items-end whitespace-nowrap">
-             <div className="flex items-center gap-2">
-                 <div className={cn("w-3 h-3 rounded-full", dotColor)}></div>
-                 <span className={cn("text-sm font-mono", color)}>{label}: {typeof value === 'number' ? Math.floor(value).toLocaleString() : value}</span>
+        <div className={cn("flex flex-col items-end whitespace-nowrap", hideOnMobile && "hidden lg:flex")}>
+             <div className="flex items-center gap-1.5">
+                 <div className={cn("w-2 h-2 lg:w-3 lg:h-3 rounded-full", dotColor)}></div>
+                 <span className={cn("font-mono", compact ? "text-xs" : "text-sm", color)}>
+                     {typeof value === 'number' ? Math.floor(value).toLocaleString() : value}
+                 </span>
              </div>
-             <span className="text-[10px] text-slate-500">{sub}</span>
+             {sub && <span className="text-[9px] lg:text-[10px] text-slate-500">{sub}</span>}
         </div>
     );
 }

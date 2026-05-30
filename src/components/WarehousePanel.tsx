@@ -1,16 +1,16 @@
 import React from 'react';
 import { useGameStore } from '../store';
-import { Package } from 'lucide-react';
+import { Package, Coins, Cylinder, Compass, Wheat, TreePine, Users } from 'lucide-react';
 import { cn } from '../utils';
 import { getWarehouseResourceCap, getWarehouseItemSlots } from '../types';
 
-const RESOURCE_LIST: { key: 'bingxiang' | 'iron' | 'meteorite' | 'food' | 'wood' | 'population'; label: string; icon: string; color: string }[] = [
-    { key: 'bingxiang', label: '兵饷', icon: '💰', color: 'text-amber-400' },
-    { key: 'iron', label: '铁锭', icon: '🔩', color: 'text-slate-300' },
-    { key: 'meteorite', label: '陨铁', icon: '☄️', color: 'text-cyan-400' },
-    { key: 'food', label: '粮草', icon: '🌾', color: 'text-emerald-400' },
-    { key: 'wood', label: '原木', icon: '🪵', color: 'text-orange-400' },
-    { key: 'population', label: '人口', icon: '👥', color: 'text-blue-400' },
+const RESOURCE_LIST: { key: 'bingxiang' | 'iron' | 'meteorite' | 'food' | 'wood' | 'population'; label: string; icon: React.ReactNode; color: string }[] = [
+    { key: 'bingxiang', label: '兵饷', icon: <Coins className="w-3.5 h-3.5" />, color: 'text-amber-400' },
+    { key: 'iron', label: '铁锭', icon: <Cylinder className="w-3.5 h-3.5" />, color: 'text-slate-300' },
+    { key: 'meteorite', label: '陨铁', icon: <Compass className="w-3.5 h-3.5" />, color: 'text-cyan-400' },
+    { key: 'food', label: '粮草', icon: <Wheat className="w-3.5 h-3.5" />, color: 'text-emerald-400' },
+    { key: 'wood', label: '原木', icon: <TreePine className="w-3.5 h-3.5" />, color: 'text-orange-400' },
+    { key: 'population', label: '人口', icon: <Users className="w-3.5 h-3.5" />, color: 'text-blue-400' },
 ];
 
 export default function WarehousePanel() {
@@ -27,18 +27,18 @@ export default function WarehousePanel() {
 
     return (
         <div className="max-w-5xl mx-auto">
-            <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-center">
-                    <Package className="w-7 h-7 text-emerald-400" />
+            <div className="flex items-center gap-3 lg:gap-4 mb-6 lg:mb-8">
+                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-center">
+                    <Package className="w-6 h-6 lg:w-7 lg:h-7 text-emerald-400" />
                 </div>
                 <div>
-                    <h2 className="text-xl font-serif font-bold text-slate-200">城中库房</h2>
+                    <h2 className="text-lg lg:text-xl font-serif font-bold text-slate-200">城中库房</h2>
                     <p className="text-xs text-slate-500 mt-0.5">粮草军械，尽归于此</p>
                 </div>
             </div>
 
             <div className="flex flex-col gap-6 pb-8">
-                <div className="bg-[#121418] border border-white/10 rounded-xl p-6 relative overflow-hidden">
+                <div className="bg-[#121418] border border-white/10 rounded-xl p-4 lg:p-6 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-2xl pointer-events-none"></div>
                     <div className="relative flex items-center justify-between mb-4">
                         <div>
@@ -59,13 +59,16 @@ export default function WarehousePanel() {
                         </button>
                     </div>
                     {!canUpgrade && (
-                        <div className="flex gap-4 text-[11px] font-mono text-slate-500">
-                            <span>需要: 🪵{woodCost} 🔩{ironCost} 💰{bingxiangCost}</span>
+                        <div className="flex gap-4 text-[11px] font-mono text-slate-500 items-center">
+                            <span>需要: </span>
+                            <span className="inline-flex items-center gap-1"><TreePine className="w-3 h-3 text-orange-400/60" />{woodCost}</span>
+                            <span className="inline-flex items-center gap-1"><Cylinder className="w-3 h-3 text-slate-400/60" />{ironCost}</span>
+                            <span className="inline-flex items-center gap-1"><Coins className="w-3 h-3 text-amber-400/60" />{bingxiangCost}</span>
                         </div>
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                     <div className="bg-[#121418] border border-white/10 rounded-xl p-6">
                         <h3 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
@@ -79,11 +82,11 @@ export default function WarehousePanel() {
                                 return (
                                     <div key={r.key} className="group">
                                         <div className="flex items-center justify-between mb-1">
-                                            <span className="text-xs text-slate-400 flex items-center gap-1.5">
-                                                <span>{r.icon}</span>
+                                            <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                                                <span className="text-slate-500">{r.icon}</span>
                                                 <span>{r.label}</span>
                                             </span>
-                                            <span className={cn("text-xs font-mono font-bold", pct >= 95 ? "text-red-400" : r.color)}>
+                                            <span className={cn("text-[11px] font-mono font-bold", pct >= 95 ? "text-red-400" : r.color)}>
                                                 {isPop ? Math.floor(val) : Math.floor(val)}{!isPop && ` / ${resCap}`}
                                             </span>
                                         </div>
@@ -120,8 +123,8 @@ export default function WarehousePanel() {
                                     const qualityText = item.quality === 'epic' ? 'text-amber-400' :
                                         item.quality === 'fine' ? 'text-blue-400' : 'text-slate-400';
                                     return (
-                                        <div key={item.id} className={cn("rounded-lg border p-2 flex flex-col items-center gap-1 transition-all hover:scale-105", qualityColor)}>
-                                            <span className="text-lg">{item.type === 'weapon' ? '⚔️' : '🛡️'}</span>
+                                        <div key={item.id} className={cn("rounded-lg border p-1.5 lg:p-2 flex flex-col items-center gap-1 transition-all hover:scale-105", qualityColor)}>
+                                            <span className="text-base text-slate-300">{item.type === 'weapon' ? '⚔' : '⛊'}</span>
                                             <span className={cn("text-[10px] font-bold leading-tight text-center truncate w-full", qualityText)}>{item.name}</span>
                                             <span className="text-[9px] font-mono text-slate-600">
                                                 {item.attack > 0 ? `攻${item.attack}` : `防${item.defense}`}
@@ -133,7 +136,7 @@ export default function WarehousePanel() {
                                     );
                                 })}
                                 {Array.from({ length: Math.max(0, itemSlots - inventory.length) }).map((_, i) => (
-                                    <div key={`empty-${i}`} className="rounded-lg border border-dashed border-white/5 p-2 flex flex-col items-center justify-center gap-1 min-h-[72px]">
+                                    <div key={`empty-${i}`} className="rounded-lg border border-dashed border-white/5 p-1.5 lg:p-2 flex flex-col items-center justify-center gap-1 min-h-[72px]">
                                         <span className="text-white/5 text-lg">+</span>
                                     </div>
                                 ))}
@@ -143,7 +146,7 @@ export default function WarehousePanel() {
                 </div>
 
                 <div className="bg-[#121418]/50 border border-white/5 rounded-xl p-4">
-                    <div className="grid grid-cols-3 gap-4 text-center text-[11px]">
+                    <div className="grid grid-cols-3 gap-3 lg:gap-4 text-center text-[11px]">
                         <div>
                             <div className="text-slate-600 mb-1">下一级资源上限</div>
                             <div className="font-mono font-bold text-emerald-400">{getWarehouseResourceCap(nextLvl)}</div>
@@ -154,7 +157,9 @@ export default function WarehousePanel() {
                         </div>
                         <div>
                             <div className="text-slate-600 mb-1">扩建所需</div>
-                            <div className="font-mono font-bold text-amber-400/80">🪵{woodCost} 🔩{ironCost} 💰{bingxiangCost}</div>
+                            <div className="font-mono font-bold text-amber-400/80 inline-flex items-center gap-1">
+                                <TreePine className="w-3 h-3" />{woodCost} <Cylinder className="w-3 h-3 ml-1" />{ironCost} <Coins className="w-3 h-3 ml-1" />{bingxiangCost}
+                            </div>
                         </div>
                     </div>
                 </div>

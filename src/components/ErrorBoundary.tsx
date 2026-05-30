@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { AlertTriangle } from 'lucide-react';
 
 interface ErrorBoundaryProps {
     children: ReactNode;
@@ -26,7 +27,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
                 <div className="fixed inset-0 z-[9999] bg-[#0a0c10] flex items-center justify-center">
                     <div className="max-w-md w-full mx-4 bg-[#121418] border border-red-500/30 rounded-2xl p-8 text-center">
                         <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <span className="text-3xl">⚠️</span>
+                            <AlertTriangle className="w-8 h-8 text-red-400" />
                         </div>
                         <h2 className="text-xl font-serif font-bold text-slate-200 mb-2">程序出现异常</h2>
                         <p className="text-sm text-slate-500 mb-6 leading-relaxed">

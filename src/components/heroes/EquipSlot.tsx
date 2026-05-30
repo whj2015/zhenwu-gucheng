@@ -1,9 +1,19 @@
-/* Extracted from HeroesPanel.tsx - EquipSlot */
 import React, { useState } from 'react';
 import { useGameStore } from '../../store';
 import { cn } from '../../utils';
+import type { Equipment } from '../../types';
+import type { LucideIcon } from 'lucide-react';
 
-export default function EquipSlot({ label, type, equip, icon: Icon, onUnequip, heroId }: any) {
+interface EquipSlotProps {
+    label: string;
+    type: 'weapon' | 'armor';
+    equip: Equipment | null;
+    icon: LucideIcon;
+    onUnequip: () => void;
+    heroId: string;
+}
+
+export default function EquipSlot({ label, type, equip, icon: Icon, onUnequip, heroId }: EquipSlotProps) {
     const { inventory, equipItem } = useGameStore();
     const [selectMode, setSelectMode] = useState(false);
 

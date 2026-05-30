@@ -32,54 +32,54 @@ export default function CityPanel() {
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
-             <div className="text-center space-y-4 py-8 border-b border-white/10">
-                  <h2 className="text-3xl font-serif text-slate-200 tracking-wide">主城署</h2>
+        <div className="max-w-4xl w-full mx-auto space-y-8 animate-in fade-in duration-500">
+             <div className="text-center space-y-4 py-4 lg:py-8 border-b border-white/10">
+                  <h2 className="text-2xl lg:text-3xl font-serif text-slate-200 tracking-wide">主城署</h2>
                   <p className="text-slate-400 text-sm leading-relaxed max-w-md mx-auto">
                       军镇中枢，百废待兴。建设农田与伐木场充实仓充，修缮民居招徕流民，以人口纳捐获取兵饷。
                   </p>
              </div>
 
-             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
                  <div className="bg-black/40 border border-white/10 p-4 rounded-xl flex flex-col items-center">
-                      <Users className="w-6 h-6 text-indigo-400 mb-2" />
+                      <Users className="w-5 h-5 lg:w-6 lg:h-6 text-indigo-400 mb-2" />
                       <span className="text-slate-500 text-[10px] mb-1 uppercase tracking-widest font-bold">城中丁口 / 容纳上限</span>
-                      <span className="text-xl font-bold font-mono text-indigo-200">
+                      <span className="text-lg lg:text-xl font-bold font-mono text-indigo-200">
                           {pop} <span className="text-xs text-indigo-500/70">/ {maxPop}</span>
                       </span>
                  </div>
                  <div className="bg-black/40 border border-white/10 p-4 rounded-xl flex flex-col items-center">
-                      <Coins className="w-6 h-6 text-amber-500 mb-2" />
+                      <Coins className="w-5 h-5 lg:w-6 lg:h-6 text-amber-500 mb-2" />
                       <span className="text-slate-500 text-[10px] mb-1 uppercase tracking-widest font-bold">赋税 (兵饷)</span>
-                      <span className="text-xl font-bold font-mono text-amber-200">
+                      <span className="text-lg lg:text-xl font-bold font-mono text-amber-200">
                           +{Math.floor(bingxiangRate * 60)} <span className="text-[10px] text-amber-500/70">/ min</span>
                       </span>
                  </div>
                  <div className="bg-black/40 border border-white/10 p-4 rounded-xl flex flex-col items-center">
-                      <Wheat className="w-6 h-6 text-emerald-500 mb-2" />
+                      <Wheat className="w-5 h-5 lg:w-6 lg:h-6 text-emerald-500 mb-2" />
                       <span className="text-slate-500 text-[10px] mb-1 uppercase tracking-widest font-bold">粮草产出</span>
-                      <span className="text-xl font-bold font-mono text-emerald-200">
+                      <span className="text-lg lg:text-xl font-bold font-mono text-emerald-200">
                           +{Math.floor(foodRate * 60)} <span className="text-[10px] text-emerald-500/70">/ min</span>
                       </span>
                  </div>
                  <div className="bg-black/40 border border-white/10 p-4 rounded-xl flex flex-col items-center">
-                      <Axe className="w-6 h-6 text-orange-700 mb-2" />
+                      <Axe className="w-5 h-5 lg:w-6 lg:h-6 text-orange-700 mb-2" />
                       <span className="text-slate-500 text-[10px] mb-1 uppercase tracking-widest font-bold">木材产出</span>
-                      <span className="text-xl font-bold font-mono text-orange-200">
+                      <span className="text-lg lg:text-xl font-bold font-mono text-orange-200">
                           +{Math.floor(woodRate * 60)} <span className="text-[10px] text-orange-500/70">/ min</span>
                       </span>
                  </div>
              </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 pt-2 lg:pt-4">
                  {/* House */}
-                 <div className="bg-white/5 border border-white/10 p-6 rounded-xl relative group flex flex-col">
+                 <div className="bg-white/5 border border-white/10 p-4 lg:p-6 rounded-xl relative group flex flex-col">
                      <div className="flex items-center space-x-3 mb-4">
-                         <div className="w-10 h-10 bg-indigo-500/10 rounded flex items-center justify-center border border-indigo-500/30">
+                         <div className="w-8 h-8 lg:w-10 lg:h-10 bg-indigo-500/10 rounded flex items-center justify-center border border-indigo-500/30">
                              <Home className="w-5 h-5 text-indigo-400" />
                          </div>
                          <div>
-                             <h3 className="text-slate-200 font-serif font-bold text-lg">民房 <span className="text-xs text-indigo-400 font-mono ml-2">Lv.{houseLvl}</span></h3>
+                             <h3 className="text-slate-200 font-serif font-bold text-base lg:text-lg">民房 <span className="text-xs text-indigo-400 font-mono ml-2">Lv.{houseLvl}</span></h3>
                              <p className="text-xs text-slate-400">吸引流民，增加人口上限</p>
                          </div>
                      </div>
@@ -108,13 +108,13 @@ export default function CityPanel() {
                  </div>
 
                  {/* Farm */}
-                 <div className="bg-white/5 border border-white/10 p-6 rounded-xl relative group flex flex-col">
+                 <div className="bg-white/5 border border-white/10 p-4 lg:p-6 rounded-xl relative group flex flex-col">
                      <div className="flex items-center space-x-3 mb-4">
-                         <div className="w-10 h-10 bg-emerald-500/10 rounded flex items-center justify-center border border-emerald-500/30">
+                         <div className="w-8 h-8 lg:w-10 lg:h-10 bg-emerald-500/10 rounded flex items-center justify-center border border-emerald-500/30">
                              <Wheat className="w-5 h-5 text-emerald-500" />
                          </div>
                          <div>
-                             <h3 className="text-slate-200 font-serif font-bold text-lg">农田 <span className="text-xs text-emerald-400 font-mono ml-2">Lv.{farmLvl}</span></h3>
+                             <h3 className="text-slate-200 font-serif font-bold text-base lg:text-lg">农田 <span className="text-xs text-emerald-400 font-mono ml-2">Lv.{farmLvl}</span></h3>
                              <p className="text-xs text-slate-400">稳定产出维生粮草</p>
                          </div>
                      </div>
@@ -143,13 +143,13 @@ export default function CityPanel() {
                  </div>
 
                  {/* Lumber Camp */}
-                 <div className="bg-white/5 border border-white/10 p-6 rounded-xl relative group flex flex-col">
+                 <div className="bg-white/5 border border-white/10 p-4 lg:p-6 rounded-xl relative group flex flex-col">
                      <div className="flex items-center space-x-3 mb-4">
-                         <div className="w-10 h-10 bg-orange-500/10 rounded flex items-center justify-center border border-orange-500/30">
+                         <div className="w-8 h-8 lg:w-10 lg:h-10 bg-orange-500/10 rounded flex items-center justify-center border border-orange-500/30">
                              <Axe className="w-5 h-5 text-orange-600" />
                          </div>
                          <div>
-                             <h3 className="text-slate-200 font-serif font-bold text-lg">伐木场 <span className="text-xs text-orange-400 font-mono ml-2">Lv.{woodLvl}</span></h3>
+                             <h3 className="text-slate-200 font-serif font-bold text-base lg:text-lg">伐木场 <span className="text-xs text-orange-400 font-mono ml-2">Lv.{woodLvl}</span></h3>
                              <p className="text-xs text-slate-400">砍伐原木提供城建基础</p>
                          </div>
                      </div>
