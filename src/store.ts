@@ -63,7 +63,8 @@ const INITIAL_STATE: GameState = {
       completedWeeklyIds: [],
       lastDailyReset: Date.now(),
       lastWeeklyReset: Date.now(),
-      progress: {}
+      progress: {},
+      acceptedIds: []
   } as QuestState
 };
 
@@ -92,6 +93,7 @@ export const useGameStore = create<GameState & {
   initTavernPool: () => void;
   checkAndRefreshQuests: () => void;
   turnInQuest: (questId: string) => boolean;
+  acceptQuest: (questId: string) => boolean;
   trackQuestProgress: (progressType: string, amount: number) => void;
 }>()(
   persist(
@@ -273,14 +275,16 @@ export const useGameStore = create<GameState & {
         };
 
         return {
-          crafting: {
-              task: null,
-              consecutiveNormal: newConsecutiveNormal,
-              consecutiveFine: newConsecutiveFine,
-              totalCrafted: state.crafting.totalCrafted + 1
-          },
-          inventory: [...state.inventory, generatedEquip]
+            crafting: {
+                task: null,
+                consecutiveNormal: newConsecutiveNormal,
+                consecutiveFine: newConsecutiveFine,
+                totalCrafted: state.crafting.totalCrafted + 1
+            },
+            inventory: [...state.inventory, generatedEquip]
         };
+        
+        state.trackQuestProgress('craft', 1);
       }),
 
       equipItem: (heroId, slot, equipId) => set((state) => {
@@ -340,7 +344,8 @@ export const useGameStore = create<GameState & {
       addResources: (res) => set((state) => {
           const cap = getWarehouseResourceCap(state.buildings.warehouseLevel);
           const clamp = (val: number) => Math.max(0, Math.min(cap, val));
-          return {
+          
+          const newRes = {
               resources: {
                   ...state.resources,
                   bingxiang: clamp(state.resources.bingxiang + (res.bingxiang || 0)),
@@ -351,6 +356,14 @@ export const useGameStore = create<GameState & {
                   population: Math.max(0, (state.resources.population ?? 100) + (res.population || 0))
               }
           };
+          
+          for (const [key, amount] of Object.entries(res)) {
+              if (amount && amount > 0) {
+                  state.trackQuestProgress(key, amount as number);
+              }
+          }
+          
+          return newRes;
       }),
 
       recruitHero: (templateId, costBingxiang) => set((state) => {
@@ -401,6 +414,8 @@ export const useGameStore = create<GameState & {
           },
           heroes: newHeroes
         };
+        
+        state.trackQuestProgress('recruit', actualAmount);
       }),
 
       healParty: (pct) => set((state) => {
@@ -486,6 +501,13 @@ export const useGameStore = create<GameState & {
                   };
               }
           });
+          
+          if (won) {
+              state.trackQuestProgress('explore', 1);
+              state.trackQuestProgress('boss_kill', 1);
+              state.trackQuestProgress('deep_explore', 1);
+          }
+          
           return { heroes: newHeroes };
       }),
 
@@ -567,10 +589,12 @@ export const useGameStore = create<GameState & {
           let newLastDailyReset = qs.lastDailyReset;
           let newLastWeeklyReset = qs.lastWeeklyReset;
           let newProgress = { ...qs.progress };
+          let newAcceptedIds = qs.acceptedIds || [];
 
           if (now - qs.lastDailyReset >= dayMs) {
               newDailyIds = [];
               newProgress = {};
+              newAcceptedIds = [];
               newLastDailyReset = now;
               const dailyQuestIds = Object.entries(QUEST_TEMPLATES)
                   .filter(([, q]) => q.category === 'daily')
@@ -590,10 +614,30 @@ export const useGameStore = create<GameState & {
                   completedWeeklyIds: newWeeklyIds,
                   lastDailyReset: newLastDailyReset,
                   lastWeeklyReset: newLastWeeklyReset,
-                  progress: newProgress
+                  progress: newProgress,
+                  acceptedIds: newAcceptedIds
               }
           };
       }),
+
+      acceptQuest: (questId) => {
+          let success = false;
+          set((state) => {
+              const qs = state.questState;
+              if (qs.acceptedIds?.includes(questId)) return state;
+              if (qs.completedDailyIds.includes(questId)) return state;
+              if (qs.completedWeeklyIds.includes(questId)) return state;
+              
+              success = true;
+              return {
+                  questState: {
+                      ...qs,
+                      acceptedIds: [...(qs.acceptedIds || []), questId]
+                  }
+              };
+          });
+          return success;
+      },
 
       turnInQuest: (questId) => {
           let success = false;
