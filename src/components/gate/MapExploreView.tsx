@@ -147,21 +147,17 @@ function PartyCell({ heroId, position }: { heroId: string | null; position: Posi
     );
 }
 
-function FogCell({ onClick }: { onClick?: () => void }) {
+function FogCell() {
     return (
-        <CellBase className={cn(
-            "border-white/[0.04] bg-white/[0.01] cursor-default",
-            onClick && "hover:border-white/10 hover:bg-white/[0.03] cursor-pointer"
-        )}>
-            <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border border-dashed border-white/15 opacity-40" />
-        </CellBase>
+        <div className={cn(
+            CELL_SIZE,
+            "rounded-lg sm:rounded-xl border border-white/[0.03] bg-white/[0.008]"
+        )} />
     );
 }
 
 function EmptyRevealedCell() {
-    return (
-        <CellBase className="border-white/[0.04] bg-transparent invisible" />
-    );
+    return <div className={cn(CELL_SIZE, "invisible")} />;
 }
 
 function ActiveEnemyCell({ node, onClick, isHovered, onHover, onLeave }: {
