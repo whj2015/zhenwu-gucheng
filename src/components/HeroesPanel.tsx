@@ -11,13 +11,13 @@ export default function HeroesPanel() {
             <div className="flex justify-center border-b border-white/10 mb-8 shrink-0">
                  <button 
                      onClick={() => setSubTab('residence')} 
-                     className={cn("px-12 py-3 tracking-widest font-bold font-serif text-lg transition-all", subTab === 'residence' ? "text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/5" : "text-slate-500 hover:text-slate-300")}
+                     className={cn("px-6 lg:px-12 py-2.5 lg:py-3 tracking-widest font-bold font-serif text-base lg:text-lg transition-all", subTab === 'residence' ? "text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/5" : "text-slate-500 hover:text-slate-300")}
                  >
                      门客居所
                  </button>
                  <button 
                      onClick={() => setSubTab('tavern')} 
-                     className={cn("px-12 py-3 tracking-widest font-bold font-serif text-lg transition-all", subTab === 'tavern' ? "text-orange-400 border-b-2 border-orange-500 bg-orange-500/5" : "text-slate-500 hover:text-slate-300")}
+                     className={cn("px-6 lg:px-12 py-2.5 lg:py-3 tracking-widest font-bold font-serif text-base lg:text-lg transition-all", subTab === 'tavern' ? "text-orange-400 border-b-2 border-orange-500 bg-orange-500/5" : "text-slate-500 hover:text-slate-300")}
                  >
                      酒馆招募
                  </button>

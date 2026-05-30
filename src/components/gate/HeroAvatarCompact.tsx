@@ -3,13 +3,7 @@ import React from 'react';
 import { useGameStore } from '../../store';
 import { HERO_TEMPLATES } from '../../data';
 import { cn } from '../../utils';
-
-function HeroIcon({ icon, name, className }: { icon: string | null; name: string; className?: string }) {
-    if (icon) {
-        return <img src={icon} alt={name} className={cn("object-cover", className)} />;
-    }
-    return <span className={cn("font-serif font-bold text-slate-200", className)}>{name.charAt(0)}</span>;
-}
+import HeroIcon from '../HeroIcon';
 
 const HeroAvatarCompact: React.FC<{ heroId: string | null }> = ({ heroId }) => {
     if (!heroId) return <div className="w-14 h-14 rounded-lg border border-dashed border-white/5 bg-white/[0.02]" />;

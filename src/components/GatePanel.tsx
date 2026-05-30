@@ -102,11 +102,11 @@ export default function GatePanel() {
     if (subPage === 'board') {
         return (
             <div className="max-w-5xl mx-auto h-full flex flex-col pt-4 animate-in fade-in duration-500">
-                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+                <div className="flex items-center gap-3 mb-4 lg:mb-6 pb-3 lg:pb-4 border-b border-white/10">
                     <button onClick={() => setSubPage(null)} className="p-1.5 rounded hover:bg-white/5 text-slate-400 hover:text-slate-200 transition-all">
                         <ChevronLeft className="w-5 h-5" />
                     </button>
-                    <span className="text-lg font-serif font-bold text-indigo-400 tracking-widest">告示板</span>
+                    <span className="text-base lg:text-lg font-serif font-bold text-indigo-400 tracking-widest">告示板</span>
                 </div>
                 <div className="flex-1 overflow-y-auto">
                     <BoardView />
@@ -118,11 +118,11 @@ export default function GatePanel() {
     if (subPage === 'expedition') {
         return (
             <div className="max-w-5xl mx-auto h-full flex flex-col pt-4 animate-in fade-in duration-500">
-                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+                <div className="flex items-center gap-3 mb-4 lg:mb-6 pb-3 lg:pb-4 border-b border-white/10">
                     <button onClick={() => setSubPage(null)} className="p-1.5 rounded hover:bg-white/5 text-slate-400 hover:text-slate-200 transition-all">
                         <ChevronLeft className="w-5 h-5" />
                     </button>
-                    <span className="text-lg font-serif font-bold text-orange-400 tracking-widest">兵马出征</span>
+                    <span className="text-base lg:text-lg font-serif font-bold text-orange-400 tracking-widest">兵马出征</span>
                 </div>
                 <div className="flex-1 overflow-y-auto">
                     <MissionSelectionView onSelect={setSelectedMission} />
@@ -133,28 +133,28 @@ export default function GatePanel() {
 
     return (
         <div className="max-w-4xl mx-auto h-full flex flex-col items-center justify-center gap-5 animate-in fade-in duration-500">
-            <div className="grid grid-cols-2 gap-6 w-full px-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6 w-full px-6 lg:px-8">
                 <button
                     onClick={() => setSubPage('board')}
-                    className="group relative bg-[#121418] border border-white/10 rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-indigo-500/50 hover:bg-[#0e1015] transition-all duration-300 shadow-xl"
+                    className="group relative bg-[#121418] border border-white/10 rounded-2xl p-6 lg:p-8 flex flex-col items-center gap-4 hover:border-indigo-500/50 hover:bg-[#0e1015] transition-all duration-300 shadow-xl"
                 >
                     <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/5 blur-3xl group-hover:bg-indigo-500/10 transition-colors pointer-events-none"></div>
-                    <div className="w-16 h-16 bg-indigo-500/10 rounded-xl flex items-center justify-center border border-indigo-500/20 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all">
+                    <div className="w-12 h-12 lg:w-16 lg:h-16 bg-indigo-500/10 rounded-xl flex items-center justify-center border border-indigo-500/20 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all">
                         <Archive className="w-8 h-8 text-indigo-400" />
                     </div>
-                    <h2 className="text-xl font-serif font-bold text-slate-200 group-hover:text-indigo-300 transition-colors tracking-wide">告示板</h2>
+                    <h2 className="text-lg lg:text-xl font-serif font-bold text-slate-200 group-hover:text-indigo-300 transition-colors tracking-wide">告示板</h2>
                     <p className="text-xs text-slate-500 text-center leading-relaxed">城内布告、任务委托与物资兑换</p>
                 </button>
 
                 <button
                     onClick={() => setSubPage('expedition')}
-                    className="group relative bg-[#121418] border border-white/10 rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-orange-500/50 hover:bg-[#0e1015] transition-all duration-300 shadow-xl"
+                    className="group relative bg-[#121418] border border-white/10 rounded-2xl p-6 lg:p-8 flex flex-col items-center gap-4 hover:border-orange-500/50 hover:bg-[#0e1015] transition-all duration-300 shadow-xl"
                 >
                     <div className="absolute top-0 right-0 w-40 h-40 bg-orange-500/5 blur-3xl group-hover:bg-orange-500/10 transition-colors pointer-events-none"></div>
-                    <div className="w-16 h-16 bg-orange-500/10 rounded-xl flex items-center justify-center border border-orange-500/20 group-hover:scale-110 group-hover:bg-orange-500/20 transition-all">
+                    <div className="w-12 h-12 lg:w-16 lg:h-16 bg-orange-500/10 rounded-xl flex items-center justify-center border border-orange-500/20 group-hover:scale-110 group-hover:bg-orange-500/20 transition-all">
                         <Navigation className="w-8 h-8 text-orange-400" />
                     </div>
-                    <h2 className="text-xl font-serif font-bold text-slate-200 group-hover:text-orange-300 transition-colors tracking-wide">兵马出征</h2>
+                    <h2 className="text-lg lg:text-xl font-serif font-bold text-slate-200 group-hover:text-orange-300 transition-colors tracking-wide">兵马出征</h2>
                     <p className="text-xs text-slate-500 text-center leading-relaxed">率领门客深入废墟，讨伐流寇</p>
                 </button>
             </div>

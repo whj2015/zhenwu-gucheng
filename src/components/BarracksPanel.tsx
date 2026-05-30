@@ -3,13 +3,7 @@ import { useGameStore } from '../store';
 import { HERO_TEMPLATES } from '../data';
 import { cn } from '../utils';
 import { Shield, Tent, Users } from 'lucide-react';
-
-function HeroIcon({ icon, name, className }: { icon: string | null; name: string; className?: string }) {
-    if (icon) {
-        return <img src={icon} alt={name} className={cn("object-cover rounded", className)} />;
-    }
-    return <span className={cn("font-serif font-bold", className)}>{name.charAt(0)}</span>;
-}
+import HeroIcon from './HeroIcon';
 
 export default function BarracksPanel() {
     const { heroes, recruitTroops, resources } = useGameStore();
@@ -38,9 +32,9 @@ export default function BarracksPanel() {
     };
 
     return (
-        <div className="flex h-full gap-8 animate-in fade-in duration-500">
+        <div className="flex flex-col lg:flex-row h-full gap-4 lg:gap-8 animate-in fade-in duration-500">
              {/* Left List */}
-             <div className="w-1/3 bg-black/40 border border-white/5 rounded-xl flex flex-col p-4 shadow-xl">
+             <div className="w-full lg:w-1/3 shrink-0 lg:shrink-0 max-h-[40vh] lg:max-h-none bg-black/40 border border-white/5 rounded-xl flex flex-col p-4 shadow-xl">
                   <div className="border-b border-white/5 pb-4 mb-4 flex items-center justify-between">
                       <div className="flex items-center space-x-2 text-slate-300">
                           <Tent className="w-5 h-5 text-emerald-500" />
@@ -86,23 +80,23 @@ export default function BarracksPanel() {
              </div>
 
              {/* Right Content */}
-             <div className="flex-1 bg-black/40 border border-white/5 rounded-xl p-8 relative shadow-inner overflow-hidden flex flex-col">
+             <div className="flex-1 bg-black/40 border border-white/5 rounded-xl p-4 lg:p-8 relative shadow-inner overflow-hidden flex flex-col">
                   {/* Decorative background */}
                   <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-900/10 blur-[80px] pointer-events-none rounded-full"></div>
                   
                   {activeHero && activeTemplate ? (
                       <div className="relative z-10 flex flex-col h-full animate-in slide-in-from-bottom-4 duration-300">
                            <div className="flex items-center space-x-6 mb-8">
-                               <div className="w-24 h-24 rounded-lg bg-black border border-white/10 flex items-center justify-center overflow-hidden">
+                               <div className="w-16 h-16 lg:w-24 lg:h-24 rounded-lg bg-black border border-white/10 flex items-center justify-center overflow-hidden">
                                    <HeroIcon icon={activeTemplate.icon} name={activeTemplate.name} className="w-full h-full flex items-center justify-center text-5xl font-serif font-bold bg-gradient-to-b from-slate-200 to-slate-500 bg-clip-text text-transparent" />
                                </div>
                                <div>
-                                   <h2 className="text-3xl font-serif text-slate-200 mb-2">{activeTemplate.name} <span className="text-sm font-mono text-emerald-400 ml-2">LVL {activeHero.level}</span></h2>
+                                   <h2 className="text-2xl lg:text-3xl font-serif text-slate-200 mb-2">{activeTemplate.name} <span className="text-sm font-mono text-emerald-400 ml-2">LVL {activeHero.level}</span></h2>
                                    <p className="text-slate-400 text-sm italic">{activeTemplate.desc}</p>
                                </div>
                            </div>
 
-                           <div className="grid grid-cols-2 gap-6 mb-8">
+                           <div className="grid grid-cols-2 gap-4 lg:gap-6 mb-4 lg:mb-8">
                                <div className="bg-white/5 p-4 rounded-lg border border-white/5">
                                     <div className="text-[10px] tracking-widest uppercase text-slate-500 mb-1">当前兵力 / 最高统帅</div>
                                     <div className="text-2xl font-mono text-slate-200">
@@ -127,7 +121,7 @@ export default function BarracksPanel() {
                            </div>
 
                            {availableCapacity > 0 ? (
-                               <div className="bg-black/60 border border-emerald-500/20 p-6 rounded-xl relative mt-auto">
+                               <div className="bg-black/60 border border-emerald-500/20 p-4 lg:p-6 rounded-xl relative mt-auto">
                                     <h3 className="text-sm tracking-widest text-emerald-400 font-bold mb-6 flex items-center"><Users className="w-4 h-4 mr-2" /> 募兵诏令</h3>
                                     
                                     <div className="mb-6">
@@ -176,7 +170,7 @@ export default function BarracksPanel() {
                                     </button>
                                </div>
                            ) : (
-                               <div className="mt-auto bg-white/5 border border-white/10 p-6 rounded-xl flex items-center justify-center text-slate-500 italic">
+                               <div className="mt-auto bg-white/5 border border-white/10 p-4 lg:p-6 rounded-xl flex items-center justify-center text-slate-500 italic">
                                    统帅已达上限，需提升豪杰等级方可调配更多兵马。
                                </div>
                            )}

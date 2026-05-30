@@ -61,7 +61,7 @@ export default function BoardView() {
 
         return (
             <div key={questId} className={cn(
-                "bg-[#121418] border rounded-xl p-5 flex flex-col relative overflow-hidden group shadow-lg transition-all",
+                "bg-[#121418] border rounded-xl p-4 lg:p-5 flex flex-col relative overflow-hidden group shadow-lg transition-all",
                 isCompleted ? "border-emerald-500/15 opacity-70" : "border-white/5 hover:border-white/10"
             )}>
                 <div className={cn(
@@ -147,7 +147,7 @@ export default function BoardView() {
     return (
         <div className="pb-8 animate-in fade-in duration-500">
             <div className="text-center mb-6">
-                <h2 className="text-2xl font-serif text-slate-200 tracking-widest mb-2 flex items-center justify-center">
+                <h2 className="text-xl lg:text-2xl font-serif text-slate-200 tracking-widest mb-2 flex items-center justify-center">
                     <ScrollText className="w-7 h-7 mr-2 text-indigo-400" /> 城中告示
                 </h2>
                 <p className="text-slate-500 text-xs">每日任务自动刷新，每周任务周一重置</p>
@@ -160,7 +160,7 @@ export default function BoardView() {
                     <RotateCcw className="w-3 h-3 text-slate-600 ml-auto" />
                     <span className="text-[10px] text-slate-600 font-mono">每日刷新</span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
                     {dailyQuests.map(renderQuestCard)}
                 </div>
             </div>
@@ -173,7 +173,7 @@ export default function BoardView() {
                         <RotateCcw className="w-3 h-3 text-slate-600 ml-auto" />
                         <span className="text-[10px] text-slate-600 font-mono">周一刷新</span>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
                         {weeklyQuests.map(renderQuestCard)}
                     </div>
                 </div>

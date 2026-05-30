@@ -4,15 +4,9 @@ import { useGameStore } from '../../store';
 import { HERO_TEMPLATES } from '../../data';
 import { Shield, Sword } from 'lucide-react';
 import { cn } from '../../utils';
+import HeroIcon from '../HeroIcon';
 import StatBox from './StatBox';
 import EquipSlot from './EquipSlot';
-
-function HeroIcon({ icon, name, className }: { icon: string | null; name: string; className?: string }) {
-    if (icon) {
-        return <img src={icon} alt={name} className={cn("object-cover rounded-lg", className)} />;
-    }
-    return <span className={cn("font-serif font-bold bg-gradient-to-b from-slate-200 to-slate-500 bg-clip-text text-transparent", className)}>{name.charAt(0)}</span>;
-}
 
 export default function HeroDetail({ heroId }: { heroId: string }) {
     const { heroes, equipItem } = useGameStore();
@@ -27,16 +21,16 @@ export default function HeroDetail({ heroId }: { heroId: string }) {
 
     return (
         <div className="flex flex-col h-full relative z-10">
-             <div className="flex gap-8 items-start border-b border-white/10 pb-8 mb-8">
-                  <div className="w-32 h-32 bg-black/40 rounded-xl border border-white/10 flex items-center justify-center shrink-0 shadow-inner overflow-hidden">
+             <div className="flex flex-col sm:flex-row gap-6 lg:gap-8 items-start border-b border-white/10 pb-6 lg:pb-8 mb-6 lg:mb-8">
+                  <div className="w-24 h-24 lg:w-32 lg:h-32 bg-black/40 rounded-xl border border-white/10 flex items-center justify-center shrink-0 shadow-inner overflow-hidden">
                       <HeroIcon icon={t.icon} name={t.name} className="w-full h-full flex items-center justify-center text-5xl" />
                   </div>
                   <div className="space-y-4 flex-1">
                        <div>
-                           <h3 className="text-3xl font-serif text-slate-100">{t.name} <span className="text-sm font-mono text-emerald-400 ml-2">LVL {hero.level}</span></h3>
+                           <h3 className="text-2xl lg:text-3xl font-serif text-slate-100">{t.name} <span className="text-sm font-mono text-emerald-400 ml-2">LVL {hero.level}</span></h3>
                            <p className="text-sm text-slate-400 italic mt-1">{t.desc}</p>
                        </div>
-                       <div className="grid grid-cols-4 gap-3 pt-2">
+                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3 pt-2">
                            <StatBox label="武力" base={t.attributes.force} bonus={wAtk} />
                            <StatBox label="体魄" base={t.attributes.physique} />
                            <StatBox label="轻功" base={t.attributes.agility} />
@@ -59,7 +53,7 @@ export default function HeroDetail({ heroId }: { heroId: string }) {
              </div>
 
              <div className="flex-1 flex flex-col">
-                  <h4 className="text-sm tracking-widest text-slate-500 uppercase font-bold mb-4">装配面板</h4>
+                  <h4 className="text-sm tracking-widest text-slate-500 uppercase font-bold mb-2 lg:mb-4">装配面板</h4>
                   <div className="flex space-x-6 flex-1 min-h-[160px]">
                       {/* Weapon Slot */}
                       <EquipSlot 

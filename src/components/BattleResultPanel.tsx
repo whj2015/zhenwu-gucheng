@@ -134,11 +134,11 @@ export default function BattleResultPanel({
     const totalWounded = battleData.heroStates.reduce((sum, h) => sum + (h.wounded || 0), 0);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300 p-2 lg:p-4">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(30,41,59,0.4)_0%,transparent_70%)] pointer-events-none"></div>
             
             <div className={cn(
-                "relative w-full max-w-4xl mx-4 bg-[#0d0f12]/95 border rounded-2xl shadow-2xl overflow-hidden",
+                "relative w-full max-w-4xl mx-2 lg:mx-4 bg-[#0d0f12]/95 border rounded-2xl shadow-2xl overflow-hidden",
                 battleData.victory ? "border-cyan-500/30" : "border-red-500/30"
             )}>
                 {battleData.victory && (
@@ -150,18 +150,18 @@ export default function BattleResultPanel({
 
                 {/* Header */}
                 <div className={cn(
-                    "relative border-b px-8 py-4 flex items-center justify-between",
+                    "relative border-b px-4 py-3 lg:px-8 lg:py-4 flex items-center justify-between",
                     battleData.victory ? "bg-cyan-500/5 border-cyan-500/20" : "bg-red-500/5 border-red-500/20"
                 )}>
                     <div className="flex items-center gap-4">
                         <div className={cn(
-                            "w-11 h-11 rounded-xl flex items-center justify-center",
+                            "w-9 h-9 lg:w-11 lg:h-11 rounded-xl flex items-center justify-center",
                             battleData.victory ? "bg-cyan-500/10 text-cyan-400" : "bg-red-500/10 text-red-400"
                         )}>
                             {battleData.victory ? <Trophy className="w-5 h-5" /> : <Skull className="w-5 h-5" />}
                         </div>
                         <div>
-                            <h2 className={cn("text-lg font-serif font-bold tracking-wide", 
+                            <h2 className={cn("text-base lg:text-lg font-serif font-bold tracking-wide", 
                                 battleData.victory ? "text-cyan-200" : "text-red-200"
                             )}>
                                 {battleData.victory ? "战役胜利" : "战役失败"}
@@ -175,7 +175,7 @@ export default function BattleResultPanel({
                     <button
                         onClick={battleData.victory ? onConfirm : onRetreat}
                         className={cn(
-                            "px-6 py-2 rounded-lg font-bold tracking-widest text-sm transition-all shadow-lg",
+                            "px-4 py-1.5 lg:px-6 lg:py-2 rounded-lg font-bold tracking-widest text-xs lg:text-sm transition-all shadow-lg",
                             battleData.victory 
                                 ? "bg-cyan-500/20 border border-cyan-500/50 text-cyan-200 hover:bg-cyan-500/30 hover:shadow-[0_0_20px_rgba(34,211,238,0.3)]"
                                 : "bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20 flex items-center gap-1.5"
@@ -185,9 +185,9 @@ export default function BattleResultPanel({
                     </button>
                 </div>
 
-                <div className="flex h-[65vh]">
+                <div className="flex flex-col lg:flex-row h-[60vh] lg:h-[65vh]">
                     {/* Left: Battle Log */}
-                    <div className="flex-1 flex flex-col border-r border-white/5">
+                    <div className="flex-1 flex flex-col lg:border-r border-white/5">
                         <div className="px-6 py-2.5 border-b border-white/5 flex items-center gap-2 shrink-0">
                             <Sword className="w-3.5 h-3.5 text-orange-400" />
                             <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">战斗记录</span>
@@ -201,7 +201,7 @@ export default function BattleResultPanel({
                                 <div
                                     key={entry.id}
                                     className={cn(
-                                        "flex items-start gap-2 py-1 px-2.5 rounded-md text-[11px] font-mono animate-in fade-in slide-in-from-left-2 duration-300",
+                                        "flex items-start gap-2 py-0.5 px-2 lg:py-1 lg:px-2.5 rounded-md text-[11px] font-mono animate-in fade-in slide-in-from-left-2 duration-300",
                                         entry.isPlayer ? "bg-cyan-500/5" : "bg-red-500/5"
                                     )}
                                 >
@@ -235,9 +235,9 @@ export default function BattleResultPanel({
                     </div>
 
                     {/* Right: Result Summary */}
-                    <div className="w-72 flex flex-col overflow-y-auto custom-scrollbar">
+                    <div className="w-full lg:w-72 flex flex-col overflow-y-auto custom-scrollbar">
                         {/* Enemy Status */}
-                        <div className="p-3 border-b border-white/5 shrink-0">
+                        <div className="p-2.5 lg:p-3 border-b border-white/5 shrink-0">
                             <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
                                 <Skull className="w-3 h-3 text-red-400" /> 敌方
                             </div>
@@ -273,7 +273,7 @@ export default function BattleResultPanel({
                         </div>
 
                         {/* Hero Status */}
-                        <div className="p-3 border-b border-white/5 shrink-0">
+                        <div className="p-2.5 lg:p-3 border-b border-white/5 shrink-0">
                             <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
                                 <Shield className="w-3 h-3 text-cyan-400" /> 我方战损
                             </div>
@@ -386,7 +386,7 @@ export default function BattleResultPanel({
 
                         {/* Rewards */}
                         {battleData.victory && (
-                            <div className="p-3 shrink-0">
+                            <div className="p-2.5 lg:p-3 shrink-0">
                                 <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
                                     <Sparkles className="w-3 h-3 text-emerald-400" /> 战利品
                                 </div>
@@ -419,7 +419,7 @@ export default function BattleResultPanel({
                         )}
 
                         {!battleData.victory && (
-                            <div className="p-3 shrink-0">
+                            <div className="p-2.5 lg:p-3 shrink-0">
                                 <p className="text-xs text-slate-500 leading-relaxed">实力不济，暂避锋芒。回营修整后再战。</p>
                             </div>
                         )}

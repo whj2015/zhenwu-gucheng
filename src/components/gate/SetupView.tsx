@@ -7,13 +7,7 @@ import { ChevronLeft, Skull, Navigation, Save, Trash2, X } from 'lucide-react';
 import { PositionKey, PositionRow, PositionCol } from '../../types';
 import { POSITION_CONFIG, MAX_DEPLOY_COUNT } from '../../data';
 import { cn } from '../../utils';
-
-function HeroIcon({ icon, name, className }: { icon: string | null; name: string; className?: string }) {
-    if (icon) {
-        return <img src={icon} alt={name} className={cn("object-cover rounded-md", className)} />;
-    }
-    return <span className={cn("font-serif font-bold", className)}>{name.charAt(0)}</span>;
-}
+import HeroIcon from '../HeroIcon';
 
 const PRESETS_STORAGE_KEY = 'ironecho_custom_presets';
 
@@ -124,7 +118,7 @@ export default function SetupView({ missionId, onCancel }: { missionId: string, 
                      <div className="h-5 w-px bg-white/10"></div>
                      <Skull className="w-5 h-5 text-orange-400 shrink-0" />
                      <div>
-                         <h2 className="text-base font-serif text-slate-200 leading-none">{mission?.name}</h2>
+                         <h2 className="text-sm lg:text-base font-serif text-slate-200 leading-none">{mission?.name}</h2>
                          <p className="text-[10px] text-slate-500 mt-0.5">布阵 · 最多 {MAX_DEPLOY_COUNT} 人</p>
                      </div>
                  </div>
@@ -137,13 +131,13 @@ export default function SetupView({ missionId, onCancel }: { missionId: string, 
              </div>
 
              {/* Preset Bar */}
-             <div className="flex gap-1.5 mb-3 flex-wrap items-center">
+             <div className="flex gap-1.5 mb-3 items-center overflow-x-auto">
                  {presets.map(preset => (
                      <div key={preset.id} className="group relative flex items-center">
                          <button
                              onClick={() => applyPreset(preset)}
                              className={cn(
-                                 "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] transition-all shrink-0",
+                                 "flex items-center gap-1.5 px-2 lg:px-2.5 py-1 lg:py-1.5 rounded-lg border text-[11px] transition-all shrink-0",
                                  "border-white/10 bg-white/[0.03] hover:border-orange-500/30 hover:bg-orange-500/5 hover:text-orange-200 text-slate-400"
                              )}
                          >
@@ -203,9 +197,9 @@ export default function SetupView({ missionId, onCancel }: { missionId: string, 
                  </button>
              </div>
 
-             <div className="flex-1 flex gap-4 min-h-0">
+             <div className="flex-1 flex flex-col lg:flex-row gap-3 lg:gap-4 min-h-0">
                   {/* 3x3 Grid */}
-                  <div className="flex-1 bg-black/40 border border-white/5 rounded-xl p-4 relative overflow-hidden">
+                  <div className="flex-1 bg-black/40 border border-white/5 rounded-xl p-3 lg:p-4 relative overflow-hidden">
                        <div className="relative z-10 flex flex-col gap-2 h-full">
                            {rows.map(row => (
                                <div key={row} className="flex gap-2 flex-1 items-stretch">
@@ -224,7 +218,7 @@ export default function SetupView({ missionId, onCancel }: { missionId: string, 
                                                key={pos}
                                                onClick={() => handleSlotClick(pos)}
                                                className={cn(
-                                                   "relative flex-1 rounded-lg border transition-all duration-150 flex flex-col items-center justify-center gap-0.5 min-h-[68px]",
+                                                   "relative flex-1 rounded-lg border transition-all duration-150 flex flex-col items-center justify-center gap-0.5 min-h-[56px] lg:min-h-[68px]",
                                                    heroId
                                                        ? "bg-cyan-500/8 border-cyan-500/25 hover:border-cyan-400 hover:bg-cyan-500/12 cursor-pointer group"
                                                        : availableHeroes.length > 0 && deployedCount < MAX_DEPLOY_COUNT
@@ -255,7 +249,7 @@ export default function SetupView({ missionId, onCancel }: { missionId: string, 
                   </div>
 
                   {/* Hero List */}
-                  <div className="w-44 bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col shrink-0 overflow-hidden">
+                  <div className="w-full lg:w-44 bg-black/40 border border-white/5 rounded-xl p-2.5 lg:p-3 flex flex-col shrink-0 overflow-hidden max-h-[30vh] lg:max-h-none">
                        <div className="text-[9px] uppercase tracking-widest font-bold text-slate-600 mb-2 flex items-center justify-between">
                            <span>门客</span>
                            <span className="font-normal text-slate-700">{availableHeroes.length} 待选</span>
@@ -294,7 +288,7 @@ export default function SetupView({ missionId, onCancel }: { missionId: string, 
 
              {/* Deploy Button */}
              <div className="mt-3 pt-3 border-t border-white/5 flex justify-between items-center">
-                 <div className="text-[10px] text-slate-600">
+                 <div className="text-[10px] lg:text-[11px] text-slate-600">
                      点击空格放置 · 点击已部署取下 · 布好阵后可存为预设
                  </div>
                  <button 
@@ -304,7 +298,7 @@ export default function SetupView({ missionId, onCancel }: { missionId: string, 
                      }}
                      disabled={!canDeploy}
                      className={cn(
-                         "px-8 py-2 border text-sm font-bold tracking-widest transition-all flex items-center gap-2",
+                         "px-6 lg:px-8 py-2 border text-xs lg:text-sm font-bold tracking-widest transition-all flex items-center gap-2",
                          canDeploy 
                              ? "border-orange-500/50 bg-orange-500/20 text-orange-100 hover:bg-orange-500/30 hover:shadow-[0_0_15px_rgba(249,115,22,0.15)]"
                              : "border-white/10 bg-white/5 text-slate-700 cursor-not-allowed"
