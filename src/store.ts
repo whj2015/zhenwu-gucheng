@@ -659,7 +659,7 @@ export const useGameStore = create<GameState & {
                   progress: newProgress,
                   acceptedIds: newAcceptedIds,
                   activeDailyIds: newActiveDailyIds,
-                  activeWeeklyIds: newActiveWeekIds
+                  activeWeeklyIds: newActiveWeeklyIds
               }
           };
       }),
