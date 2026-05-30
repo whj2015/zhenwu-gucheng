@@ -230,7 +230,7 @@ export default function BattleResultPanel({
                             </span>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-0.5 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-0.5 custom-scrollbar max-h-[35vh] lg:max-h-[calc(90vh-180px)]">
                             {displayedLogs.map((entry) => (
                                 <div
                                     key={entry.id}
