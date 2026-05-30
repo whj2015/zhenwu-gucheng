@@ -144,27 +144,27 @@ function FogCell() {
     );
 }
 
-function EmptyCell({ onClick }: { onClick: () => void }) {
+function EmptyCell() {
     return (
-        <button type="button" onClick={onClick} className={cn(
+        <div className={cn(
             CELL_SIZE,
             "rounded-lg sm:rounded-xl border border-dashed border-white/[0.08] bg-white/[0.012]",
-            "flex flex-col items-center justify-center cursor-pointer hover:border-white/18 hover:bg-white/[0.03] transition-all duration-200"
+            "flex flex-col items-center justify-center cursor-default transition-all duration-200"
         )}>
             <span className="text-[10px] text-white/[0.06]">·</span>
-        </button>
+        </div>
     );
 }
 
-function DoneCell({ onClick }: { onClick: () => void }) {
+function DoneCell() {
     return (
-        <button type="button" onClick={onClick} className={cn(
+        <div className={cn(
             CELL_SIZE,
             "rounded-lg sm:rounded-xl border border-emerald-500/15 bg-emerald-950/10",
-            "flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500/30 transition-all duration-200"
+            "flex flex-col items-center justify-center cursor-default transition-all duration-200"
         )}>
             <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-        </button>
+        </div>
     );
 }
 
@@ -226,20 +226,6 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
     const [cellStates, setCellStates] = useState<CellState[]>(Array(9).fill('fog'));
     const [ready, setReady] = useState(false);
 
-    const spreadFrom = useCallback((pos: GridPos) => {
-        const eg = gridRef.current;
-        if (!eg) return;
-        setCellStates(prev => {
-            const next = [...prev];
-            for (const n of getNeighbors(pos)) {
-                if (next[n] === 'fog') {
-                    next[n] = eg[n] !== null ? 'ready' : 'empty';
-                }
-            }
-            return next;
-        });
-    }, []);
-
     const handleReadyNodeAction = useCallback((pos: GridPos, node: RuinsNode) => {
         const rr = useGameStore.getState().ruinsRun;
         if (!rr) return;
@@ -291,17 +277,9 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
     }, [heroes, addResources, healParty, updateRun, onBattleComplete]);
 
     const handleCellClick = useCallback((pos: GridPos) => {
-        const state = cellStates[pos];
-        if (state === 'fog') return;
-        if (state === 'ready') {
-            const node = gridRef.current?.[pos];
-            if (node) handleReadyNodeAction(pos, node);
-            return;
-        }
-        if (state === 'empty' || state === 'done') {
-            spreadFrom(pos);
-        }
-    }, [cellStates, handleReadyNodeAction, spreadFrom]);
+        const node = gridRef.current?.[pos];
+        if (node) handleReadyNodeAction(pos, node);
+    }, [handleReadyNodeAction]);
 
     const renderEnemyCell = useCallback((pos: GridPos): React.ReactNode => {
         const state = cellStates[pos];
@@ -311,9 +289,9 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
             case 'fog':
                 return <React.Fragment key={pos}><FogCell /></React.Fragment>;
             case 'empty':
-                return <React.Fragment key={pos}><EmptyCell onClick={() => handleCellClick(pos)} /></React.Fragment>;
+                return <React.Fragment key={pos}><EmptyCell /></React.Fragment>;
             case 'done':
-                return <React.Fragment key={pos}><DoneCell onClick={() => handleCellClick(pos)} /></React.Fragment>;
+                return <React.Fragment key={pos}><DoneCell /></React.Fragment>;
             case 'ready':
                 return <React.Fragment key={pos}>{node ? (
                     <ReadyCell node={node} onClick={() => handleCellClick(pos)}
@@ -321,9 +299,9 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                         onHover={() => setHoveredNodeId(node.id)}
                         onLeave={() => setHoveredNodeId(null)}
                     />
-                ) : <EmptyCell onClick={() => handleCellClick(pos)} />}</React.Fragment>;
+                ) : <EmptyCell />}</React.Fragment>;
             default:
-                return <React.Fragment key={pos}><EmptyCell onClick={() => handleCellClick(pos)} /></React.Fragment>;
+                return <React.Fragment key={pos}><EmptyCell /></React.Fragment>;
         }
     }, [cellStates, hoveredNodeId, handleCellClick]);
 
