@@ -47,7 +47,7 @@ export default function TavernView() {
                     <p className="text-slate-500 text-xs sm:text-sm">暂无过客...</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 pb-6 sm:pb-8 overflow-y-auto custom-scrollbar flex-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 pb-6 sm:pb-8 overflow-y-auto custom-scrollbar flex-1 min-h-0 content-start">
                     {tavernPool.map((id) => {
                         const t = HERO_TEMPLATES[id];
                         if (!t) return null;
@@ -56,7 +56,7 @@ export default function TavernView() {
                         const alreadyHired = hiredIds.has(id);
 
                         return (
-                            <div key={id} className="bg-[#121418] border border-white/5 rounded-xl p-3 sm:p-4 lg:p-6 flex flex-col relative overflow-hidden group shadow-lg">
+                            <div key={id} className="bg-[#121418] border border-white/5 rounded-xl p-3 sm:p-4 lg:p-6 flex flex-col relative overflow-hidden group shadow-lg h-full sm:h-auto">
                                 <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-orange-500/5 blur-2xl group-hover:bg-orange-500/10 transition-colors pointer-events-none"></div>
                                 
                                 {/* Header: Icon + Name */}
@@ -76,10 +76,10 @@ export default function TavernView() {
                                 </div>
 
                                 {/* Description */}
-                                <p className="text-[11px] sm:text-sm text-slate-400 italic mb-3 sm:mb-4 lg:mb-6 relative z-10 line-clamp-2 sm:line-clamp-none">{t.desc}</p>
-                                
+                                <p className="text-[11px] sm:text-sm text-slate-400 italic mb-2.5 sm:mb-3 lg:mb-6 relative z-10 line-clamp-2 lg:line-clamp-none flex-shrink-0">{t.desc}</p>
+
                                 {/* Stats Grid */}
-                                <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mb-3 sm:mb-4 lg:mb-6 border-t border-white/5 pt-2.5 sm:pt-4">
+                                <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mb-2.5 sm:mb-3 lg:mb-6 border-t border-white/5 pt-2 sm:pt-3 lg:pt-4 flex-shrink-0">
                                     <div className="flex flex-col items-center p-1 sm:p-1.5 lg:p-2 bg-white/5 rounded">
                                         <span className="text-[9px] sm:text-[10px] text-slate-500">武力</span>
                                         <span className="font-mono text-xs sm:text-sm text-orange-300">{t.attributes.force}</span>
@@ -99,13 +99,13 @@ export default function TavernView() {
                                 </div>
 
                                 {/* Recruit Button */}
-                                <button 
+                                <button
                                     onClick={() => recruitHero(id, cost)}
                                     disabled={!canAfford || alreadyHired}
                                     className={cn(
-                                        "w-full py-2 sm:py-2.5 lg:py-3 rounded-lg font-bold tracking-widest text-[10px] sm:text-sm transition-all relative z-10 mobile-touch-target",
-                                        alreadyHired ? "bg-white/5 text-slate-500 border border-white/10 cursor-not-allowed" 
-                                        : canAfford ? "bg-orange-600 hover:bg-orange-500 text-white shadow-lg shadow-orange-500/20" 
+                                        "w-full py-2 sm:py-2.5 lg:py-3 rounded-lg font-bold tracking-widest text-[10px] sm:text-sm transition-all relative z-10 mobile-touch-target mt-auto shrink-0",
+                                        alreadyHired ? "bg-white/5 text-slate-500 border border-white/10 cursor-not-allowed"
+                                        : canAfford ? "bg-orange-600 hover:bg-orange-500 text-white shadow-lg shadow-orange-500/20"
                                         : "bg-white/5 text-slate-500 cursor-not-allowed border border-white/10"
                                     )}
                                 >
