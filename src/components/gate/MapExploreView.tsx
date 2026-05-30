@@ -12,10 +12,10 @@ type HeroTrait = 'assault' | 'flank' | 'tank' | 'support' | 'ranged';
 
 const TRAIT_COLORS: Record<HeroTrait, { dot: string; label: string }> = {
     assault: { dot: 'bg-red-400', label: '突' },
-    flank: { dot: 'bg-cyan-400', label: '侧' },
-    tank: { dot: 'bg-blue-400', label: '坦' },
+    flank:   { dot: 'bg-cyan-400', label: '侧' },
+    tank:    { dot: 'bg-blue-400', label: '坦' },
     support: { dot: 'bg-emerald-400', label: '辅' },
-    ranged: { dot: 'bg-violet-400', label: '远' },
+    ranged:  { dot: 'bg-violet-400', label: '远' },
 };
 
 const ROWS: Array<'front' | 'middle' | 'back'> = ['front', 'middle', 'back'];
@@ -62,16 +62,22 @@ interface MapData {
 
 function buildMapData(nodes: RuinsNode[]): MapData {
     const grid = distributeNodesToGrid(nodes);
-    const states: CellState[] = grid.map(n => n ? 'fog' : 'empty');
 
-    const starts: GridPos[] = [];
-    for (let p = 0; p < 9; p++) if (grid[p] !== null) starts.push(p);
-    const start = starts.length > 0 ? starts[Math.floor(Math.random() * starts.length)] : -1;
+    const states: CellState[] = Array(9).fill('fog');
+
+    const nodePositions: GridPos[] = [];
+    for (let p = 0; p < 9; p++) if (grid[p] !== null) nodePositions.push(p);
+
+    const start = nodePositions.length > 0
+        ? nodePositions[Math.floor(Math.random() * nodePositions.length)]
+        : -1;
 
     if (start >= 0) {
         states[start] = 'ready';
         for (const n of getNeighbors(start)) {
-            if (states[n] === 'fog') states[n] = grid[n] ? 'ready' : 'empty';
+            if (states[n] === 'fog') {
+                states[n] = grid[n] !== null ? 'ready' : 'empty';
+            }
         }
     }
 
@@ -116,33 +122,49 @@ function PartyCell({ heroId, position }: { heroId: string | null; position: Posi
     const tc = trait ? TRAIT_COLORS[trait] : null;
 
     return (
-            <CellBase className={cn("border-white/10 bg-black/40 hover:border-cyan-500/40 hover:bg-black/55 cursor-default", hero.hp <= 0 && "opacity-35")}>
-                {tc && <div className={cn("absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full", tc.dot)} title={TRAIT_COLORS[trait].label} />}
-                <span className="text-sm sm:text-base font-serif font-bold text-slate-200 leading-none">{t.name[0] || '?'}</span>
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50">
-                    <div className={cn("h-full transition-all duration-300", hpColor)} style={{ width: `${hpRatio * 100}%` }} />
-                </div>
-            </CellBase>
-        );
-}
-
-function FogCell() {
-    return (
-        <CellBase className="border-white/[0.08] bg-white/[0.03] cursor-default">
-            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm border border-dashed border-white/20" />
+        <CellBase className={cn("border-white/10 bg-black/40 hover:border-cyan-500/40 hover:bg-black/55 cursor-default", hero.hp <= 0 && "opacity-35")}>
+            {tc && <div className={cn("absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full", tc.dot)} title={TRAIT_COLORS[trait].label} />}
+            <span className="text-sm sm:text-base font-serif font-bold text-slate-200 leading-none">{t.name[0] || '?'}</span>
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50">
+                <div className={cn("h-full transition-all duration-300", hpColor)} style={{ width: `${hpRatio * 100}%` }} />
+            </div>
         </CellBase>
     );
 }
 
-function EmptyCell() {
-    return <CellBase className="border-dashed border-white/[0.08] bg-white/[0.012] cursor-default"><span /></CellBase>;
+function FogCell({ onClick }: { onClick: () => void }) {
+    return (
+        <button type="button" onClick={onClick} className={cn(
+            CELL_SIZE,
+            "rounded-lg sm:rounded-xl border border-white/[0.08] bg-white/[0.04]",
+            "flex flex-col items-center justify-center cursor-pointer hover:border-white/20 hover:bg-white/[0.07] transition-all duration-200"
+        )}>
+            <span className="text-base sm:text-lg font-bold text-white/25 select-none">?</span>
+        </button>
+    );
 }
 
-function DoneCell() {
+function EmptyCell({ onClick }: { onClick: () => void }) {
     return (
-        <CellBase className="border-emerald-500/15 bg-emerald-950/10 cursor-default">
+        <button type="button" onClick={onClick} className={cn(
+            CELL_SIZE,
+            "rounded-lg sm:rounded-xl border border-dashed border-white/[0.08] bg-white/[0.012]",
+            "flex flex-col items-center justify-center cursor-pointer hover:border-white/18 hover:bg-white/[0.03] transition-all duration-200"
+        )}>
+            <span className="text-[10px] text-white/[0.06]">·</span>
+        </button>
+    );
+}
+
+function DoneCell({ onClick }: { onClick: () => void }) {
+    return (
+        <button type="button" onClick={onClick} className={cn(
+            CELL_SIZE,
+            "rounded-lg sm:rounded-xl border border-emerald-500/15 bg-emerald-950/10",
+            "flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500/30 transition-all duration-200"
+        )}>
             <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-        </CellBase>
+        </button>
     );
 }
 
@@ -213,21 +235,21 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
 
     if (!ruinsRun || !mapData) return null;
 
-    const handleNodeClick = useCallback((pos: GridPos, node: RuinsNode) => {
-        let shouldProcess = false;
+    const spreadFrom = useCallback((pos: GridPos) => {
         setCellStates(prev => {
-            if (prev[pos] !== 'ready') return prev;
-            shouldProcess = true;
             const next = [...prev];
-            next[pos] = 'done';
+            let changed = false;
             for (const n of getNeighbors(pos)) {
-                if (next[n] === 'fog') next[n] = enemyGrid[n] ? 'ready' : 'empty';
+                if (next[n] === 'fog') {
+                    next[n] = enemyGrid[n] !== null ? 'ready' : 'empty';
+                    changed = true;
+                }
             }
             return next;
         });
+    }, [enemyGrid]);
 
-        if (!shouldProcess) return;
-
+    const handleReadyNodeAction = useCallback((pos: GridPos, node: RuinsNode) => {
         if (node.type === 'camp') {
             healParty(0.2);
         } else if (node.type === 'armory') {
@@ -261,7 +283,32 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
             });
             updateRun({ nodes: updatedNodes });
         }
+
+        setCellStates(prev => {
+            const next = [...prev];
+            next[pos] = 'done';
+            for (const n of getNeighbors(pos)) {
+                if (next[n] === 'fog') next[n] = enemyGrid[n] !== null ? 'ready' : 'empty';
+            }
+            return next;
+        });
     }, [ruinsRun, heroes, addResources, healParty, updateRun, onBattleComplete, enemyGrid]);
+
+    const handleCellClick = useCallback((pos: GridPos) => {
+        const state = cellStates[pos];
+
+        if (state === 'fog') return;
+
+        if (state === 'ready') {
+            const node = enemyGrid[pos];
+            if (node) handleReadyNodeAction(pos, node);
+            return;
+        }
+
+        if (state === 'empty' || state === 'done') {
+            spreadFrom(pos);
+        }
+    }, [cellStates, enemyGrid, handleReadyNodeAction, spreadFrom]);
 
     const completedCount = ruinsRun.nodes.filter(n => n.completed).length;
     const totalCount = ruinsRun.nodes.length;
@@ -269,17 +316,26 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
     const renderEnemyCell = useCallback((pos: GridPos): React.ReactNode => {
         const state = cellStates[pos];
         const node = enemyGrid[pos];
+
         switch (state) {
-            case 'fog':   return <React.Fragment key={pos}><FogCell /></React.Fragment>;
-            case 'empty': return <React.Fragment key={pos}><EmptyCell /></React.Fragment>;
-            case 'done':  return <React.Fragment key={pos}>{node ? <DoneCell /> : <EmptyCell />}</React.Fragment>;
-            case 'ready': return <React.Fragment key={pos}>{node ? (
-                <ReadyCell node={node} onClick={() => handleNodeClick(pos, node)}
-                    isHovered={hoveredNodeId === node.id} onHover={() => setHoveredNodeId(node.id)} onLeave={() => setHoveredNodeId(null)} />
-            ) : <EmptyCell />}</React.Fragment>;
-            default:      return <React.Fragment key={pos}><EmptyCell /></React.Fragment>;
+            case 'fog':
+                return <React.Fragment key={pos}><FogCell onClick={() => handleCellClick(pos)} /></React.Fragment>;
+            case 'empty':
+                return <React.Fragment key={pos}><EmptyCell onClick={() => handleCellClick(pos)} /></React.Fragment>;
+            case 'done':
+                return <React.Fragment key={pos}><DoneCell onClick={() => handleCellClick(pos)} /></React.Fragment>;
+            case 'ready':
+                return <React.Fragment key={pos}>{node ? (
+                    <ReadyCell node={node} onClick={() => handleCellClick(pos)}
+                        isHovered={hoveredNodeId === node.id}
+                        onHover={() => setHoveredNodeId(node.id)}
+                        onLeave={() => setHoveredNodeId(null)}
+                    />
+                ) : <EmptyCell onClick={() => handleCellClick(pos)} />}</React.Fragment>;
+            default:
+                return <React.Fragment key={pos}><EmptyCell onClick={() => handleCellClick(pos)} /></React.Fragment>;
         }
-    }, [cellStates, enemyGrid, hoveredNodeId, handleNodeClick]);
+    }, [cellStates, enemyGrid, hoveredNodeId, handleCellClick]);
 
     return (
         <div className="max-w-4xl mx-auto h-full flex flex-col animate-in fade-in duration-500 relative">
