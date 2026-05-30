@@ -226,52 +226,42 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
     const [cellStates, setCellStates] = useState<CellState[]>(Array(9).fill('fog'));
     const [ready, setReady] = useState(false);
 
-    if (!ruinsRun) return null;
-
-    if (gridRef.current === null && !ready) {
-        const mapData = buildMapData(ruinsRun.nodes);
-        gridRef.current = mapData.grid;
-        setCellStates(mapData.initialStates);
-        setReady(true);
-    }
-
-    if (!ready || gridRef.current === null) return null;
-
-    const enemyGrid = gridRef.current;
-
     const spreadFrom = useCallback((pos: GridPos) => {
+        const eg = gridRef.current;
+        if (!eg) return;
         setCellStates(prev => {
             const next = [...prev];
-            let changed = false;
             for (const n of getNeighbors(pos)) {
                 if (next[n] === 'fog') {
-                    next[n] = enemyGrid[n] !== null ? 'ready' : 'empty';
-                    changed = true;
+                    next[n] = eg[n] !== null ? 'ready' : 'empty';
                 }
             }
             return next;
         });
-    }, [enemyGrid]);
+    }, []);
 
     const handleReadyNodeAction = useCallback((pos: GridPos, node: RuinsNode) => {
+        const rr = useGameStore.getState().ruinsRun;
+        if (!rr) return;
+
         if (node.type === 'camp') {
             healParty(0.2);
         } else if (node.type === 'armory') {
             const r = (node as any).rewardOptions?.[0];
             if (r) addResources({ [r.type]: r.amount });
         } else if (node.type === 'battle' || node.type === 'boss') {
-            const activeHeros = Object.values(ruinsRun.party)
+            const activeHeros = Object.values(rr.party)
                 .filter((hId): hId is string => hId !== null)
                 .map(hId => heroes.find(x => x.id === hId)!)
                 .filter(Boolean);
             const enemyIds = (node as any).enemies as string[];
             const enemyData = enemyIds.map((eId: string) => ({ ...ENEMY_TEMPLATES[eId], id: eId }));
-            const res = simulateBattle(activeHeros, enemyData, HERO_TEMPLATES, ruinsRun.party);
+            const res = simulateBattle(activeHeros, enemyData, HERO_TEMPLATES, rr.party);
             useGameStore.getState().applyCombatResults(res.remainingState, res.victory);
             const battleResultData = buildBattleResultData({
                 victory: res.victory, logs: res.logs, remainingState: res.remainingState,
                 heroes: activeHeros, enemies: enemyData, nodeType: node.type as 'battle' | 'boss',
-                floorNumber: ruinsRun.currentFloor,
+                floorNumber: rr.currentFloor,
             });
             onBattleComplete(battleResultData, node);
         }
@@ -280,7 +270,7 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
         if (parts.length >= 3) {
             const row = parseInt(parts[1].replace('r',''));
             const nextRow = row + 1;
-            const updatedNodes = ruinsRun.nodes.map(n => {
+            const updatedNodes = rr.nodes.map(n => {
                 if (n.id === node.id) return { ...n, completed: true };
                 if (n.id.includes(`r${nextRow}-`) || (row === 1 && n.type === 'boss')) return { ...n, revealed: true };
                 return n;
@@ -288,38 +278,34 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
             updateRun({ nodes: updatedNodes });
         }
 
+        const eg = gridRef.current;
         setCellStates(prev => {
+            if (!eg) return prev;
             const next = [...prev];
             next[pos] = 'done';
             for (const n of getNeighbors(pos)) {
-                if (next[n] === 'fog') next[n] = enemyGrid[n] !== null ? 'ready' : 'empty';
+                if (next[n] === 'fog') next[n] = eg[n] !== null ? 'ready' : 'empty';
             }
             return next;
         });
-    }, [ruinsRun, heroes, addResources, healParty, updateRun, onBattleComplete, enemyGrid]);
+    }, [heroes, addResources, healParty, updateRun, onBattleComplete]);
 
     const handleCellClick = useCallback((pos: GridPos) => {
         const state = cellStates[pos];
-
         if (state === 'fog') return;
-
         if (state === 'ready') {
-            const node = enemyGrid[pos];
+            const node = gridRef.current?.[pos];
             if (node) handleReadyNodeAction(pos, node);
             return;
         }
-
         if (state === 'empty' || state === 'done') {
             spreadFrom(pos);
         }
-    }, [cellStates, enemyGrid, handleReadyNodeAction, spreadFrom]);
-
-    const completedCount = ruinsRun.nodes.filter(n => n.completed).length;
-    const totalCount = ruinsRun.nodes.length;
+    }, [cellStates, handleReadyNodeAction, spreadFrom]);
 
     const renderEnemyCell = useCallback((pos: GridPos): React.ReactNode => {
         const state = cellStates[pos];
-        const node = enemyGrid[pos];
+        const node = gridRef.current?.[pos] ?? null;
 
         switch (state) {
             case 'fog':
@@ -339,7 +325,21 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
             default:
                 return <React.Fragment key={pos}><EmptyCell onClick={() => handleCellClick(pos)} /></React.Fragment>;
         }
-    }, [cellStates, enemyGrid, hoveredNodeId, handleCellClick]);
+    }, [cellStates, hoveredNodeId, handleCellClick]);
+
+    if (!ruinsRun) return null;
+
+    if (gridRef.current === null && !ready) {
+        const mapData = buildMapData(ruinsRun.nodes);
+        gridRef.current = mapData.grid;
+        setCellStates(mapData.initialStates);
+        setReady(true);
+    }
+
+    if (!ready || gridRef.current === null) return null;
+
+    const completedCount = ruinsRun.nodes.filter(n => n.completed).length;
+    const totalCount = ruinsRun.nodes.length;
 
     return (
         <div className="max-w-4xl mx-auto h-full flex flex-col animate-in fade-in duration-500 relative">
