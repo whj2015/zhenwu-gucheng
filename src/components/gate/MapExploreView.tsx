@@ -65,21 +65,8 @@ function buildMapData(nodes: RuinsNode[]): MapData {
 
     const states: CellState[] = Array(9).fill('fog');
 
-    const nodePositions: GridPos[] = [];
-    for (let p = 0; p < 9; p++) if (grid[p] !== null) nodePositions.push(p);
-
-    const start = nodePositions.length > 0
-        ? nodePositions[Math.floor(Math.random() * nodePositions.length)]
-        : -1;
-
-    if (start >= 0) {
-        states[start] = 'ready';
-        for (const n of getNeighbors(start)) {
-            if (states[n] === 'fog') {
-                states[n] = grid[n] !== null ? 'ready' : 'empty';
-            }
-        }
-    }
+    const start = Math.floor(Math.random() * 9);
+    states[start] = grid[start] !== null ? 'ready' : 'empty';
 
     return { grid, initialStates: states };
 }
