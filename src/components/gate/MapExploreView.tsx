@@ -1,39 +1,14 @@
 /* Extracted from GatePanel.tsx - MapExploreView */
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useGameStore } from '../../store';
-import { simulateBattle, initTacticalBattle, executePlayerAttack, executeEnemyTurn, endPlayerPhase, canTarget } from '../../engine/ruins';
+import { simulateBattle } from '../../engine/ruins';
 import { HERO_TEMPLATES, ENEMY_TEMPLATES, POSITION_CONFIG } from '../../data';
 import { RuinsNode, PositionKey } from '../../types';
 import { cn } from '../../utils';
 import BattleResultPanel, { buildBattleResultData } from '../BattleResultPanel';
-import NodeButton from './NodeButton';
 import HeroAvatarCompact from './HeroAvatarCompact';
 
 type HeroTrait = 'assault' | 'flank' | 'tank' | 'support' | 'ranged';
-
-interface BattleUnit {
-    id: string;
-    name: string;
-    side: 'player' | 'enemy';
-    hp: number;
-    maxHp: number;
-    row: 'front' | 'middle' | 'back';
-    col: number;
-    templateId?: string;
-    isAlive: boolean;
-}
-
-interface BattleState {
-    round: number;
-    phase: 'player' | 'enemy' | 'ended';
-    playerUnits: BattleUnit[];
-    enemyUnits: BattleUnit[];
-    selectedAttacker: string | null;
-    selectedTarget: string | null;
-    logs: string[];
-    victory: boolean | null;
-    playerAttacksThisRound: Record<string, string>;
-}
 
 const TRAIT_COLORS: Record<HeroTrait | 'ranged', { bg: string; text: string; label: string }> = {
     assault: { bg: 'bg-red-500/20', text: 'text-red-400', label: '突击' },
@@ -43,160 +18,160 @@ const TRAIT_COLORS: Record<HeroTrait | 'ranged', { bg: string; text: string; lab
     ranged: { bg: 'bg-violet-500/20', text: 'text-violet-400', label: '远程' },
 };
 
-function BattleCell({ unit, isPlayerSide, isSelected, isSelectable, onSelect, reason }: {
-    unit: { id: string; name: string; hp: number; maxHp: number; row: string; col: number; templateId?: string; isAlive: boolean };
-    isPlayerSide: boolean;
-    isSelected: boolean;
-    isSelectable: boolean;
-    onSelect: () => void;
-    reason?: string;
-    key?: React.Key;
-}) {
-    const hpRatio = unit.hp / unit.maxHp;
+const ROWS: Array<'front' | 'middle' | 'back'> = ['front', 'middle', 'back'];
+const COLS = ['left', 'center', 'right'] as const;
+
+function PartyCell({ heroId, position }: { heroId: string | null; position: PositionKey }) {
+    if (!heroId) {
+        const posConfig = POSITION_CONFIG[position] || POSITION_CONFIG['front-center'];
+        return (
+            <div className="w-full aspect-square rounded-xl border border-dashed border-white/5 bg-white/[0.01] flex items-center justify-center">
+                <span className="text-[7px] font-mono text-slate-700">{posConfig.name}</span>
+            </div>
+        );
+    }
+
+    const t = HERO_TEMPLATES[heroId];
+    const hero = useGameStore(s => s.heroes.find(h => h.id === heroId));
+    const hpRatio = hero ? Math.max(0, hero.hp / (t.attributes.physique * 10)) : 0;
     const hpColor = hpRatio > 0.6 ? 'bg-emerald-500' : hpRatio > 0.3 ? 'bg-amber-500' : 'bg-red-500';
-    
-    const trait = (HERO_TEMPLATES[unit.templateId || '']?.trait || null) as HeroTrait | null;
+    const trait = t?.trait as HeroTrait | undefined;
     const traitStyle = trait ? TRAIT_COLORS[trait] : null;
 
     return (
-        <div
-            onClick={onSelect}
-            className={cn(
-                "relative w-full aspect-square rounded-xl border flex flex-col items-center justify-center p-1 sm:p-2 transition-all duration-200",
-                !unit.isAlive && "opacity-30",
-                isSelected && "border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.4)] scale-[1.05]",
-                isSelectable && !isSelected && "border-emerald-400/60 hover:border-emerald-400 hover:scale-105 cursor-pointer hover:bg-emerald-500/10",
-                !isSelectable && !unit.isAlive && "border-white/5 bg-white/[0.02] cursor-default",
-                !isSelectable && unit.isAlive && "border-white/10 bg-white/[0.03] opacity-50 cursor-not-allowed",
-                isPlayerSide ? "bg-black/40" : "bg-red-950/30"
-            )}
-            title={!isSelectable ? reason : undefined}
-        >
+        <div className="w-full aspect-square rounded-xl border border-white/10 bg-black/40 flex flex-col items-center justify-center p-1 sm:p-2 transition-all hover:border-cyan-500/40 hover:bg-black/60">
             <span className="text-[9px] sm:text-xs font-serif font-bold truncate w-full text-center text-slate-200">
-                {unit.name}
+                {t?.name?.[0] || '?'}
             </span>
-            
             {traitStyle && (
-                <span className={cn("text-[6px] sm:text-[7px] px-1 rounded-full mt-0.5", traitStyle.bg, traitStyle.text)}>
+                <span className={cn("text-[6px] px-0.5 rounded", traitStyle.bg, traitStyle.text)}>
                     {traitStyle.label}
                 </span>
             )}
-
-            <div className="w-full h-1 sm:h-1.5 rounded-full bg-black/40 mt-1 overflow-hidden">
-                <div 
-                    className={cn("h-full transition-all duration-300", hpColor)}
-                    style={{ width: `${Math.max(0, hpRatio * 100)}%` }}
-                />
+            <div className="w-full h-1 sm:h-1.5 rounded-full bg-black/40 mt-0.5 overflow-hidden">
+                <div className={cn("h-full transition-all", hpColor)} style={{ width: `${hpRatio * 100}%` }} />
             </div>
-            
-            <span className={cn(
-                "text-[8px] sm:text-[9px] font-mono mt-0.5",
-                hpRatio > 0.6 ? "text-emerald-300" : hpRatio > 0.3 ? "text-amber-300" : "text-red-300"
-            )}>
-                {unit.isAlive ? Math.max(0, Math.floor(unit.hp)) : '💀'}
-            </span>
-            
-            <span className="absolute top-0.5 right-1 text-[6px] text-slate-600 font-mono">
-                {unit.row === 'front' ? '前' : unit.row === 'middle' ? '中' : '后'}
+            <span className={cn("text-[7px] sm:text-[8px] font-mono", hpRatio > 0.6 ? "text-emerald-300" : hpRatio > 0.3 ? "text-amber-300" : "text-red-300")}>
+                {hero ? Math.max(0, Math.floor(hero.hp)) : '--'}
             </span>
         </div>
     );
 }
 
-function BattleGrid({ units, side, battleState, selectedAttacker, onUnitClick }: {
-    units: BattleState['playerUnits'] | BattleState['enemyUnits'];
-    side: 'player' | 'enemy';
-    battleState: BattleState;
-    selectedAttacker: string | null;
-    onUnitClick: (unitId: string) => void;
+function EnemyNodeCell({ node, onClick, isHovered, onHover, onLeave }: {
+    node: RuinsNode;
+    onClick: () => void;
+    isHovered: boolean;
+    onHover: () => void;
+    onLeave: () => void;
 }) {
-    const isPlayerSide = side === 'player';
-    
-    const rows: Array<'front' | 'middle' | 'back'> = ['front', 'middle', 'back'];
-    
+    if (!node.revealed) {
+        return (
+            <div className="w-full aspect-square rounded-xl border border-dashed border-white/10 bg-white/[0.02] flex items-center justify-center">
+                <span className="text-lg opacity-20">?</span>
+            </div>
+        );
+    }
+
+    if (node.completed) {
+        return (
+            <div className="w-full aspect-square rounded-xl border border-white/5 bg-white/[0.02] flex items-center justify-center opacity-30">
+                <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </div>
+        );
+    }
+
+    const info = getNodeInfo(node);
+    const colorMap: Record<string, string> = {
+        battle: 'border-orange-500/40 hover:border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.12)]',
+        boss: 'border-red-500/40 hover:border-red-400 shadow-[0_0_15px_rgba(239,68,68,0.15)]',
+        camp: 'border-emerald-500/30 hover:border-emerald-400',
+        armory: 'border-violet-500/30 hover:border-violet-400',
+    };
+
     return (
-        <div className="flex flex-col gap-1 sm:gap-1.5 w-full max-w-[180px] sm:max-w-[220px]">
-            {rows.map(row => (
-                <div key={row} className="flex gap-1 sm:gap-1.5">
-                    {[0, 1, 2].map(col => {
-                        const unit = units.find(u => u.row === row && u.col === col);
-                        if (!unit) {
-                            return (
-                                <div 
-                                    key={`${row}-${col}`}
-                                    className="w-full aspect-square rounded-xl border border-dashed border-white/5 bg-white/[0.01]"
-                                />
-                            );
-                        }
-
-                        let isSelectable = false;
-                        let reason: string | undefined;
-
-                        if (isPlayerSide) {
-                            isSelectable = unit.isAlive && battleState.phase === 'player';
-                        } else if (selectedAttacker && battleState.phase === 'player') {
-                            const check = canTarget(selectedAttacker, unit.id, battleState);
-                            isSelectable = check.can && unit.isAlive;
-                            reason = check.reason;
-                        }
-
-                        return (
-                            <BattleCell
-                                key={unit.id}
-                                unit={unit}
-                                isPlayerSide={isPlayerSide}
-                                isSelected={selectedAttacker === unit.id}
-                                isSelectable={isSelectable}
-                                reason={reason}
-                                onSelect={() => onUnitClick(unit.id)}
-                            />
-                        );
-                    })}
+        <button
+            onMouseEnter={onHover}
+            onMouseLeave={onLeave}
+            onClick={onClick}
+            className={cn(
+                "relative w-full aspect-square rounded-xl border flex flex-col items-center justify-center p-1 sm:p-2 transition-all duration-200 cursor-pointer",
+                "bg-red-950/20 hover:bg-red-950/35",
+                colorMap[node.type] || 'border-white/10',
+                isHovered && "scale-105 z-10"
+            )}
+        >
+            <span className="text-[9px] sm:text-xs font-serif font-bold truncate w-full text-center text-slate-200">
+                {info.icon} {info.name}
+            </span>
+            {(node.type === 'battle' || node.type === 'boss') && (node as any).enemies && (
+                <span className="text-[7px] text-slate-500 font-mono">
+                    x{(node as any).enemies.length}
+                </span>
+            )}
+            {isHovered && !node.completed && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-36 bg-black/95 backdrop-blur-md border border-white/10 rounded-lg p-2 z-20 animate-in fade-in zoom-in-95 duration-150">
+                    <div className={cn("font-serif text-xs font-bold mb-0.5", info.color)}>{info.name}</div>
+                    <div className="text-[10px] text-slate-400 leading-relaxed">{info.desc}</div>
+                    <div className="mt-1 text-[9px] font-mono text-cyan-400/80">点击进入</div>
                 </div>
-            ))}
-        </div>
+            )}
+        </button>
     );
+}
+
+function getNodeInfo(node: RuinsNode) {
+    if (node.type === 'camp') return { name: '营地', icon: '🏕️', desc: '扎营修整，恢复血气', color: 'text-emerald-400' };
+    if (node.type === 'armory') {
+        const r = (node as any).rewardOptions?.[0];
+        return { name: '武备库', icon: '📦', desc: r ? `可获得 ${r.type==='iron'?'铁锭':'陨铁'}x${r.amount}` : '', color: 'text-violet-400' };
+    }
+    if ((node.type === 'battle' || node.type === 'boss') && (node as any).enemies) {
+        const names = (node as any).enemies.map((eId: string) => ENEMY_TEMPLATES[eId]?.name || eId);
+        return { name: node.type === 'boss' ? 'BOSS' : '遭遇战', icon: node.type === 'boss' ? '💀' : '⚔️', desc: names.join('、'), color: node.type === 'boss' ? 'text-red-400' : 'text-orange-400' };
+    }
+    return { name: '', icon: '', desc: '', color: '' };
 }
 
 export default function MapExploreView({ onBattleComplete }: { onBattleComplete: (data: ReturnType<typeof buildBattleResultData>, node: RuinsNode) => void }) {
     const { ruinsRun, updateRun, heroes, addResources, healParty } = useGameStore();
-    const [hoveredNode, setHoveredNode] = useState<RuinsNode | null>(null);
-    const [battleState, setBattleState] = useState<BattleState | null>(null);
-    const [currentNode, setCurrentNode] = useState<RuinsNode | null>(null);
-    const [showVictory, setShowVictory] = useState(false);
-    const logsEndRef = useRef<HTMLDivElement>(null);
-    const [enemyAnimating, setEnemyAnimating] = useState(false);
+    const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
     if (!ruinsRun) return null;
 
-    useEffect(() => {
-        if (logsEndRef.current) {
-            logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [battleState?.logs]);
-
     const handleNodeClick = useCallback((node: RuinsNode) => {
-        if (!node.revealed || node.completed || enemyAnimating) return;
+        if (!node.revealed || node.completed) return;
 
-        if (node.type === 'battle' || node.type === 'boss') {
+        if (node.type === 'camp') {
+            healParty(0.2);
+        } else if (node.type === 'armory') {
+            const r = (node as any).rewardOptions?.[0];
+            if (r) addResources({ [r.type]: r.amount });
+        } else if (node.type === 'battle' || node.type === 'boss') {
             const activeHeros = Object.values(ruinsRun.party)
                 .filter((hId): hId is string => hId !== null)
                 .map(hId => heroes.find(x => x.id === hId)!)
                 .filter(Boolean);
 
             const enemyIds = (node as any).enemies as string[];
-            
-            const state = initTacticalBattle(activeHeros, enemyIds, ruinsRun.party);
-            setBattleState(state);
-            setCurrentNode(node);
-            return;
-        }
+            const enemyData = enemyIds.map((eId: string) => ({ ...ENEMY_TEMPLATES[eId], id: eId }));
 
-        if (node.type === 'camp') {
-            healParty(0.2);
-        } else if (node.type === 'armory') {
-            const r = (node as any).rewardOptions[0];
-            addResources({ [r.type]: r.amount });
+            const res = simulateBattle(activeHeros, enemyData, HERO_TEMPLATES, ruinsRun.party);
+
+            useGameStore.getState().applyCombatResults(res.remainingState, res.victory);
+
+            const battleResultData = buildBattleResultData({
+                victory: res.victory,
+                logs: res.logs,
+                remainingState: res.remainingState,
+                heroes: activeHeros,
+                enemies: enemyData,
+                nodeType: node.type as 'battle' | 'boss',
+                floorNumber: ruinsRun.currentFloor,
+            });
+
+            onBattleComplete(battleResultData, node);
+            return;
         }
 
         const parts = node.id.split('-');
@@ -210,263 +185,24 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
             });
             updateRun({ nodes: updatedNodes });
         }
-    }, [ruinsRun, heroes, addResources, healParty, updateRun, enemyAnimating]);
-
-    const handleBattleUnitClick = useCallback((unitId: string) => {
-        if (!battleState || battleState.phase !== 'player' || enemyAnimating) return;
-
-        const isPlayerUnit = battleState.playerUnits.some(u => u.id === unitId);
-
-        if (isPlayerUnit) {
-            const unit = battleState.playerUnits.find(u => u.id === unitId);
-            if (!unit || !unit.isAlive) return;
-
-            if (battleState.selectedAttacker === unitId) {
-                setBattleState(prev => prev ? { ...prev, selectedAttacker: null } : null);
-            } else {
-                setBattleState(prev => prev ? { ...prev, selectedAttacker: unitId } : null);
-            }
-            return;
-        }
-
-        if (battleState.selectedAttacker && !battleState.selectedTarget) {
-            const check = canTarget(battleState.selectedAttacker, unitId, battleState);
-            if (check.can) {
-                const newState = executePlayerAttack({ ...battleState, selectedTarget: unitId });
-                setBattleState(newState);
-
-                if (newState.victory === true) {
-                    setTimeout(() => {
-                        setShowVictory(true);
-                        setTimeout(() => handleBattleEnd(newState, true), 1500);
-                    }, 300);
-                }
-            }
-        }
-    }, [battleState, enemyAnimating]);
-
-    const handleEndTurn = useCallback(() => {
-        if (!battleState || battleState.phase !== 'player' || enemyAnimating) return;
-
-        const newState = endPlayerPhase(battleState);
-        setBattleState(newState);
-        setEnemyAnimating(true);
-
-        setTimeout(() => {
-            const afterEnemy = executeEnemyTurn(newState);
-            setBattleState(afterEnemy);
-            setEnemyAnimating(false);
-
-            if (afterEnemy.victory === false) {
-                setTimeout(() => handleBattleEnd(afterEnemy, false), 500);
-            } else if (afterEnemy.victory === true) {
-                setShowVictory(true);
-                setTimeout(() => handleBattleEnd(afterEnemy, true), 1500);
-            }
-        }, 800);
-    }, [battleState, enemyAnimating]);
-
-    const handleBattleEnd = useCallback((finalState: BattleState, victory: boolean) => {
-        if (!currentNode) return;
-
-        const activeHeros = Object.values(ruinsRun.party)
-            .filter((hId): hId is string => hId !== null)
-            .map(hId => heroes.find(x => x.id === hId)!)
-            .filter(Boolean);
-
-        const enemyData = (currentNode as any).enemies.map((eId:string) => ({ ...ENEMY_TEMPLATES[eId], id: eId }));
-
-        const res = simulateBattle(activeHeros, enemyData, HERO_TEMPLATES, ruinsRun.party);
-        
-        useGameStore.getState().applyCombatResults(res.remainingState, victory);
-
-        const battleResultData = buildBattleResultData({
-            victory,
-            logs: finalState.logs,
-            remainingState: res.remainingState,
-            heroes: activeHeros,
-            enemies: enemyData,
-            nodeType: currentNode.type as 'battle' | 'boss',
-            floorNumber: ruinsRun.currentFloor,
-        });
-
-        setBattleState(null);
-        setCurrentNode(null);
-        setShowVictory(false);
-
-        onBattleComplete(battleResultData, currentNode);
-    }, [currentNode, ruinsRun, heroes, onBattleComplete]);
-
-    const handleRetreat = useCallback(() => {
-        if (!battleState || enemyAnimating) return;
-        
-        setBattleState(null);
-        setCurrentNode(null);
-        setShowVictory(false);
-    }, [battleState, enemyAnimating]);
-
-    const getNodeLabel = (node: RuinsNode) => {
-        if (node.type === 'camp') return { name: '营地', desc: '扎营修整，恢复血气与部分伤兵', color: 'text-emerald-400' };
-        if (node.type === 'armory') {
-            const r = (node as any).rewardOptions[0];
-            return { name: '武备库', desc: `可获得 ${r.type==='iron'?'铁锭':'陨铁'}x${r.amount}`, color: 'text-violet-400' };
-        }
-        if ((node.type === 'battle' || node.type === 'boss') && (node as any).enemies) {
-            const names = (node as any).enemies.map((eId: string) => ENEMY_TEMPLATES[eId]?.name || eId);
-            return { 
-                name: node.type === 'boss' ? 'BOSS' : '遭遇战', 
-                desc: names.join('、'), 
-                color: node.type === 'boss' ? 'text-red-400' : 'text-orange-400'
-            };
-        }
-        return { name: '', desc: '', color: '' };
-    };
+    }, [ruinsRun, heroes, addResources, healParty, updateRun, onBattleComplete]);
 
     const completedCount = ruinsRun.nodes.filter(n => n.completed).length;
     const totalCount = ruinsRun.nodes.length;
 
-    if (battleState && currentNode) {
-        const alivePlayers = battleState.playerUnits.filter(u => u.isAlive).length;
-        const aliveEnemies = battleState.enemyUnits.filter(u => u.isAlive).length;
-
-        return (
-            <div className="max-w-4xl mx-auto h-full flex flex-col animate-in fade-in duration-500 relative">
-                
-                <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                        <h3 className="font-serif text-base sm:text-lg text-slate-200 tracking-widest">
-                            第 {battleState.round} 回合
-                        </h3>
-                        <span className={cn(
-                            "text-[10px] font-mono px-2 py-0.5 rounded border",
-                            battleState.phase === 'player' 
-                                ? "text-cyan-400 bg-cyan-500/10 border-cyan-500/30" 
-                                : "text-red-400 bg-red-500/10 border-red-500/30"
-                        )}>
-                            {battleState.phase === 'player' ? '⚔️ 我方回合' : '🔥 敌方回合'}
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <span className="text-xs font-mono text-slate-400">
-                            敌方剩余: <span className="text-red-400 font-bold">{aliveEnemies}</span>
-                        </span>
-                        <button
-                            onClick={handleRetreat}
-                            disabled={enemyAnimating}
-                            className="text-[10px] font-mono text-slate-500 hover:text-slate-300 px-2 py-1 rounded border border-white/5 hover:border-white/20 transition-all disabled:opacity-30"
-                        >
-                            撤退
-                        </button>
-                    </div>
-                </div>
-
-                <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-4 sm:gap-6 lg:gap-10 py-2 sm:py-4 min-h-0">
-                    
-                    <div className="flex flex-col items-center gap-2 w-full lg:w-auto">
-                        <div className="text-[10px] font-mono text-cyan-400/80 tracking-wider mb-1">我方阵型</div>
-                        <BattleGrid
-                            units={battleState.playerUnits}
-                            side="player"
-                            battleState={battleState}
-                            selectedAttacker={battleState.selectedAttacker}
-                            onUnitClick={handleBattleUnitClick}
-                        />
-                    </div>
-
-                    <div className="hidden lg:flex flex-col items-center gap-2 px-4">
-                        <div className="text-2xl font-serif text-slate-500">⚔️</div>
-                        <div className="text-sm font-serif text-slate-600">VS</div>
-                        <div className="w-px h-16 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
-                    </div>
-
-                    <div className="lg:hidden flex items-center gap-2 py-2">
-                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent"></div>
-                        <span className="text-xs font-serif text-slate-500">⚔️ VS ⚔️</span>
-                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-red-500/30 to-transparent"></div>
-                    </div>
-
-                    <div className="flex flex-col items-center gap-2 w-full lg:w-auto">
-                        <div className="text-[10px] font-mono text-red-400/80 tracking-wider mb-1">敌方阵型</div>
-                        <BattleGrid
-                            units={battleState.enemyUnits}
-                            side="enemy"
-                            battleState={battleState}
-                            selectedAttacker={battleState.selectedAttacker}
-                            onUnitClick={handleBattleUnitClick}
-                        />
-                    </div>
-                </div>
-
-                <div className="mt-2 sm:mt-3 bg-black/40 backdrop-blur-sm border border-white/5 rounded-xl p-2 sm:p-3 max-h-[120px] sm:max-h-[150px] overflow-y-auto">
-                    <div className="space-y-1">
-                        {battleState.logs.slice(-20).map((log, idx) => (
-                            <div 
-                                key={idx} 
-                                className={cn(
-                                    "text-[10px] sm:text-xs font-mono leading-relaxed animate-in fade-in duration-200",
-                                    log.includes('💀') ? 'text-red-400' :
-                                    log.includes('击破') ? 'text-amber-400' :
-                                    log.includes('胜利') ? 'text-emerald-400' :
-                                    log.includes('失败') ? 'text-red-500' :
-                                    log.includes('---') ? 'text-slate-600' :
-                                    'text-slate-400'
-                                )}
-                            >
-                                {log}
-                            </div>
-                        ))}
-                        <div ref={logsEndRef} />
-                    </div>
-                </div>
-
-                <div className="mt-3 sm:mt-4 flex items-center justify-between gap-3">
-                    <div className="text-[9px] font-mono text-slate-600">
-                        存活: <span className="text-cyan-400">{alivePlayers}</span> / {battleState.playerUnits.length}
-                    </div>
-                    
-                    {battleState.phase === 'player' && !enemyAnimating && (
-                        <button
-                            onClick={handleEndTurn}
-                            className={cn(
-                                "px-4 sm:px-6 py-2 rounded-xl font-serif text-sm transition-all",
-                                "border border-amber-500/30 bg-amber-500/10 text-amber-400",
-                                "hover:bg-amber-500/20 hover:border-amber-500/50 hover:shadow-[0_0_15px_rgba(245,158,11,0.2)]",
-                                "active:scale-95"
-                            )}
-                        >
-                            结束回合 →
-                        </button>
-                    )}
-
-                    {(battleState.phase === 'enemy' || enemyAnimating) && (
-                        <div className="px-4 sm:px-6 py-2 rounded-xl font-serif text-sm border border-red-500/30 bg-red-500/10 text-red-400 animate-pulse">
-                            敌方行动中...
-                        </div>
-                    )}
-
-                    {showVictory && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-30 animate-in fade-in duration-300">
-                            <div className="text-center animate-in zoom-in-95 duration-500">
-                                <div className="text-4xl sm:text-5xl font-serif text-emerald-400 mb-2">
-                                    {battleState.victory === true ? '🏆 战斗胜利！' : '💀 战斗失败...'}
-                                </div>
-                                <div className="text-sm text-slate-400 font-mono">结算中...</div>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="text-[9px] font-mono text-slate-600">
-                        回合: {battleState.round}
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    const getEnemyNodesForPosition = (rowIdx: number, colIdx: number): RuinsNode[] => {
+        const rowNodes = ruinsRun.nodes.filter(n => {
+            if (rowIdx === 0) return n.id.includes('r0-');
+            if (rowIdx === 1) return n.id.includes('r1-');
+            return n.type === 'boss';
+        });
+        return rowNodes.filter((_, i) => i % 3 === colIdx);
+    };
 
     return (
-        <div className="max-w-3xl mx-auto h-full flex flex-col animate-in fade-in duration-500 relative">
+        <div className="max-w-4xl mx-auto h-full flex flex-col animate-in fade-in duration-500 relative">
 
-            <div className="flex items-center justify-between mb-3 sm:mb-5 lg:mb-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4 lg:mb-6">
                 <div className="flex items-center gap-2 sm:gap-3">
                     <h3 className="font-serif text-lg sm:text-xl lg:text-2xl text-slate-200 tracking-widest">第 {ruinsRun.currentFloor} 阵</h3>
                     <span className="text-[10px] font-mono text-slate-600 bg-white/5 px-1.5 sm:px-2 py-0.5 rounded border border-white/5">
@@ -481,52 +217,57 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                 </div>
             </div>
 
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 sm:gap-5 lg:gap-10 py-2 sm:py-4 lg:py-6 relative overflow-hidden">
-                
-                <div className="flex justify-center gap-4 lg:gap-8">
-                    {ruinsRun.nodes.filter(n => n.id.includes('r0-')).map(n => (
-                        <NodeButton key={n.id} node={n} hovered={hoveredNode?.id === n.id} onHover={setHoveredNode} onClick={handleNodeClick} />
+            <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-3 sm:gap-4 lg:gap-8 py-2 sm:py-4 min-h-0">
+
+                <div className="flex flex-col items-center gap-1 sm:gap-1.5 w-full max-w-[220px] sm:max-w-[260px] lg:w-auto">
+                    <div className="text-[10px] font-mono text-cyan-400/70 tracking-wider mb-0.5">我方阵型</div>
+                    {ROWS.map(row => (
+                        <div key={row} className="flex gap-1 sm:gap-1.5 w-full">
+                            {COLS.map(col => {
+                                const posKey = `${row}-${col}` as PositionKey;
+                                const hId = ruinsRun.party[posKey];
+                                return <PartyCell key={posKey} heroId={hId} position={posKey} />;
+                            })}
+                        </div>
                     ))}
                 </div>
 
-                <div className="flex flex-col items-center gap-0">
-                    <div className="w-px h-4 lg:h-8 bg-gradient-to-b from-white/10 to-transparent"></div>
-                    <div className="w-px h-4 lg:h-8 bg-gradient-to-b from-transparent to-white/10"></div>
+                <div className="hidden lg:flex flex-col items-center gap-1 px-3 py-2">
+                    <div className="text-xl font-serif text-slate-600">⚔</div>
+                    <div className="text-xs font-serif text-slate-500 tracking-widest">对 峙</div>
+                    <div className="w-px h-12 bg-gradient-to-b from-transparent via-white/15 to-transparent"></div>
                 </div>
 
-                <div className="flex justify-center gap-4 lg:gap-8">
-                    {ruinsRun.nodes.filter(n => n.id.includes('r1-')).map(n => (
-                        <NodeButton key={n.id} node={n} hovered={hoveredNode?.id === n.id} onHover={setHoveredNode} onClick={handleNodeClick} />
+                <div className="lg:hidden flex items-center gap-2 py-1.5 w-full max-w-[260px] mx-auto">
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500/25 to-transparent"></div>
+                    <span className="text-[10px] font-serif text-slate-500 tracking-wider">⚔ 对峙 ⚔</span>
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-red-500/25 to-transparent"></div>
+                </div>
+
+                <div className="flex flex-col items-center gap-1 sm:gap-1.5 w-full max-w-[220px] sm:max-w-[260px] lg:w-auto">
+                    <div className="text-[10px] font-mono text-red-400/70 tracking-wider mb-0.5">敌方阵型</div>
+                    {ROWS.map((row, rowIdx) => (
+                        <div key={row} className="flex gap-1 sm:gap-1.5 w-full">
+                            {COLS.map((_, colIdx) => {
+                                const nodes = getEnemyNodesForPosition(rowIdx, colIdx);
+                                const node = nodes[0];
+                                if (!node) {
+                                    return <div key={`${row}-${colIdx}`} className="w-full aspect-square rounded-xl border border-dashed border-white/5 bg-white/[0.01]" />;
+                                }
+                                return (
+                                    <EnemyNodeCell
+                                        key={node.id}
+                                        node={node}
+                                        onClick={() => handleNodeClick(node)}
+                                        isHovered={hoveredNodeId === node.id}
+                                        onHover={() => setHoveredNodeId(node.id)}
+                                        onLeave={() => setHoveredNodeId(null)}
+                                    />
+                                );
+                            })}
+                        </div>
                     ))}
                 </div>
-
-                <div className="flex flex-col items-center gap-0">
-                    <div className="w-px h-4 lg:h-8 bg-gradient-to-b from-white/10 to-transparent"></div>
-                    <div className="w-px h-4 lg:h-8 bg-gradient-to-b from-transparent to-white/10"></div>
-                </div>
-
-                <div className="flex justify-center">
-                    {ruinsRun.nodes.filter(n => n.type === 'boss').map(n => (
-                        <NodeButton key={n.id} node={n} hovered={hoveredNode?.id === n.id} onHover={setHoveredNode} onClick={handleNodeClick} />
-                    ))}
-                </div>
-
-                {hoveredNode && !hoveredNode.completed && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 sm:top-4 sm:right-0 sm:left-auto sm:translate-x-0 sm:mt-0 w-48 lg:w-56 bg-black/90 backdrop-blur-md border border-white/10 rounded-xl p-3 sm:p-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200 z-20 sm:max-w-[200px]">
-                        {(() => {
-                            const info = getNodeLabel(hoveredNode);
-                            return (
-                                <>
-                                    <div className={cn("font-serif font-bold text-sm mb-1", info.color)}>{info.name}</div>
-                                    <div className="text-xs text-slate-400 leading-relaxed">{info.desc}</div>
-                                    {hoveredNode.revealed && (
-                                        <div className="mt-2 text-[10px] font-mono text-cyan-400/80">点击进入</div>
-                                    )}
-                                </>
-                            );
-                        })()}
-                    </div>
-                )}
             </div>
 
             <div className="mt-auto pt-3 sm:pt-4 border-t border-white/5 bg-black/30 rounded-xl p-2.5 sm:p-3 lg:p-4 backdrop-blur-sm">
