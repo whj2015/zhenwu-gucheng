@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { GameState, HeroState, CraftingTask, Equipment, PositionKey, WOUNDED_NATURAL_RECOVER_RATE, getWarehouseResourceCap, QuestState, CraftingState } from './types';
+import { GameState, HeroState, CraftingTask, Equipment, PositionKey, WOUNDED_NATURAL_RECOVER_RATE, getWarehouseResourceCap, QuestState, CraftingState, RuinsNode } from './types';
 import { HERO_TEMPLATES, FORGE_UPGRADE_COSTS, CRAFTING_TEMPLATES, QUEST_TEMPLATES } from './data';
 import { generateId } from './utils';
 import { 
@@ -346,7 +346,9 @@ export const useGameStore = create<GameState & {
               nodes: nodes,
               party,
               status: 'in_progress',
-              currentNodeId: null
+              currentNodeId: null,
+              grid: null as (RuinsNode | null)[] | null,
+              fogStates: null as string[] | null
           }
       })),
 
@@ -608,39 +610,62 @@ export const useGameStore = create<GameState & {
           let newActiveDailyIds = qs.activeDailyIds || [];
           let newActiveWeeklyIds = qs.activeWeeklyIds || [];
 
+          // Initialize daily quests if empty (first-time or after reset)
+          if (newActiveDailyIds.length === 0) {
+              newActiveDailyIds = Array.from(generateDailyQuests(QUEST_TEMPLATES, 6).keys());
+              newActiveDailyIds.forEach((id) => {
+                  const template = QUEST_TEMPLATES[id];
+                  if (!template) return;
+                  if (template.requireType !== 'resource') {
+                      newProgress[id] = 0;
+                      newAcceptedIds.push(id);
+                  }
+              });
+              if (!newLastDailyReset) newLastDailyReset = now;
+          }
+
           // Check daily reset
           if (now - qs.lastDailyReset >= dayMs) {
               newDailyIds = [];
               newProgress = {};
               newAcceptedIds = [];
               newLastDailyReset = now;
-              
-              // Generate random daily quests (pick 6 from pool)
+
               const dailyPool = generateDailyQuests(QUEST_TEMPLATES, 6);
               newActiveDailyIds = Array.from(dailyPool.keys());
-              
-              // Initialize progress for action-based quests
+
               dailyPool.forEach((template, id) => {
                   if (template.requireType !== 'resource') {
                       newProgress[id] = 0;
                   }
-                  // Auto-accept non-resource quests
                   if (template.requireType !== 'resource') {
                       newAcceptedIds.push(id);
                   }
               });
           }
 
+          // Initialize weekly quests if empty (first-time or after reset)
+          if (newActiveWeeklyIds.length === 0) {
+              newActiveWeeklyIds = Array.from(generateWeeklyQuests(QUEST_TEMPLATES, 3).keys());
+              newActiveWeeklyIds.forEach((id) => {
+                  const template = QUEST_TEMPLATES[id];
+                  if (!template) return;
+                  if (template.requireType !== 'resource') {
+                      newProgress[id] = 0;
+                      newAcceptedIds.push(id);
+                  }
+              });
+              if (!newLastWeeklyReset) newLastWeeklyReset = now;
+          }
+
           // Check weekly reset
           if (now - qs.lastWeeklyReset >= weekMs) {
               newWeeklyIds = [];
               newLastWeeklyReset = now;
-              
-              // Generate random weekly quests (pick 2-3 from pool)
+
               const weeklyPool = generateWeeklyQuests(QUEST_TEMPLATES, 3);
               newActiveWeeklyIds = Array.from(weeklyPool.keys());
-              
-              // Initialize progress and auto-accept
+
               weeklyPool.forEach((template, id) => {
                   if (template.requireType !== 'resource') {
                       newProgress[id] = 0;
@@ -659,7 +684,7 @@ export const useGameStore = create<GameState & {
                   progress: newProgress,
                   acceptedIds: newAcceptedIds,
                   activeDailyIds: newActiveDailyIds,
-                  activeWeeklyIds: newActiveWeekIds
+                  activeWeeklyIds: newActiveWeeklyIds
               }
           };
       }),

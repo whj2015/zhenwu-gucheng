@@ -16,6 +16,8 @@ export type SkillEffect =
     | { type: 'dodge'; trigger: 'position'; targetPositions: string[]; dodgeChance: number; desc: string }
     | { type: 'iron_will'; maxHpBonus: number; damageCap: number; desc: string };
 
+export type HeroTrait = 'assault' | 'flank' | 'tank' | 'support' | 'ranged';
+
 export interface HeroTemplate {
     name: string;
     quality: string;
@@ -24,6 +26,8 @@ export interface HeroTemplate {
     skillName: string;
     desc: string;
     skillEffect?: SkillEffect;
+    trait: HeroTrait;
+    traitDesc: string;
 }
 
 export type EnemyAbility =
@@ -42,6 +46,7 @@ export interface EnemyTemplate {
     agility: number;
     desc: string;
     ability?: EnemyAbility;
+    enemyRow?: 'front' | 'middle' | 'back';
 }
 
 export interface MissionDef {
@@ -112,3 +117,29 @@ export const QUEST_TEMPLATE_POOL = questsRaw.templates as unknown as Record<stri
 export const POSITION_CONFIG: Record<string, PositionDef> = positionsRaw.positions;
 
 export const MAX_DEPLOY_COUNT: number = positionsRaw.maxDeployCount;
+
+export type BattleRow = 'front' | 'middle' | 'back';
+
+export interface BattleUnit {
+    id: string;
+    name: string;
+    side: 'player' | 'enemy';
+    hp: number;
+    maxHp: number;
+    row: BattleRow;
+    col: number;
+    templateId?: string;
+    isAlive: boolean;
+}
+
+export interface BattleState {
+    round: number;
+    phase: 'player' | 'enemy' | 'ended';
+    playerUnits: BattleUnit[];
+    enemyUnits: BattleUnit[];
+    selectedAttacker: string | null;
+    selectedTarget: string | null;
+    logs: string[];
+    victory: boolean | null;
+    playerAttacksThisRound: Record<string, string>;
+}

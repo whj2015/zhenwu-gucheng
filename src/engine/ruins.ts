@@ -85,6 +85,7 @@ interface EnemyState {
     defense: number;
     agility: number;
     ability: any;
+    row: 'front' | 'middle' | 'back';
     isBerserked: boolean;
     furyCounter: number;
     isSummon: boolean;
@@ -161,6 +162,7 @@ export function simulateBattle(heroes: HeroState[], enemyDataList: any[], templa
         defense: e.defense,
         agility: e.agility,
         ability: e.ability || null,
+        row: (e.enemyRow || 'front') as 'front' | 'middle' | 'back',
         isBerserked: false,
         furyCounter: 0,
         isSummon: false,
@@ -312,7 +314,19 @@ export function simulateBattle(heroes: HeroState[], enemyDataList: any[], templa
            const aliveEnemies = getAliveEnemies();
            if (aliveEnemies.length === 0) break;
 
-           const targetIdx = enemyStates.findIndex(e => e.hp > 0);
+           const attackerTemplate = templateMap.get(ps.id);
+           const attackerTrait = (attackerTemplate as any)?.trait as string | undefined;
+           const canAttackBackRow = attackerTrait === 'flank' || attackerTrait === 'ranged';
+
+           const aliveFrontEnemies = aliveEnemies.filter(e => e.row === 'front');
+           let targetIdx: number;
+
+           if (canAttackBackRow || aliveFrontEnemies.length === 0) {
+               targetIdx = enemyStates.findIndex(e => e.hp > 0);
+           } else {
+               targetIdx = enemyStates.findIndex(e => e.hp > 0 && e.row === 'front');
+           }
+
            if (targetIdx === -1) continue;
 
            const targetEnemy = enemyStates[targetIdx];
@@ -377,6 +391,7 @@ export function simulateBattle(heroes: HeroState[], enemyDataList: any[], templa
                            defense: summonTpl.defense,
                            agility: summonTpl.agility,
                            ability: summonTpl.ability || null,
+                           row: (summonTpl as any).enemyRow || 'front',
                            isBerserked: false,
                            furyCounter: 0,
                            isSummon: true,
@@ -478,4 +493,202 @@ export function simulateBattle(heroes: HeroState[], enemyDataList: any[], templa
 
     logs.push('⏱️ 战斗超时...');
     return { victory: false, logs, remainingState: playerStates };
+}
+
+import { HERO_TEMPLATES } from '../data';
+import { BattleState, BattleUnit, BattleRow, HeroTrait } from '../data';
+
+export function initTacticalBattle(
+    heroes: { id: string; templateId: string; hp: number; troops: number; wounded: number; equipment: any }[],
+    enemyIds: string[],
+    party: Record<PositionKey, string | null>
+): BattleState {
+    const templateMap = new Map(heroes.map(h => [h.id, HERO_TEMPLATES[h.templateId]]));
+
+    const playerUnits: BattleUnit[] = [];
+    Object.entries(party).forEach(([posKey, heroId]) => {
+        if (!heroId) return;
+        const hero = heroes.find(h => h.id === heroId);
+        if (!hero || hero.hp <= 0) return;
+        const t = templateMap.get(heroId);
+        if (!t) return;
+
+        const [row, col] = posKey.split('-');
+        const colIdx = col === 'left' ? 0 : col === 'center' ? 1 : 2;
+
+        playerUnits.push({
+            id: heroId,
+            name: t.name,
+            side: 'player',
+            hp: hero.hp,
+            maxHp: t.attributes.physique * 10,
+            row: row as BattleRow,
+            col: colIdx,
+            templateId: heroId,
+            isAlive: true,
+        });
+    });
+
+    const enemyUnits: BattleUnit[] = [];
+    const rowCounts: Record<string, number> = { front: 0, middle: 0, back: 0 };
+
+    enemyIds.forEach((eId, idx) => {
+        const et = ENEMY_TEMPLATES[eId];
+        if (!et) return;
+
+        let row: BattleRow = et.enemyRow || 'front';
+        if (idx >= 3) row = 'middle';
+        if (idx >= 5) row = 'back';
+
+        const colIdx = rowCounts[row] % 3;
+        rowCounts[row]++;
+
+        enemyUnits.push({
+            id: eId,
+            name: et.name,
+            side: 'enemy',
+            hp: et.hp,
+            maxHp: et.hp,
+            row,
+            col: colIdx,
+            templateId: eId,
+            isAlive: true,
+        });
+    });
+
+    return {
+        round: 1,
+        phase: 'player',
+        playerUnits,
+        enemyUnits,
+        selectedAttacker: null,
+        selectedTarget: null,
+        logs: ['⚔️ 战斗开始！选择你的攻击目标'],
+        victory: null,
+        playerAttacksThisRound: {},
+    };
+}
+
+export function canTarget(
+    attackerId: string,
+    targetId: string,
+    battleState: BattleState
+): { can: boolean; reason?: string } {
+    const attacker = battleState.playerUnits.find(u => u.id === attackerId && u.isAlive);
+    const target = battleState.enemyUnits.find(u => u.id === targetId && u.isAlive);
+    if (!attacker || !target) return { can: false, reason: '无效目标' };
+
+    const t = HERO_TEMPLATES[attacker.templateId || ''];
+    const trait = t?.trait as HeroTrait | undefined;
+
+    if (trait === 'flank' || trait === 'ranged') return { can: true };
+
+    const aliveFrontEnemies = battleState.enemyUnits.filter(u => u.isAlive && u.row === 'front');
+    if (aliveFrontEnemies.length > 0 && target.row !== 'front') {
+        return { can: false, reason: '前方仍有敌人阻挡，无法攻击后排' };
+    }
+
+    return { can: true };
+}
+
+export function executePlayerAttack(battleState: BattleState): BattleState {
+    const { selectedAttacker, selectedTarget, playerUnits, enemyUnits } = battleState;
+    if (!selectedAttacker || !selectedTarget) return battleState;
+
+    const attacker = playerUnits.find(u => u.id === selectedAttacker && u.isAlive);
+    const target = enemyUnits.find(u => u.id === selectedTarget && u.isAlive);
+    if (!attacker || !target) return battleState;
+
+    const check = canTarget(selectedAttacker, selectedTarget, battleState);
+    if (!check.can) {
+        return { ...battleState, logs: [...battleState.logs, `⚠️ ${check.reason}`] };
+    }
+
+    const t = HERO_TEMPLATES[attacker.templateId || ''];
+    const baseAtk = t?.attributes.force || 10;
+    const et = ENEMY_TEMPLATES[target.templateId || ''];
+    const defense = et?.defense || 5;
+
+    let dmg = Math.max(1, Math.floor(baseAtk - defense * 0.5 + (Math.random() * baseAtk * 0.3)));
+
+    const trait = t?.trait as HeroTrait | undefined;
+    if (trait === 'assault') dmg = Math.floor(dmg * 1.15);
+    if (trait === 'tank') dmg = Math.floor(dmg * 0.8);
+    if (trait === 'support') dmg = Math.floor(dmg * 0.6);
+
+    const posMod = attacker.row === 'front' ? 1.15 : attacker.row === 'back' ? 0.9 : 1.0;
+    dmg = Math.floor(dmg * posMod);
+
+    target.hp -= dmg;
+    const targetKilled = target.hp <= 0;
+    if (targetKilled) target.isAlive = false;
+
+    const newLogs = [
+        ...battleState.logs,
+        `${attacker.name}[${attacker.row}排] → ${target.name}[${target.row}排]  -${dmg}HP${targetKilled ? ' 💀击破！' : ''}`
+    ];
+
+    const newAttacks = { ...battleState.playerAttacksThisRound, [selectedAttacker]: selectedTarget };
+
+    const enemiesAlive = enemyUnits.some(u => u.isAlive);
+    const newState: BattleState = {
+        ...battleState,
+        enemyUnits: [...enemyUnits],
+        logs: newLogs,
+        selectedAttacker: null,
+        selectedTarget: null,
+        playerAttacksThisRound: newAttacks,
+        victory: !enemiesAlive ? true : null,
+        phase: !enemiesAlive ? 'ended' : 'player',
+    };
+
+    return newState;
+}
+
+export function executeEnemyTurn(battleState: BattleState): BattleState {
+    let { playerUnits, enemyUnits, logs, round } = battleState;
+
+    let alivePlayers = playerUnits.filter(u => u.isAlive);
+    const aliveEnemies = enemyUnits.filter(u => u.isAlive);
+
+    const newLogs = [...logs];
+    newLogs.push(`--- 第 ${round} 回合 敌方反击 ---`);
+
+    for (const enemy of aliveEnemies) {
+        const et = ENEMY_TEMPLATES[enemy.templateId || ''];
+        if (!alivePlayers.length) break;
+
+        const aliveFrontPlayers = alivePlayers.filter(p => p.row === 'front');
+        let targets = aliveFrontPlayers.length > 0 ? aliveFrontPlayers : alivePlayers;
+
+        const target = targets[Math.floor(Math.random() * targets.length)];
+        const pt = HERO_TEMPLATES[target.templateId || ''];
+
+        const atk = et?.attack || 10;
+        const def = pt?.attributes.physique || 10;
+        let dmg = Math.max(1, Math.floor(atk - def * 0.3 + (Math.random() * atk * 0.2)));
+
+        target.hp -= dmg;
+        if (target.hp <= 0) target.isAlive = false;
+
+        alivePlayers = playerUnits.filter(u => u.isAlive);
+        newLogs.push(`${enemy.name} → ${target.name}  -${dmg}HP${target.hp <= 0 ? ' 💀' : ''}`);
+    }
+
+    const playersAlive = playerUnits.some(u => u.isAlive);
+    const enemiesAlive = enemyUnits.some(u => u.isAlive);
+
+    return {
+        ...battleState,
+        playerUnits: [...playerUnits],
+        logs: newLogs,
+        round: playersAlive && enemiesAlive ? round + 1 : round,
+        phase: (!playersAlive || !enemiesAlive) ? 'ended' as const : 'player' as const,
+        victory: !playersAlive ? false : !enemiesAlive ? true : null,
+        playerAttacksThisRound: {},
+    };
+}
+
+export function endPlayerPhase(battleState: BattleState): BattleState {
+    return { ...battleState, phase: 'enemy', selectedAttacker: null, selectedTarget: null };
 }

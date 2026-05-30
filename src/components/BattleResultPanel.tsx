@@ -185,7 +185,7 @@ export default function BattleResultPanel({
                     </button>
                 </div>
 
-                <div className="flex flex-col lg:flex-row h-[60vh] lg:h-[65vh]">
+                <div className="flex flex-col lg:flex-row h-[55vh] sm:h-[60vh] lg:h-[65vh]">
                     {/* Left: Battle Log */}
                     <div className="flex-1 flex flex-col lg:border-r border-white/5">
                         <div className="px-6 py-2.5 border-b border-white/5 flex items-center gap-2 shrink-0">

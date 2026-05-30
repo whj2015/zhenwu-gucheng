@@ -58,14 +58,14 @@ export default function MainUI() {
 
              {/* Desktop Sidebar — hidden on mobile */}
              <aside className="hidden lg:flex w-64 bg-black/60 border-r border-white/5 flex-col shrink-0 relative z-10 backdrop-blur-md flex-col">
-                <div className="p-6 border-b border-white/5 flex items-center gap-4">
-                     <div className="w-10 h-10 bg-orange-600/20 border border-orange-500/50 flex items-center justify-center rounded-sm rotate-45 shrink-0">
-                         <div className="-rotate-45 font-bold text-orange-500 text-xl font-serif">武</div>
+                <div className="p-5 sm:p-6 border-b border-white/5 flex items-center gap-3">
+                     <div className="w-9 h-9 sm:w-10 sm:h-10 bg-orange-600/20 border border-orange-500/50 flex items-center justify-center rounded-sm rotate-45 shrink-0">
+                         <div className="-rotate-45 font-bold text-orange-500 text-lg sm:text-xl font-serif">武</div>
                      </div>
-                     <div className="flex flex-col overflow-hidden">
-                         <span className="text-xs text-slate-500 uppercase tracking-widest font-bold">Zhenwu City</span>
-                         <span className="text-lg font-serif italic text-slate-200 tracking-tighter truncate">镇武孤城 {getVersionDisplay()}</span>
-                     </div>
+                     <div className="flex flex-col min-w-0">
+                        <span className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold leading-none">Zhenwu City</span>
+                        <span className="text-sm sm:text-base font-serif italic text-slate-200 tracking-wide leading-tight whitespace-nowrap">镇武孤城 {getVersionDisplay()}</span>
+                    </div>
                 </div>
                 <nav className="flex-1 px-4 py-8 space-y-3 overflow-y-auto">
                     {tabs.map((t) => {
@@ -109,7 +109,7 @@ export default function MainUI() {
                           <div className="lg:hidden w-7 h-7 sm:w-8 sm:h-8 bg-orange-600/20 border border-orange-500/50 flex items-center justify-center rounded-sm rotate-45 shrink-0">
                               <div className="-rotate-45 font-bold text-orange-500 text-xs sm:text-sm font-serif">武</div>
                           </div>
-                          <h2 className="text-sm sm:text-base lg:text-lg font-serif italic text-slate-200 tracking-tighter truncate">
+                          <h2 className="text-sm sm:text-base lg:text-lg font-serif italic text-slate-200 tracking-tight sm:tracking-tight leading-tight">
                               {tabs.find(t => t.id === activeTab)?.label}
                           </h2>
                       </div>
@@ -234,7 +234,7 @@ function TopResourceBar() {
     const woodRate = Math.floor(woodLvl * 1.5 * 60);
 
     return (
-        <div className="grid grid-cols-3 gap-1 sm:gap-2 lg:flex lg:gap-6 lg:overflow-visible py-0.5">
+        <div className="flex items-center gap-1 sm:gap-2 lg:gap-6 lg:overflow-visible overflow-x-auto">
             <ResourceItem label="人口" value={`${pop}/${maxPop}`} color="text-indigo-200" dotColor="bg-indigo-500" icon="👤" />
             <ResourceItem label="粮草" value={resources.food} color="text-emerald-200" dotColor="bg-emerald-500" sub={`+${foodRate}/m`} icon="🌾" />
             <ResourceItem label="木材" value={resources.wood} color="text-orange-200" dotColor="bg-orange-700" sub={`+${woodRate}/m`} icon="🪵" />
@@ -254,15 +254,16 @@ function ResourceItem({ label, value, color, dotColor, sub, icon }: {
     icon: string;
 }) {
     return (
-        <div className="flex flex-col items-center sm:items-end whitespace-nowrap px-0.5 sm:px-2">
+        <div className="flex items-center gap-0.5 sm:gap-1.5 sm:flex-col sm:items-end whitespace-nowrap shrink-0">
              <div className="flex items-center gap-0.5 sm:gap-1.5">
-                 <span className="text-[10px] sm:text-xs hidden sm:inline">{icon}</span>
-                 <div className={cn("w-1 h-1 sm:w-1.5 sm:h-1.5 lg:w-2 lg:h-2 rounded-full", dotColor)}></div>
+                 <span className="text-[10px] hidden sm:inline">{icon}</span>
+                 <div className={cn("w-1.5 h-1.5 sm:w-1 sm:h-1.5 lg:w-2 lg:h-2 rounded-full shrink-0", dotColor)}></div>
                  <span className={cn("font-mono text-[9px] sm:text-xs", color)}>
                      {typeof value === 'number' ? Math.floor(value).toLocaleString() : value}
                  </span>
+                 <span className="text-[7px] text-slate-500 sm:hidden">{label}</span>
              </div>
-             <span className="text-[7px] sm:text-[8px] lg:text-[10px] text-slate-500 mt-px">{label}</span>
+             <span className="text-[8px] lg:text-[10px] text-slate-500 hidden sm:inline">{label}</span>
              {sub && <span className="text-[6px] sm:text-[7px] text-slate-600 leading-none hidden lg:block">{sub}</span>}
         </div>
     );
