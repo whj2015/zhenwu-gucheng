@@ -1,5 +1,5 @@
 /* Extracted from GatePanel.tsx - MapExploreView - Fog of War Edition */
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useGameStore } from '../../store';
 import { simulateBattle } from '../../engine/ruins';
 import { HERO_TEMPLATES, ENEMY_TEMPLATES, POSITION_CONFIG } from '../../data';
@@ -212,9 +212,9 @@ function ReadyCell({ node, onClick, isHovered, onHover, onLeave }: {
             isHovered ? cn(st.hover, "scale-110 z-10") : ("hover:" + st.hover)
         )}>
             <span className="text-base sm:text-lg leading-none mb-0.5">{info.icon}</span>
-            {(node.type === 'battle' || node.type === 'boss') && (node as any).enemies && (
+            {(node.type === 'battle' || node.type === 'boss') ? ((node as any).enemies ? (
                 <span className="text-[8px] font-mono text-slate-500 leading-none">x{(node as any).enemies.length}</span>
-            )}
+            ) : null) : null}
             {isHovered && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-black/95 backdrop-blur-md border border-white/10 rounded-lg p-2 z-30 animate-in fade-in zoom-in-95 duration-150 shadow-xl">
                     <div className={cn("font-serif text-xs font-bold mb-0.5", info.color)}>{info.name}</div>

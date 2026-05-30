@@ -13,6 +13,30 @@ import {
     type QuestType 
 } from './utils/questEngine';
 
+const pendingWrites = new Map<string, ReturnType<typeof setTimeout>>();
+
+function createDebouncedSetItem(debounceMs: number = 1000) {
+  return (name: string, value: string): void => {
+    try {
+      const existingTimer = pendingWrites.get(name);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+      }
+
+      const timer = setTimeout(() => {
+        localStorage.setItem(name, value);
+        pendingWrites.delete(name);
+      }, debounceMs);
+
+      pendingWrites.set(name, timer);
+    } catch (e) {
+      console.warn('localStorage is not available, state will not persist.');
+    }
+  };
+}
+
+const debouncedSetItem = createDebouncedSetItem(1000);
+
 const safeStorage = {
   getItem: (name: string): string | null => {
     try {
@@ -21,17 +45,23 @@ const safeStorage = {
       return null;
     }
   },
-  setItem: (name: string, value: string): void => {
-    try {
-      localStorage.setItem(name, value);
-    } catch (e) {
-      console.warn('localStorage is not available, state will not persist.');
-    }
-  },
+  setItem: debouncedSetItem,
   removeItem: (name: string): void => {
     try {
+      const existingTimer = pendingWrites.get(name);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+        pendingWrites.delete(name);
+      }
       localStorage.removeItem(name);
     } catch (e) {}
+  },
+  
+  flushAll(): void {
+    pendingWrites.forEach((timer) => {
+      clearTimeout(timer);
+    });
+    pendingWrites.clear();
   }
 };
 

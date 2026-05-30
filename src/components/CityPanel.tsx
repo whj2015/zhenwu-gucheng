@@ -1,9 +1,17 @@
 import { useGameStore } from '../store';
+import { shallow } from 'zustand/shallow';
 import { Coins, Users, Home, Wheat, Axe, ArrowUpCircle } from 'lucide-react';
 import { cn } from '../utils';
 
 export default function CityPanel() {
-    const { resources, buildings, upgradeBuilding } = useGameStore();
+    const { resources, buildings, upgradeBuilding } = useGameStore(
+        (state) => ({
+            resources: state.resources,
+            buildings: state.buildings,
+            upgradeBuilding: state.upgradeBuilding,
+        }),
+        shallow
+    );
 
     const houseLvl = buildings.houseLevel;
     const farmLvl = buildings.farmLevel;

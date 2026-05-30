@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useGameStore } from '../store';
 import { generateFloor } from '../engine/ruins';
 import { MISSIONS } from '../data';

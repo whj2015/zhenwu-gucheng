@@ -1,5 +1,4 @@
 /* Extracted from HeroesPanel.tsx - HeroDetail */
-import React from 'react';
 import { useGameStore } from '../../store';
 import { HERO_TEMPLATES } from '../../data';
 import { Shield, Sword } from 'lucide-react';
