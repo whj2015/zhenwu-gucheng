@@ -109,7 +109,7 @@ export default function MainUI() {
                           <div className="lg:hidden w-7 h-7 sm:w-8 sm:h-8 bg-orange-600/20 border border-orange-500/50 flex items-center justify-center rounded-sm rotate-45 shrink-0">
                               <div className="-rotate-45 font-bold text-orange-500 text-xs sm:text-sm font-serif">武</div>
                           </div>
-                          <h2 className="text-sm sm:text-base lg:text-lg font-serif italic text-slate-200 tracking-tighter truncate">
+                          <h2 className="text-sm sm:text-base lg:text-lg font-serif italic text-slate-200 tracking-tight sm:tracking-tight leading-tight">
                               {tabs.find(t => t.id === activeTab)?.label}
                           </h2>
                       </div>
