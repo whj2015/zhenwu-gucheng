@@ -105,9 +105,9 @@ export const CRAFTING_TEMPLATES: Record<string, CraftingDef> = craftingRaw.craft
 
 export const FORGE_UPGRADE_COSTS: Record<string, { bingxiang: number; meteorite: number }> = craftingRaw.forgeUpgradeCosts;
 
-export const STATIC_QUESTS: Record<string, QuestTemplate> = questsRaw.quests as unknown as Record<string, QuestTemplate>;
+export const QUEST_TEMPLATES: Record<string, QuestTemplate> = questsRaw.templates as unknown as Record<string, QuestTemplate>;
 
-export const QUEST_TEMPLATES: Record<string, QuestTemplate> = questsRaw.quests as unknown as Record<string, QuestTemplate>;
+export const QUEST_TEMPLATE_POOL = questsRaw.templates as unknown as Record<string, QuestTemplate>;
 
 export const POSITION_CONFIG: Record<string, PositionDef> = positionsRaw.positions;
 

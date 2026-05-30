@@ -4,6 +4,7 @@ import { QUEST_TEMPLATES } from '../../data';
 import type { QuestTemplate } from '../../data';
 import { cn } from '../../utils';
 import { ScrollText, Clock, Trophy, CheckCircle2, RotateCcw, Target, Hand } from 'lucide-react';
+import { QUEST_TYPE_CONFIG } from '../../utils/questEngine';
 
 const DIFFICULTY_COLORS: Record<number, string> = {
     1: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
@@ -43,18 +44,32 @@ export default function BoardView() {
         checkAndRefreshQuests();
     }, []);
 
-    const dailyQuests = Object.entries(QUEST_TEMPLATES)
-        .filter(([, q]) => q.category === 'daily')
-        .sort((a, b) => a[1].difficulty - b[1].difficulty);
+    // Get active quests (randomly selected)
+    const getActiveDailyQuests = (): [string, QuestTemplate][] => {
+        const activeIds = questState.activeDailyIds || [];
+        return activeIds
+            .map(id => [id, QUEST_TEMPLATES[id]])
+            .filter(([, t]) => t !== undefined)
+            .sort((a, b) => a[1].difficulty - b[1].difficulty);
+    };
 
-    const weeklyQuests = Object.entries(QUEST_TEMPLATES)
-        .filter(([, q]) => q.category === 'weekly')
-        .sort((a, b) => a[1].difficulty - b[1].difficulty);
+    const getActiveWeeklyQuests = (): [string, QuestTemplate][] => {
+        const activeIds = questState.activeWeeklyIds || [];
+        return activeIds
+            .map(id => [id, QUEST_TEMPLATES[id]])
+            .filter(([, t]) => t !== undefined)
+            .sort((a, b) => a[1].difficulty - b[1].difficulty);
+    };
 
-    const getQuestProgress = (questId: string, template: QuestTemplate) => {
+    const dailyQuests = getActiveDailyQuests();
+    const weeklyQuests = getActiveWeeklyQuests();
+
+    const getQuestProgressInfo = (questId: string, template: QuestTemplate) => {
         if (template.requireType === 'resource' && template.resourceKey) {
+            // Resource quests: read from inventory in real-time
             return resources[template.resourceKey as keyof typeof resources] || 0;
         }
+        // Action quests: read from accumulated progress
         return questState.progress[questId] || 0;
     };
 
@@ -65,8 +80,9 @@ export default function BoardView() {
         
         const isAccepted = questState.acceptedIds?.includes(questId) || false;
         const isResourceQuest = template.requireType === 'resource';
+        const typeConfig = QUEST_TYPE_CONFIG[template.requireType as keyof typeof QUEST_TYPE_CONFIG];
         
-        const progress = getQuestProgress(questId, template);
+        const progress = getQuestProgressInfo(questId, template);
         const canTurnIn = !isCompleted && (isResourceQuest || isAccepted) && progress >= template.amount;
         const progressPct = Math.min(100, (progress / template.amount) * 100);
 
@@ -99,6 +115,21 @@ export default function BoardView() {
                 </div>
 
                 <p className="text-[11px] sm:text-xs text-slate-500 mb-2.5 sm:mb-3 leading-relaxed pr-6">{template.description}</p>
+                
+                {/* Type indicator */}
+                <div className="mb-2.5 sm:mb-3 flex items-center gap-1.5 text-[9px] sm:text-[10px]">
+                    <span className="px-1.5 py-0.5 bg-slate-700/30 rounded text-slate-300 font-mono">
+                        {typeConfig?.label || template.requireType}
+                    </span>
+                    {isResourceQuest && template.resourceKey && (
+                        <span className="text-slate-500">
+                            ({RESOURCE_LABELS[template.resourceKey]})
+                        </span>
+                    )}
+                    {!isResourceQuest && typeConfig?.needsAcceptance && !isAccepted && (
+                        <span className="text-orange-400 animate-pulse">需接取</span>
+                    )}
+                </div>
 
                 <div className="mb-2.5 sm:mb-3 relative z-10">
                     <div className="flex justify-between text-[9px] sm:text-[10px] font-mono mb-1">
@@ -111,7 +142,7 @@ export default function BoardView() {
                                 ? "text-emerald-400 font-bold"
                                 : "text-slate-500"
                         )}>
-                            {progress}/{template.amount}
+                            {Math.floor(progress)}/{template.amount}
                         </span>
                     </div>
                     <div className="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-white/5">
@@ -173,6 +204,7 @@ export default function BoardView() {
                     <ScrollText className="w-6 h-6 sm:w-7 sm:h-7 mr-2 text-indigo-400" /> 城中告示
                 </h2>
                 <p className="text-slate-500 text-[10px] sm:text-xs">每日任务自动刷新，每周任务周一重置</p>
+                <p className="text-slate-600 text-[8px] sm:text-[9px] mt-1">任务随机发布，每次可能不同</p>
             </div>
 
             <div className="mb-4 sm:mb-6">
@@ -180,11 +212,18 @@ export default function BoardView() {
                     <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400" />
                     <span className="text-xs sm:text-sm font-serif text-slate-300">每日委托</span>
                     <RotateCcw className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-slate-600 ml-auto" />
-                    <span className="text-[9px] sm:text-[10px] text-slate-600 font-mono">每日刷新</span>
+                    <span className="text-[9px] sm:text-[10px] text-slate-600 font-mono">每日随机刷新</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 lg:gap-4">
-                    {dailyQuests.map(renderQuestCard)}
-                </div>
+                
+                {dailyQuests.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 lg:gap-4">
+                        {dailyQuests.map(renderQuestCard)}
+                    </div>
+                ) : (
+                    <div className="text-center py-8 text-slate-600 text-sm">
+                        今日暂无委托，明日再来吧...
+                    </div>
+                )}
             </div>
 
             {weeklyQuests.length > 0 && (
@@ -193,13 +232,36 @@ export default function BoardView() {
                         <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400" />
                         <span className="text-xs sm:text-sm font-serif text-slate-300">每周挑战</span>
                         <RotateCcw className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-slate-600 ml-auto" />
-                        <span className="text-[9px] sm:text-[10px] text-slate-600 font-mono">周一刷新</span>
+                        <span className="text-[9px] sm:text-[10px] text-slate-600 font-mono">周一随机刷新</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 lg:gap-4">
                         {weeklyQuests.map(renderQuestCard)}
                     </div>
                 </div>
             )}
+
+            {/* Task Pool Info */}
+            <div className="mt-6 p-3 bg-black/40 border border-white/5 rounded-xl">
+                <h4 className="text-xs font-bold text-slate-400 mb-2">📋 任务池信息</h4>
+                <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500">
+                    <div>
+                        每日任务池：<span className="text-slate-300 font-mono">
+                            {Object.values(QUEST_TEMPLATES).filter(q => q.category === 'daily').length} 个模板
+                        </span>
+                    </div>
+                    <div>
+                        每周任务池：<span className="text-slate-300 font-mono">
+                            {Object.values(QUEST_TEMPLATES).filter(q => q.category === 'weekly').length} 个模板
+                        </span>
+                    </div>
+                    <div>
+                        当前每日任务：<span className="text-blue-400 font-mono">{dailyQuests.length}/6</span>
+                    </div>
+                    <div>
+                        当前每周任务：<span className="text-purple-400 font-mono">{weeklyQuests.length}/3</span>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

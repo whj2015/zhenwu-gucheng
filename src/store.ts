@@ -3,6 +3,15 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { GameState, HeroState, CraftingTask, Equipment, PositionKey, WOUNDED_NATURAL_RECOVER_RATE, getWarehouseResourceCap, QuestState, CraftingState } from './types';
 import { HERO_TEMPLATES, FORGE_UPGRADE_COSTS, CRAFTING_TEMPLATES, QUEST_TEMPLATES } from './data';
 import { generateId } from './utils';
+import { 
+    trackAction, 
+    getQuestProgress as engineGetProgress,
+    validateQuestTurnIn,
+    generateDailyQuests,
+    generateWeeklyQuests,
+    QUEST_TYPE_CONFIG,
+    type QuestType 
+} from './utils/questEngine';
 
 const safeStorage = {
   getItem: (name: string): string | null => {
@@ -64,7 +73,9 @@ const INITIAL_STATE: GameState = {
       lastDailyReset: Date.now(),
       lastWeeklyReset: Date.now(),
       progress: {},
-      acceptedIds: []
+      acceptedIds: [],
+      activeDailyIds: [],
+      activeWeeklyIds: []
   } as QuestState
 };
 
@@ -274,18 +285,7 @@ export const useGameStore = create<GameState & {
           maxDurability: 100
         };
         
-        const newProgress = { ...state.questState.progress };
-        Object.entries(QUEST_TEMPLATES)
-            .filter(([, q]) => q.requireType === 'craft')
-            .forEach(([qid]) => {
-                if (state.questState.completedDailyIds.includes(qid)) return;
-                if (state.questState.completedWeeklyIds.includes(qid)) return;
-                if (!state.questState.acceptedIds?.includes(qid)) return;
-                newProgress[qid] = Math.min(
-                    QUEST_TEMPLATES[qid].amount,
-                    (newProgress[qid] || 0) + 1
-                );
-            });
+        const newProgress = trackAction('craft', 1, state.questState, QUEST_TEMPLATES);
 
         return {
             crafting: {
@@ -413,18 +413,7 @@ export const useGameStore = create<GameState & {
         let actualCostFood = costFood * (actualAmount / amount);
         let actualCostBingxiang = costBingxiang * (actualAmount / amount);
         
-        const newProgress = { ...state.questState.progress };
-        Object.entries(QUEST_TEMPLATES)
-            .filter(([, q]) => q.requireType === 'recruit')
-            .forEach(([qid]) => {
-                if (state.questState.completedDailyIds.includes(qid)) return;
-                if (state.questState.completedWeeklyIds.includes(qid)) return;
-                if (!state.questState.acceptedIds?.includes(qid)) return;
-                newProgress[qid] = Math.min(
-                    QUEST_TEMPLATES[qid].amount,
-                    (newProgress[qid] || 0) + actualAmount
-                );
-            });
+        const newProgress = trackAction('recruit', actualAmount, state.questState, QUEST_TEMPLATES);
 
         return {
           resources: {
@@ -524,21 +513,9 @@ export const useGameStore = create<GameState & {
               }
           });
           
-          const newProgress = { ...state.questState.progress };
-          
-          if (won) {
-              Object.entries(QUEST_TEMPLATES)
-                  .filter(([, q]) => ['explore', 'boss_kill', 'deep_explore'].includes(q.requireType))
-                  .forEach(([qid]) => {
-                      if (state.questState.completedDailyIds.includes(qid)) return;
-                      if (state.questState.completedWeeklyIds.includes(qid)) return;
-                      if (!state.questState.acceptedIds?.includes(qid)) return;
-                      newProgress[qid] = Math.min(
-                          QUEST_TEMPLATES[qid].amount,
-                          (newProgress[qid] || 0) + 1
-                      );
-                  });
-          }
+          const newProgress = won 
+              ? trackAction('explore', 1, state.questState, QUEST_TEMPLATES)
+              : state.questState.progress;
           
           return { 
               heroes: newHeroes,
@@ -628,21 +605,48 @@ export const useGameStore = create<GameState & {
           let newLastWeeklyReset = qs.lastWeeklyReset;
           let newProgress = { ...qs.progress };
           let newAcceptedIds = qs.acceptedIds || [];
+          let newActiveDailyIds = qs.activeDailyIds || [];
+          let newActiveWeeklyIds = qs.activeWeeklyIds || [];
 
+          // Check daily reset
           if (now - qs.lastDailyReset >= dayMs) {
               newDailyIds = [];
               newProgress = {};
               newAcceptedIds = [];
               newLastDailyReset = now;
-              const dailyQuestIds = Object.entries(QUEST_TEMPLATES)
-                  .filter(([, q]) => q.category === 'daily')
-                  .map(([id]) => id);
-              dailyQuestIds.forEach(id => { newProgress[id] = 0; });
+              
+              // Generate random daily quests (pick 6 from pool)
+              const dailyPool = generateDailyQuests(QUEST_TEMPLATES, 6);
+              newActiveDailyIds = Array.from(dailyPool.keys());
+              
+              // Initialize progress for action-based quests
+              dailyPool.forEach((template, id) => {
+                  if (template.requireType !== 'resource') {
+                      newProgress[id] = 0;
+                  }
+                  // Auto-accept non-resource quests
+                  if (template.requireType !== 'resource') {
+                      newAcceptedIds.push(id);
+                  }
+              });
           }
 
+          // Check weekly reset
           if (now - qs.lastWeeklyReset >= weekMs) {
               newWeeklyIds = [];
               newLastWeeklyReset = now;
+              
+              // Generate random weekly quests (pick 2-3 from pool)
+              const weeklyPool = generateWeeklyQuests(QUEST_TEMPLATES, 3);
+              newActiveWeeklyIds = Array.from(weeklyPool.keys());
+              
+              // Initialize progress and auto-accept
+              weeklyPool.forEach((template, id) => {
+                  if (template.requireType !== 'resource') {
+                      newProgress[id] = 0;
+                      newAcceptedIds.push(id);
+                  }
+              });
           }
 
           return {
@@ -653,7 +657,9 @@ export const useGameStore = create<GameState & {
                   lastDailyReset: newLastDailyReset,
                   lastWeeklyReset: newLastWeeklyReset,
                   progress: newProgress,
-                  acceptedIds: newAcceptedIds
+                  acceptedIds: newAcceptedIds,
+                  activeDailyIds: newActiveDailyIds,
+                  activeWeeklyIds: newActiveWeekIds
               }
           };
       }),
@@ -683,41 +689,22 @@ export const useGameStore = create<GameState & {
               const template = QUEST_TEMPLATES[questId];
               if (!template) return state;
 
+              // Use engine to validate
+              const validation = validateQuestTurnIn(questId, template, state);
+              if (!validation.valid) return state;
+
+              // Process turn-in
               const qs = state.questState;
-              const isCompleted = qs.completedDailyIds.includes(questId) || qs.completedWeeklyIds.includes(questId);
-              if (isCompleted) return state;
-
-              let currentProgress: number;
-              const resourceCosts: Partial<GameState['resources']> = {};
-              
-              if (template.requireType === 'resource' && template.resourceKey) {
-                  currentProgress = state.resources[template.resourceKey as keyof GameState['resources']] || 0;
-                  if (currentProgress < template.amount) return state;
-                  
-                  resourceCosts[template.resourceKey as keyof GameState['resources']] = 
-                      (state.resources[template.resourceKey as keyof GameState['resources']] || 0) - template.amount;
-              } else {
-                  if (!qs.acceptedIds?.includes(questId)) return state;
-                  currentProgress = qs.progress[questId] || 0;
-                  if (currentProgress < template.amount) return state;
-              }
-
               const newCompletedIds = template.category === 'daily'
                   ? [...qs.completedDailyIds, questId]
                   : [...qs.completedWeeklyIds, questId];
-
-              const resourceGains: Partial<GameState['resources']> = {};
-              for (const [key, val] of Object.entries(template.rewards)) {
-                  resourceGains[key as keyof GameState['resources']] =
-                      (state.resources[key as keyof GameState['resources']] || 0) + val;
-              }
 
               success = true;
               return {
                   resources: { 
                       ...state.resources, 
-                      ...resourceGains,
-                      ...resourceCosts 
+                      ...(validation.resourceGains || {}),
+                      ...(validation.resourceCosts || {})
                   },
                   questState: {
                       ...qs,
