@@ -31,9 +31,29 @@ function PartyCell({ heroId, position }: { heroId: string | null; position: Posi
         );
     }
 
-    const t = HERO_TEMPLATES[heroId];
     const hero = useGameStore(s => s.heroes.find(h => h.id === heroId));
-    const hpRatio = hero ? Math.max(0, hero.hp / (t.attributes.physique * 10)) : 0;
+    if (!hero) {
+        return (
+            <div className="w-full aspect-square rounded-xl border border-dashed border-white/5 bg-white/[0.01] flex items-center justify-center">
+                <span className="text-[7px] font-mono text-slate-700">?</span>
+            </div>
+        );
+    }
+
+    const t = HERO_TEMPLATES[hero.templateId];
+    if (!t) {
+        return (
+            <div className="w-full aspect-square rounded-xl border border-white/10 bg-black/40 flex flex-col items-center justify-center p-1 sm:p-2">
+                <span className="text-[9px] sm:text-xs font-serif font-bold truncate w-full text-center text-slate-200">{hero.templateId}</span>
+                <div className="w-full h-1 sm:h-1.5 rounded-full bg-black/40 mt-0.5 overflow-hidden">
+                    <div className={cn("h-full", hero.hp > 0 ? "bg-emerald-500" : "bg-red-500")} style={{ width: `${Math.max(0, Math.min(100, Math.floor(hero.hp / 10)))}%` }} />
+                </div>
+                <span className="text-[7px] sm:text-[8px] font-mono text-emerald-300">{Math.max(0, Math.floor(hero.hp))}</span>
+            </div>
+        );
+    }
+
+    const hpRatio = Math.max(0, hero.hp / (t.attributes.physique * 10));
     const hpColor = hpRatio > 0.6 ? 'bg-emerald-500' : hpRatio > 0.3 ? 'bg-amber-500' : 'bg-red-500';
     const trait = t?.trait as HeroTrait | undefined;
     const traitStyle = trait ? TRAIT_COLORS[trait] : null;
@@ -52,7 +72,7 @@ function PartyCell({ heroId, position }: { heroId: string | null; position: Posi
                 <div className={cn("h-full transition-all", hpColor)} style={{ width: `${hpRatio * 100}%` }} />
             </div>
             <span className={cn("text-[7px] sm:text-[8px] font-mono", hpRatio > 0.6 ? "text-emerald-300" : hpRatio > 0.3 ? "text-amber-300" : "text-red-300")}>
-                {hero ? Math.max(0, Math.floor(hero.hp)) : '--'}
+                {Math.max(0, Math.floor(hero.hp))}
             </span>
         </div>
     );
