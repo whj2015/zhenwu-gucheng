@@ -41,6 +41,16 @@ function getNeighbors(pos: GridPos): GridPos[] {
     return out;
 }
 
+function isRowAccessible(pos: GridPos, states: CellState[]): boolean {
+    const row = Math.floor(pos / 3);
+    if (row === 0) return true;
+    for (let r = 0; r < row; r++) {
+        const hasOpen = states.slice(r * 3, r * 3 + 3).some(s => s !== 'fog');
+        if (!hasOpen) return false;
+    }
+    return true;
+}
+
 function distributeNodesToGrid(nodes: RuinsNode[]): (RuinsNode | null)[] {
     const grid: (RuinsNode | null)[] = Array(9).fill(null);
     const shuffled = [...nodes].sort(() => Math.random() - 0.5);
@@ -152,6 +162,18 @@ function DoneCell({ onClick }: { onClick: () => void }) {
         )}>
             <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
         </button>
+    );
+}
+
+function LockedCell() {
+    return (
+        <div className={cn(
+            CELL_SIZE,
+            "rounded-lg sm:rounded-xl border border-white/[0.04] bg-black/20",
+            "flex flex-col items-center justify-center cursor-not-allowed opacity-40 transition-all duration-200"
+        )}>
+            <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white/15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        </div>
     );
 }
 
@@ -280,6 +302,7 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
     const handleCellClick = useCallback((pos: GridPos) => {
         const state = cellStates[pos];
         if (state === 'fog') return;
+        if (!isRowAccessible(pos, cellStates)) return;
         if (state === 'ready') {
             const node = gridRef.current?.[pos];
             if (node) handleReadyNodeAction(pos, node);
@@ -293,6 +316,10 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
     const renderEnemyCell = useCallback((pos: GridPos): React.ReactNode => {
         const state = cellStates[pos];
         const node = gridRef.current?.[pos] ?? null;
+
+        if (state !== 'fog' && !isRowAccessible(pos, cellStates)) {
+            return <React.Fragment key={pos}><LockedCell /></React.Fragment>;
+        }
 
         switch (state) {
             case 'fog':
