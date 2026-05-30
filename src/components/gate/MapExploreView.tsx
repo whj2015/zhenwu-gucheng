@@ -132,15 +132,15 @@ function PartyCell({ heroId, position }: { heroId: string | null; position: Posi
     );
 }
 
-function FogCell({ onClick }: { onClick: () => void }) {
+function FogCell() {
     return (
-        <button type="button" onClick={onClick} className={cn(
+        <div className={cn(
             CELL_SIZE,
             "rounded-lg sm:rounded-xl border border-white/[0.08] bg-white/[0.04]",
-            "flex flex-col items-center justify-center cursor-pointer hover:border-white/20 hover:bg-white/[0.07] transition-all duration-200"
+            "flex flex-col items-center justify-center cursor-default transition-all duration-200"
         )}>
             <span className="text-base sm:text-lg font-bold text-white/25 select-none">?</span>
-        </button>
+        </div>
     );
 }
 
@@ -309,7 +309,7 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
 
         switch (state) {
             case 'fog':
-                return <React.Fragment key={pos}><FogCell onClick={() => handleCellClick(pos)} /></React.Fragment>;
+                return <React.Fragment key={pos}><FogCell /></React.Fragment>;
             case 'empty':
                 return <React.Fragment key={pos}><EmptyCell onClick={() => handleCellClick(pos)} /></React.Fragment>;
             case 'done':

@@ -85,6 +85,7 @@ interface EnemyState {
     defense: number;
     agility: number;
     ability: any;
+    row: 'front' | 'middle' | 'back';
     isBerserked: boolean;
     furyCounter: number;
     isSummon: boolean;
@@ -161,6 +162,7 @@ export function simulateBattle(heroes: HeroState[], enemyDataList: any[], templa
         defense: e.defense,
         agility: e.agility,
         ability: e.ability || null,
+        row: (e.enemyRow || 'front') as 'front' | 'middle' | 'back',
         isBerserked: false,
         furyCounter: 0,
         isSummon: false,
@@ -312,7 +314,19 @@ export function simulateBattle(heroes: HeroState[], enemyDataList: any[], templa
            const aliveEnemies = getAliveEnemies();
            if (aliveEnemies.length === 0) break;
 
-           const targetIdx = enemyStates.findIndex(e => e.hp > 0);
+           const attackerTemplate = templateMap.get(ps.id);
+           const attackerTrait = (attackerTemplate as any)?.trait as string | undefined;
+           const canAttackBackRow = attackerTrait === 'flank' || attackerTrait === 'ranged';
+
+           const aliveFrontEnemies = aliveEnemies.filter(e => e.row === 'front');
+           let targetIdx: number;
+
+           if (canAttackBackRow || aliveFrontEnemies.length === 0) {
+               targetIdx = enemyStates.findIndex(e => e.hp > 0);
+           } else {
+               targetIdx = enemyStates.findIndex(e => e.hp > 0 && e.row === 'front');
+           }
+
            if (targetIdx === -1) continue;
 
            const targetEnemy = enemyStates[targetIdx];
@@ -377,6 +391,7 @@ export function simulateBattle(heroes: HeroState[], enemyDataList: any[], templa
                            defense: summonTpl.defense,
                            agility: summonTpl.agility,
                            ability: summonTpl.ability || null,
+                           row: (summonTpl as any).enemyRow || 'front',
                            isBerserked: false,
                            furyCounter: 0,
                            isSummon: true,
