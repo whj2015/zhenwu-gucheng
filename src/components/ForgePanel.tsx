@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useGameStore } from '../store';
-import { shallow } from 'zustand/shallow';
 import { CRAFTING_TEMPLATES, FORGE_UPGRADE_COSTS } from '../data';
 import { Hammer, ArrowUpCircle, Clock, Sparkles, Shield, Sword, Crosshair, Star } from 'lucide-react';
 import { formatTime } from '../utils';
@@ -22,17 +21,12 @@ const QUALITY_COLORS: Record<string, string> = {
 };
 
 export default function ForgePanel() {
-    const { buildings, resources, startCrafting, claimCrafting, crafting, upgradeForge } = useGameStore(
-        (state) => ({
-            buildings: state.buildings,
-            resources: state.resources,
-            startCrafting: state.startCrafting,
-            claimCrafting: state.claimCrafting,
-            crafting: state.crafting,
-            upgradeForge: state.upgradeForge,
-        }),
-        shallow
-    );
+    const buildings = useGameStore((state) => state.buildings);
+    const resources = useGameStore((state) => state.resources);
+    const startCrafting = useGameStore((state) => state.startCrafting);
+    const claimCrafting = useGameStore((state) => state.claimCrafting);
+    const crafting = useGameStore((state) => state.crafting);
+    const upgradeForge = useGameStore((state) => state.upgradeForge);
     const lvl = buildings.forgeLevel;
     const upgradeCost = FORGE_UPGRADE_COSTS[(lvl + 1) as unknown as keyof typeof FORGE_UPGRADE_COSTS];
     const canUpgrade = upgradeCost && resources.bingxiang >= upgradeCost.bingxiang && resources.meteorite >= upgradeCost.meteorite;
@@ -122,13 +116,8 @@ export default function ForgePanel() {
 }
 
 function ActiveTask() {
-    const { crafting, claimCrafting } = useGameStore(
-        (state) => ({
-            crafting: state.crafting,
-            claimCrafting: state.claimCrafting,
-        }),
-        shallow
-    );
+    const crafting = useGameStore((state) => state.crafting);
+    const claimCrafting = useGameStore((state) => state.claimCrafting);
     const task = crafting.task;
     const [timeLeft, setTimeLeft] = useState(0);
 

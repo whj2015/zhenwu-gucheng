@@ -1,5 +1,4 @@
 import { useGameStore } from '../store';
-import { shallow } from 'zustand/shallow';
 import { cn } from '../utils';
 import { Store, ArrowUpCircle } from 'lucide-react';
 import { GameState } from '../types';
@@ -37,15 +36,10 @@ const MARKET_BENEFITS = [
 ];
 
 export default function MarketPanel() {
-    const { resources, tradeResource, buildings, upgradeBuilding } = useGameStore(
-        (state) => ({
-            resources: state.resources,
-            tradeResource: state.tradeResource,
-            buildings: state.buildings,
-            upgradeBuilding: state.upgradeBuilding,
-        }),
-        shallow
-    );
+    const resources = useGameStore((state) => state.resources);
+    const tradeResource = useGameStore((state) => state.tradeResource);
+    const buildings = useGameStore((state) => state.buildings);
+    const upgradeBuilding = useGameStore((state) => state.upgradeBuilding);
 
     const mktLvl = buildings.marketLevel || 1;
     const bonusRate = (mktLvl - 1) * 8;
