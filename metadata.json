@@ -1,0 +1,6 @@
+{
+  "name": "镇武孤城 (Zhenwu Lone City)",
+  "description": "架空历史高武世界模拟经营与放置挂机",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

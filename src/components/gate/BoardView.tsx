@@ -1,0 +1,183 @@
+import React, { useEffect } from 'react';
+import { useGameStore } from '../../store';
+import { QUEST_TEMPLATES } from '../../data';
+import type { QuestTemplate } from '../../data';
+import { cn } from '../../utils';
+import { ScrollText, Clock, Trophy, CheckCircle2, RotateCcw, Target } from 'lucide-react';
+
+const DIFFICULTY_COLORS: Record<number, string> = {
+    1: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    2: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
+    3: 'text-red-400 bg-red-500/10 border-red-500/20'
+};
+
+const DIFFICULTY_LABELS: Record<number, string> = {
+    1: '简易',
+    2: '困难',
+    3: '极难'
+};
+
+const CATEGORY_ICONS = {
+    daily: <Clock className="w-3.5 h-3.5" />,
+    weekly: <Trophy className="w-3.5 h-3.5" />
+};
+
+const REQUIRE_TYPE_LABELS: Record<string, string> = {
+    resource: '资源',
+    explore: '探索',
+    craft: '锻造',
+    recruit: '募兵',
+    boss_kill: '击杀BOSS',
+    deep_explore: '深层探索'
+};
+
+const RESOURCE_LABELS: Record<string, string> = {
+    bingxiang: '兵饷', iron: '铁锭', meteorite: '陨铁',
+    food: '粮草', wood: '木材', population: '人口'
+};
+
+export default function BoardView() {
+    const { questState, turnInQuest, checkAndRefreshQuests } = useGameStore();
+
+    useEffect(() => {
+        checkAndRefreshQuests();
+    }, []);
+
+    const dailyQuests = Object.entries(QUEST_TEMPLATES)
+        .filter(([, q]) => q.category === 'daily')
+        .sort((a, b) => a[1].difficulty - b[1].difficulty);
+
+    const weeklyQuests = Object.entries(QUEST_TEMPLATES)
+        .filter(([, q]) => q.category === 'weekly')
+        .sort((a, b) => a[1].difficulty - b[1].difficulty);
+
+    const renderQuestCard = ([questId, template]: [string, QuestTemplate]) => {
+        const isCompleted = template.category === 'daily'
+            ? questState.completedDailyIds.includes(questId)
+            : questState.completedWeeklyIds.includes(questId);
+        const progress = questState.progress[questId] || 0;
+        const canTurnIn = !isCompleted && progress >= template.amount;
+        const progressPct = Math.min(100, (progress / template.amount) * 100);
+
+        return (
+            <div key={questId} className={cn(
+                "bg-[#121418] border rounded-xl p-5 flex flex-col relative overflow-hidden group shadow-lg transition-all",
+                isCompleted ? "border-emerald-500/15 opacity-70" : "border-white/5 hover:border-white/10"
+            )}>
+                <div className={cn(
+                    "absolute top-0 right-0 w-24 h-24 blur-2xl group-hover:bg-indigo-500/10 transition-colors pointer-events-none",
+                    isCompleted ? "bg-emerald-500/5" : "bg-indigo-500/5"
+                )}></div>
+
+                <div className="flex items-start justify-between mb-2 relative z-10">
+                    <h3 className={cn("text-base font-serif", isCompleted ? "text-emerald-300 line-through" : "text-slate-200")}>
+                        {template.title}
+                    </h3>
+                    <div className="flex items-center gap-1.5">
+                        <span className={cn(
+                            "text-[9px] px-1.5 py-0.5 rounded font-mono border uppercase tracking-wider",
+                            DIFFICULTY_COLORS[template.difficulty]
+                        )}>
+                            {DIFFICULTY_LABELS[template.difficulty]}
+                        </span>
+                        <span className="text-[10px] text-slate-600 flex items-center gap-0.5">
+                            {CATEGORY_ICONS[template.category]}
+                            {template.category === 'daily' ? '日' : '周'}
+                        </span>
+                    </div>
+                </div>
+
+                <p className="text-xs text-slate-500 mb-3 leading-relaxed pr-6">{template.description}</p>
+
+                <div className="mb-3 relative z-10">
+                    <div className="flex justify-between text-[10px] font-mono mb-1">
+                        <span className="text-slate-400">
+                            {REQUIRE_TYPE_LABELS[template.requireType] || template.requireType}
+                            {template.resourceKey && `(${RESOURCE_LABELS[template.resourceKey]})`}
+                        </span>
+                        <span className={cn(
+                            progress >= template.amount && !isCompleted
+                                ? "text-emerald-400 font-bold"
+                                : "text-slate-500"
+                        )}>
+                            {progress}/{template.amount}
+                        </span>
+                    </div>
+                    <div className="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-white/5">
+                        <div
+                            className={cn(
+                                "h-full transition-all duration-500 rounded-full",
+                                isCompleted ? "bg-emerald-500" : progress >= template.amount ? "bg-indigo-500" : "bg-slate-600"
+                            )}
+                            style={{ width: `${progressPct}%` }}
+                        ></div>
+                    </div>
+                </div>
+
+                <div className="mt-auto pt-3 border-t border-white/5 flex items-center justify-between relative z-10">
+                    <div className="flex flex-wrap gap-1">
+                        {Object.entries(template.rewards).map(([key, val]) => (
+                            <span key={key} className="text-[10px] font-mono text-indigo-300 bg-indigo-500/8 px-1.5 py-0.5 rounded border border-indigo-500/12">
+                                +{val} {RESOURCE_LABELS[key] || key}
+                            </span>
+                        ))}
+                    </div>
+
+                    {isCompleted ? (
+                        <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-mono">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> 已完成
+                        </span>
+                    ) : canTurnIn ? (
+                        <button
+                            onClick={() => turnInQuest(questId)}
+                            className="px-4 py-1.5 rounded-lg font-bold tracking-widest text-[11px] bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition-all"
+                        >
+                            领取奖励
+                        </button>
+                    ) : (
+                        <span className="text-[11px] text-slate-600 font-mono flex items-center gap-1">
+                            <Target className="w-3 h-3" /> 进行中...
+                        </span>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div className="pb-8 animate-in fade-in duration-500">
+            <div className="text-center mb-6">
+                <h2 className="text-2xl font-serif text-slate-200 tracking-widest mb-2 flex items-center justify-center">
+                    <ScrollText className="w-7 h-7 mr-2 text-indigo-400" /> 城中告示
+                </h2>
+                <p className="text-slate-500 text-xs">每日任务自动刷新，每周任务周一重置</p>
+            </div>
+
+            <div className="mb-6">
+                <div className="flex items-center gap-2 mb-3 px-1">
+                    <Clock className="w-4 h-4 text-blue-400" />
+                    <span className="text-sm font-serif text-slate-300">每日委托</span>
+                    <RotateCcw className="w-3 h-3 text-slate-600 ml-auto" />
+                    <span className="text-[10px] text-slate-600 font-mono">每日刷新</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {dailyQuests.map(renderQuestCard)}
+                </div>
+            </div>
+
+            {weeklyQuests.length > 0 && (
+                <div>
+                    <div className="flex items-center gap-2 mb-3 px-1">
+                        <Trophy className="w-4 h-4 text-purple-400" />
+                        <span className="text-sm font-serif text-slate-300">每周挑战</span>
+                        <RotateCcw className="w-3 h-3 text-slate-600 ml-auto" />
+                        <span className="text-[10px] text-slate-600 font-mono">周一刷新</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {weeklyQuests.map(renderQuestCard)}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

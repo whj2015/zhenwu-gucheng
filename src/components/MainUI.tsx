@@ -1,0 +1,207 @@
+import React, { useEffect, useState } from 'react';
+import { useGameStore } from '../store';
+import { Building, Hammer, Map, Users, Tent, HeartPulse, Store, Settings, Package } from 'lucide-react';
+import { cn } from '../utils';
+import CityPanel from './CityPanel';
+import ForgePanel from './ForgePanel';
+import HeroesPanel from './HeroesPanel';
+import GatePanel from './GatePanel';
+import BarracksPanel from './BarracksPanel';
+import HospitalPanel from './HospitalPanel';
+import MarketPanel from './MarketPanel';
+import WarehousePanel from './WarehousePanel';
+
+type Tab = 'city' | 'hospital' | 'market' | 'forge' | 'heroes' | 'gate' | 'barracks' | 'warehouse';
+
+export default function MainUI() {
+    const [activeTab, setActiveTab] = useState<Tab>('city');
+    const { tick, claimOffline, lastTickTime } = useGameStore();
+    const [offlineModal, setOfflineModal] = useState<{ amount: number } | null>(null);
+    const [resetModal, setResetModal] = useState(false);
+
+    useEffect(() => {
+        // Calculate offline time on mount
+        const now = Date.now();
+        const deltaMs = now - lastTickTime;
+        const offlineMins = Math.floor(deltaMs / 60000);
+        if (offlineMins >= 10) { // More than 10 mins offline
+            const capMins = Math.min(offlineMins, 12 * 60); // 12 hours cap
+            // 80% efficiency: 60/min * 0.8 = 48/min
+            const gains = capMins * 48;
+            setOfflineModal({ amount: Math.floor(gains) });
+            claimOffline(Math.floor(gains));
+        }
+
+        const interval = setInterval(() => {
+            tick();
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    const tabs = [
+        { id: 'city', label: '主城署', icon: Building },
+        { id: 'hospital', label: '医馆', icon: HeartPulse },
+        { id: 'market', label: '集市', icon: Store },
+        { id: 'barracks', label: '募兵营', icon: Tent },
+        { id: 'forge', label: '兵甲坊', icon: Hammer },
+        { id: 'heroes', label: '门客', icon: Users },
+        { id: 'warehouse', label: '库房', icon: Package },
+        { id: 'gate', label: '城门', icon: Map },
+    ] as const;
+
+    return (
+        <div className="flex w-full h-screen bg-[#0d0f12] text-slate-200 font-sans overflow-hidden relative select-none">
+             {/* Background Atmosphere */}
+             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,#1e293b_0%,transparent_70%)] opacity-40 pointer-events-none"></div>
+             <div className="absolute bottom-0 right-0 w-96 h-96 bg-orange-900/10 blur-[120px] rounded-full pointer-events-none"></div>
+
+             {/* Sidebar Navigation */}
+             <aside className="w-64 bg-black/60 border-r border-white/5 flex flex-col shrink-0 relative z-10 backdrop-blur-md">
+                <div className="p-6 border-b border-white/5 flex items-center gap-4">
+                     <div className="w-10 h-10 bg-orange-600/20 border border-orange-500/50 flex items-center justify-center rounded-sm rotate-45 shrink-0">
+                         <div className="-rotate-45 font-bold text-orange-500 text-xl font-serif">武</div>
+                     </div>
+                     <div className="flex flex-col overflow-hidden">
+                         <span className="text-xs text-slate-500 uppercase tracking-widest font-bold">Zhenwu City</span>
+                         <span className="text-lg font-serif italic text-slate-200 tracking-tighter truncate">镇武孤城 V0.1</span>
+                     </div>
+                </div>
+                <nav className="flex-1 px-4 py-8 space-y-3">
+                    {tabs.map((t) => {
+                        const Icon = t.icon;
+                        const isActive = activeTab === t.id;
+                        return (
+                            <button 
+                                key={t.id}
+                                onClick={() => setActiveTab(t.id)}
+                                className={cn(
+                                    "w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all outline-none",
+                                    isActive 
+                                        ? "bg-orange-600/10 border border-orange-500/30 text-orange-500 shadow-sm" 
+                                        : "border border-transparent hover:bg-white/5 text-slate-400 hover:text-slate-200 opacity-80 hover:opacity-100"
+                                )}
+                            >
+                                <Icon className="w-5 h-5" />
+                                <span className="font-medium tracking-wide">{t.label}</span>
+                            </button>
+                        );
+                    })}
+                </nav>
+                <div className="p-4 border-t border-white/5 text-[10px] text-slate-600 font-mono tracking-widest uppercase flex justify-between items-center">
+                    <span>Project Zhenwu</span>
+                    <button onClick={() => setResetModal(true)} className="hover:text-red-500 transition-colors" title="重置游戏进度">
+                        <Settings className="w-4 h-4" />
+                    </button>
+                </div>
+             </aside>
+
+             {/* Main Content Area */}
+             <main className="flex-1 flex flex-col relative overflow-hidden z-10">
+                  <header className="h-16 bg-black/40 border-b border-white/10 backdrop-blur-md flex items-center px-8 justify-between shrink-0">
+                      <h2 className="text-lg font-serif italic text-slate-200 tracking-tighter">
+                          {tabs.find(t => t.id === activeTab)?.label}
+                      </h2>
+                      <TopResourceBar />
+                  </header>
+                  <div className="flex-1 overflow-y-auto p-8 relative">
+                       {activeTab === 'city' && <CityPanel />}
+                       {activeTab === 'hospital' && <HospitalPanel />}
+                       {activeTab === 'market' && <MarketPanel />}
+                       {activeTab === 'barracks' && <BarracksPanel />}
+                       {activeTab === 'forge' && <ForgePanel />}
+                       {activeTab === 'heroes' && <HeroesPanel />}
+                       {activeTab === 'warehouse' && <WarehousePanel />}
+                       {activeTab === 'gate' && <GatePanel />}
+                  </div>
+             </main>
+
+             {/* Offline Modal */}
+             {offlineModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md">
+                    <div className="bg-[#0d0f12] border border-white/10 p-8 rounded-xl max-w-sm w-full shadow-2xl relative overflow-hidden">
+                        <div className="absolute -top-4 -right-4 w-24 h-24 bg-orange-500/10 blur-2xl pointer-events-none"></div>
+                        <h3 className="text-xl font-bold mb-4 text-orange-100 tracking-wide font-serif relative z-10">离线纪事</h3>
+                        <p className="text-slate-300 mb-6 relative z-10 text-sm">将军不在营中之时，将士们已为您筹集了物资。</p>
+                        <div className="bg-black/40 p-4 rounded-lg mb-6 border border-white/5 flex items-center justify-between relative z-10">
+                             <span className="text-slate-400 text-sm">获得兵饷</span>
+                             <span className="text-amber-400 font-mono font-bold">+{offlineModal.amount}</span>
+                        </div>
+                        <button 
+                            onClick={() => setOfflineModal(null)}
+                            className="relative z-10 w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg transition-all shadow-[0_4px_15px_rgba(234,88,12,0.3)]"
+                        >
+                            收入库中
+                        </button>
+                    </div>
+                </div>
+             )}
+
+             {/* Reset Modal */}
+             {resetModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md">
+                    <div className="bg-[#0d0f12] border border-white/10 p-8 rounded-xl max-w-sm w-full shadow-2xl relative overflow-hidden">
+                        <div className="absolute -top-4 -right-4 w-24 h-24 bg-red-500/10 blur-2xl pointer-events-none"></div>
+                        <h3 className="text-xl font-bold mb-4 text-red-100 tracking-wide font-serif relative z-10">破釜沉舟</h3>
+                        <p className="text-slate-300 mb-6 relative z-10 text-sm">将军，此举将散尽家财，解散大军，回到初入孤城之时，您确定要如此吗？</p>
+                        <div className="flex space-x-4 relative z-10">
+                            <button 
+                                onClick={() => setResetModal(false)}
+                                className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white font-bold rounded-lg transition-all"
+                            >
+                                收回成命
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    useGameStore.getState().resetGame();
+                                    setResetModal(false);
+                                }}
+                                className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-all shadow-[0_4px_15px_rgba(220,38,38,0.3)]"
+                            >
+                                确定重置
+                            </button>
+                        </div>
+                    </div>
+                </div>
+             )}
+        </div>
+    );
+}
+
+function TopResourceBar() {
+    const { resources, buildings } = useGameStore();
+    
+    const houseLvl = buildings.houseLevel || 1;
+    const farmLvl = buildings.farmLevel || 1;
+    const woodLvl = buildings.lumberCampLevel || 1;
+
+    const maxPop = houseLvl * 100;
+    const pop = Math.floor(resources.population || 100);
+
+    const bingxiangRate = Math.floor(pop * 0.01 * 60);
+    const foodRate = Math.floor(farmLvl * 2 * 60);
+    const woodRate = Math.floor(woodLvl * 1.5 * 60);
+
+    return (
+        <div className="flex space-x-6 overflow-x-auto custom-scrollbar pb-2 pt-2">
+            <ResourceItem label="人口" value={`${pop}/${maxPop}`} color="text-indigo-200" dotColor="bg-indigo-500 shadow-[0_0_8px_#6366f1]" sub="税赋之源" />
+            <ResourceItem label="粮草" value={resources.food} color="text-emerald-200" dotColor="bg-emerald-500 shadow-[0_0_8px_#10b981]" sub={`产出: +${foodRate}/m`} />
+            <ResourceItem label="木材" value={resources.wood} color="text-orange-200" dotColor="bg-orange-700 shadow-[0_0_8px_#c2410c]" sub={`产出: +${woodRate}/m`} />
+            <ResourceItem label="兵饷" value={resources.bingxiang} color="text-amber-200" dotColor="bg-amber-500 shadow-[0_0_8px_#f59e0b]" sub={`纳捐: +${bingxiangRate}/m`} />
+            <ResourceItem label="铁锭" value={resources.iron} color="text-slate-200" dotColor="bg-slate-400" sub="探索获取" />
+            <ResourceItem label="陨铁" value={resources.meteorite} color="text-cyan-200" dotColor="bg-cyan-400 shadow-[0_0_8px_#22d3ee]" sub="稀有矿藏" />
+        </div>
+    );
+}
+
+function ResourceItem({ label, value, color, dotColor, sub }: { label: string; value: number | string; color: string; dotColor: string; sub: string }) {
+    return (
+        <div className="flex flex-col items-end whitespace-nowrap">
+             <div className="flex items-center gap-2">
+                 <div className={cn("w-3 h-3 rounded-full", dotColor)}></div>
+                 <span className={cn("text-sm font-mono", color)}>{label}: {typeof value === 'number' ? Math.floor(value).toLocaleString() : value}</span>
+             </div>
+             <span className="text-[10px] text-slate-500">{sub}</span>
+        </div>
+    );
+}
