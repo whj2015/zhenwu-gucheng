@@ -21,8 +21,8 @@ export default function TavernView() {
     const availableHeroes = Object.keys(HERO_TEMPLATES).filter(id => !hiredIds.has(id));
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 sm:mb-4 lg:mb-6 pb-3 sm:pb-4 border-b border-white/10 gap-2">
+        <div className="flex flex-col h-full overflow-hidden">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 sm:mb-4 lg:mb-6 pb-3 sm:pb-4 border-b border-white/10 gap-2 shrink-0">
                 <div>
                     <h3 className="text-sm sm:text-base lg:text-lg font-serif text-slate-200">过客留名</h3>
                     <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1">酒馆中暂歇的游侠，每次仅露面三位</p>
@@ -47,7 +47,8 @@ export default function TavernView() {
                     <p className="text-slate-500 text-xs sm:text-sm">暂无过客...</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 pb-6 sm:pb-8 overflow-y-auto custom-scrollbar flex-1 min-h-0 content-start">
+                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-6 sm:pb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                     {tavernPool.map((id) => {
                         const t = HERO_TEMPLATES[id];
                         if (!t) return null;
@@ -56,7 +57,7 @@ export default function TavernView() {
                         const alreadyHired = hiredIds.has(id);
 
                         return (
-                            <div key={id} className="bg-[#121418] border border-white/5 rounded-xl p-3 sm:p-4 lg:p-6 flex flex-col relative overflow-hidden group shadow-lg h-full sm:h-auto">
+                            <div key={id} className="bg-[#121418] border border-white/5 rounded-xl p-3 sm:p-4 lg:p-6 flex flex-col relative overflow-hidden group shadow-lg">
                                 <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-orange-500/5 blur-2xl group-hover:bg-orange-500/10 transition-colors pointer-events-none"></div>
                                 
                                 {/* Header: Icon + Name */}
@@ -114,6 +115,7 @@ export default function TavernView() {
                             </div>
                         )
                     })}
+                    </div>
                 </div>
             )}
 
