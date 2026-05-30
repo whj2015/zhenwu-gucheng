@@ -20,7 +20,7 @@ export default function ForgePanel() {
     const { buildings, resources, startCrafting, claimCrafting, crafting, upgradeForge } = useGameStore();
     const lvl = buildings.forgeLevel;
     const upgradeCost = FORGE_UPGRADE_COSTS[(lvl + 1) as unknown as keyof typeof FORGE_UPGRADE_COSTS];
-    canUpgrade = upgradeCost && resources.bingxiang >= upgradeCost.bingxiang && resources.meteorite >= upgradeCost.meteorite;
+    const canUpgrade = upgradeCost && resources.bingxiang >= upgradeCost.bingxiang && resources.meteorite >= upgradeCost.meteorite;
     const pityNormal = crafting.consecutiveNormal || 0;
     const pityFine = crafting.consecutiveFine || 0;
     const nextPityNormal = 5 - pityNormal;
