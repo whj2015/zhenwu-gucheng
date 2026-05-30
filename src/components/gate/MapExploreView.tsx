@@ -10,71 +10,85 @@ import HeroAvatarCompact from './HeroAvatarCompact';
 
 type HeroTrait = 'assault' | 'flank' | 'tank' | 'support' | 'ranged';
 
-const TRAIT_COLORS: Record<HeroTrait | 'ranged', { bg: string; text: string; label: string }> = {
-    assault: { bg: 'bg-red-500/20', text: 'text-red-400', label: '突击' },
-    flank: { bg: 'bg-cyan-500/20', text: 'text-cyan-400', label: '侧翼' },
-    tank: { bg: 'bg-blue-500/20', text: 'text-blue-400', label: '重装' },
-    support: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', label: '辅助' },
-    ranged: { bg: 'bg-violet-500/20', text: 'text-violet-400', label: '远程' },
+const TRAIT_COLORS: Record<HeroTrait | 'ranged', { dot: string; label: string }> = {
+    assault: { dot: 'bg-red-400', label: '突' },
+    flank: { dot: 'bg-cyan-400', label: '侧' },
+    tank: { dot: 'bg-blue-400', label: '坦' },
+    support: { dot: 'bg-emerald-400', label: '辅' },
+    ranged: { dot: 'bg-violet-400', label: '远' },
 };
 
 const ROWS: Array<'front' | 'middle' | 'back'> = ['front', 'middle', 'back'];
 const COLS = ['left', 'center', 'right'] as const;
 
+const CELL_SIZE = "w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16";
+const CELL_GAP = "gap-1.5 sm:gap-2";
+const ROW_GAP = "gap-1.5 sm:gap-2";
+
+function CellBase({ children, className }: { children: React.ReactNode; className?: string }) {
+    return (
+        <div className={cn(
+            CELL_SIZE,
+            "rounded-lg sm:rounded-xl border flex flex-col items-center justify-center relative overflow-hidden transition-all duration-200",
+            className
+        )}>
+            {children}
+        </div>
+    );
+}
+
 function PartyCell({ heroId, position }: { heroId: string | null; position: PositionKey }) {
     if (!heroId) {
         const posConfig = POSITION_CONFIG[position] || POSITION_CONFIG['front-center'];
         return (
-            <div className="w-full aspect-square rounded-xl border border-dashed border-white/5 bg-white/[0.01] flex items-center justify-center">
-                <span className="text-[7px] font-mono text-slate-700">{posConfig.name}</span>
-            </div>
+            <CellBase className="border-white/[0.06] bg-white/[0.015]">
+                <span className="text-[8px] sm:text-[9px] font-mono text-slate-700">{posConfig.name}</span>
+            </CellBase>
         );
     }
 
     const hero = useGameStore(s => s.heroes.find(h => h.id === heroId));
     if (!hero) {
         return (
-            <div className="w-full aspect-square rounded-xl border border-dashed border-white/5 bg-white/[0.01] flex items-center justify-center">
-                <span className="text-[7px] font-mono text-slate-700">?</span>
-            </div>
+            <CellBase className="border-white/[0.06] bg-white/[0.015]">
+                <span className="text-sm text-slate-700">?</span>
+            </CellBase>
         );
     }
 
     const t = HERO_TEMPLATES[hero.templateId];
     if (!t) {
         return (
-            <div className="w-full aspect-square rounded-xl border border-white/10 bg-black/40 flex flex-col items-center justify-center p-1 sm:p-2">
-                <span className="text-[9px] sm:text-xs font-serif font-bold truncate w-full text-center text-slate-200">{hero.templateId}</span>
-                <div className="w-full h-1 sm:h-1.5 rounded-full bg-black/40 mt-0.5 overflow-hidden">
-                    <div className={cn("h-full", hero.hp > 0 ? "bg-emerald-500" : "bg-red-500")} style={{ width: `${Math.max(0, Math.min(100, Math.floor(hero.hp / 10)))}%` }} />
+            <CellBase className="border-cyan-500/20 bg-cyan-950/20">
+                <span className="text-xs font-serif text-cyan-300">{hero.templateId[0]}</span>
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/60">
+                    <div className={cn("h-full", hero.hp > 30 ? "bg-emerald-500" : "bg-red-500")} style={{ width: `${Math.min(100, Math.max(0, Math.floor(hero.hp / (hero.hp > 0 ? 20 : 1))))}%` }} />
                 </div>
-                <span className="text-[7px] sm:text-[8px] font-mono text-emerald-300">{Math.max(0, Math.floor(hero.hp))}</span>
-            </div>
+            </CellBase>
         );
     }
 
-    const hpRatio = Math.max(0, hero.hp / (t.attributes.physique * 10));
+    const maxHp = t.attributes.physique * 10;
+    const hpRatio = Math.max(0, Math.min(1, hero.hp / maxHp));
     const hpColor = hpRatio > 0.6 ? 'bg-emerald-500' : hpRatio > 0.3 ? 'bg-amber-500' : 'bg-red-500';
     const trait = t?.trait as HeroTrait | undefined;
-    const traitStyle = trait ? TRAIT_COLORS[trait] : null;
+    const tc = trait ? TRAIT_COLORS[trait] : null;
 
     return (
-        <div className="w-full aspect-square rounded-xl border border-white/10 bg-black/40 flex flex-col items-center justify-center p-1 sm:p-2 transition-all hover:border-cyan-500/40 hover:bg-black/60">
-            <span className="text-[9px] sm:text-xs font-serif font-bold truncate w-full text-center text-slate-200">
+        <CellBase className={cn(
+            "border-white/10 bg-black/40 hover:border-cyan-500/40 hover:bg-black/55 cursor-default",
+            !hero.isAlive && "opacity-35"
+        )}>
+            {tc && (
+                <div className={cn("absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full", tc.dot)} title={TRAIT_COLORS[trait as HeroTrait]?.label} />
+            )}
+            <span className="text-sm sm:text-base font-serif font-bold text-slate-200 leading-none">
                 {t?.name?.[0] || '?'}
             </span>
-            {traitStyle && (
-                <span className={cn("text-[6px] px-0.5 rounded", traitStyle.bg, traitStyle.text)}>
-                    {traitStyle.label}
-                </span>
-            )}
-            <div className="w-full h-1 sm:h-1.5 rounded-full bg-black/40 mt-0.5 overflow-hidden">
-                <div className={cn("h-full transition-all", hpColor)} style={{ width: `${hpRatio * 100}%` }} />
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50">
+                <div className={cn("h-full transition-all duration-300", hpColor)} style={{ width: `${hpRatio * 100}%` }} />
             </div>
-            <span className={cn("text-[7px] sm:text-[8px] font-mono", hpRatio > 0.6 ? "text-emerald-300" : hpRatio > 0.3 ? "text-amber-300" : "text-red-300")}>
-                {Math.max(0, Math.floor(hero.hp))}
-            </span>
-        </div>
+        </CellBase>
     );
 }
 
@@ -85,28 +99,29 @@ function EnemyNodeCell({ node, onClick, isHovered, onHover, onLeave }: {
     onHover: () => void;
     onLeave: () => void;
 }) {
+    const info = getNodeInfo(node);
+
     if (!node.revealed) {
         return (
-            <div className="w-full aspect-square rounded-xl border border-dashed border-white/10 bg-white/[0.02] flex items-center justify-center">
-                <span className="text-lg opacity-20">?</span>
-            </div>
+            <CellBase className="border-white/[0.04] bg-white/[0.01]">
+                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full border border-white/10 border-dashed" />
+            </CellBase>
         );
     }
 
     if (node.completed) {
         return (
-            <div className="w-full aspect-square rounded-xl border border-white/5 bg-white/[0.02] flex items-center justify-center opacity-30">
-                <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-            </div>
+            <CellBase className="border-emerald-500/15 bg-emerald-950/10">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </CellBase>
         );
     }
 
-    const info = getNodeInfo(node);
-    const colorMap: Record<string, string> = {
-        battle: 'border-orange-500/40 hover:border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.12)]',
-        boss: 'border-red-500/40 hover:border-red-400 shadow-[0_0_15px_rgba(239,68,68,0.15)]',
-        camp: 'border-emerald-500/30 hover:border-emerald-400',
-        armory: 'border-violet-500/30 hover:border-violet-400',
+    const typeStyles: Record<string, string> = {
+        battle: 'border-orange-500/30 bg-orange-950/15 hover:border-orange-400/60 hover:bg-orange-950/25 hover:shadow-[0_0_12px_rgba(249,115,22,0.08)]',
+        boss: 'border-red-500/30 bg-red-950/20 hover:border-red-400/60 hover:bg-red-950/30 hover:shadow-[0_0_12px_rgba(239,68,68,0.1)]',
+        camp: 'border-emerald-500/25 bg-emerald-950/10 hover:border-emerald-400/50 hover:bg-emerald-950/18',
+        armory: 'border-violet-500/25 bg-violet-950/10 hover:border-violet-400/50 hover:bg-violet-950/18',
     };
 
     return (
@@ -115,25 +130,25 @@ function EnemyNodeCell({ node, onClick, isHovered, onHover, onLeave }: {
             onMouseLeave={onLeave}
             onClick={onClick}
             className={cn(
-                "relative w-full aspect-square rounded-xl border flex flex-col items-center justify-center p-1 sm:p-2 transition-all duration-200 cursor-pointer",
-                "bg-red-950/20 hover:bg-red-950/35",
-                colorMap[node.type] || 'border-white/10',
-                isHovered && "scale-105 z-10"
+                CELL_SIZE,
+                "rounded-lg sm:rounded-xl border flex flex-col items-center justify-center relative overflow-hidden",
+                "transition-all duration-200 cursor-pointer",
+                typeStyles[node.type] || 'border-white/10 bg-white/[0.03]',
+                isHovered && "scale-110 z-10"
             )}
         >
-            <span className="text-[9px] sm:text-xs font-serif font-bold truncate w-full text-center text-slate-200">
-                {info.icon} {info.name}
-            </span>
+            <span className="text-base sm:text-lg leading-none mb-0.5">{info.icon}</span>
             {(node.type === 'battle' || node.type === 'boss') && (node as any).enemies && (
-                <span className="text-[7px] text-slate-500 font-mono">
+                <span className="text-[8px] font-mono text-slate-500 leading-none">
                     x{(node as any).enemies.length}
                 </span>
             )}
-            {isHovered && !node.completed && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-36 bg-black/95 backdrop-blur-md border border-white/10 rounded-lg p-2 z-20 animate-in fade-in zoom-in-95 duration-150">
+            {isHovered && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-black/95 backdrop-blur-md border border-white/10 rounded-lg p-2 z-30 animate-in fade-in zoom-in-95 duration-150 shadow-xl">
                     <div className={cn("font-serif text-xs font-bold mb-0.5", info.color)}>{info.name}</div>
-                    <div className="text-[10px] text-slate-400 leading-relaxed">{info.desc}</div>
+                    <div className="text-[10px] text-slate-400 leading-relaxed line-clamp-2">{info.desc}</div>
                     <div className="mt-1 text-[9px] font-mono text-cyan-400/80">点击进入</div>
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-black/95 border-r border-b border-white/10"></div>
                 </div>
             )}
         </button>
@@ -237,42 +252,41 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                 </div>
             </div>
 
-            <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-3 sm:gap-4 lg:gap-8 py-2 sm:py-4 min-h-0">
+            <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-4 sm:gap-6 lg:gap-10 py-2 sm:py-4 min-h-0">
 
-                <div className="flex flex-col items-center gap-1 sm:gap-1.5 w-full max-w-[220px] sm:max-w-[260px] lg:w-auto">
-                    <div className="text-[10px] font-mono text-cyan-400/70 tracking-wider mb-0.5">我方阵型</div>
-                    {ROWS.map(row => (
-                        <div key={row} className="flex gap-1 sm:gap-1.5 w-full">
-                            {COLS.map(col => {
+                <div className="flex flex-col items-center">
+                    <div className="text-[9px] sm:text-[10px] font-mono text-cyan-500/60 tracking-widest uppercase mb-2">我方阵型</div>
+                    <div className={cn("grid grid-cols-3", ROW_GAP)}>
+                        {ROWS.map(row => (
+                            COLS.map(col => {
                                 const posKey = `${row}-${col}` as PositionKey;
-                                const hId = ruinsRun.party[posKey];
-                                return <PartyCell key={posKey} heroId={hId} position={posKey} />;
-                            })}
-                        </div>
-                    ))}
+                                return <PartyCell key={posKey} heroId={ruinsRun.party[posKey]} position={posKey} />;
+                            })
+                        ))}
+                    </div>
                 </div>
 
-                <div className="hidden lg:flex flex-col items-center gap-1 px-3 py-2">
-                    <div className="text-xl font-serif text-slate-600">⚔</div>
-                    <div className="text-xs font-serif text-slate-500 tracking-widest">对 峙</div>
-                    <div className="w-px h-12 bg-gradient-to-b from-transparent via-white/15 to-transparent"></div>
+                <div className="hidden lg:flex flex-col items-center px-2">
+                    <div className="text-lg font-serif text-slate-600/60">⚔</div>
+                    <div className="text-[10px] font-serif text-slate-600 tracking-widest mt-0.5">VS</div>
+                    <div className="w-px h-10 mt-1 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
                 </div>
 
-                <div className="lg:hidden flex items-center gap-2 py-1.5 w-full max-w-[260px] mx-auto">
-                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500/25 to-transparent"></div>
-                    <span className="text-[10px] font-serif text-slate-500 tracking-wider">⚔ 对峙 ⚔</span>
-                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-red-500/25 to-transparent"></div>
+                <div className="lg:hidden flex items-center gap-2 py-2 w-full max-w-[280px] mx-auto">
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent"></div>
+                    <span className="text-[10px] font-serif text-slate-600 tracking-widest">⚔ VS ⚔</span>
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-red-500/20 to-transparent"></div>
                 </div>
 
-                <div className="flex flex-col items-center gap-1 sm:gap-1.5 w-full max-w-[220px] sm:max-w-[260px] lg:w-auto">
-                    <div className="text-[10px] font-mono text-red-400/70 tracking-wider mb-0.5">敌方阵型</div>
-                    {ROWS.map((row, rowIdx) => (
-                        <div key={row} className="flex gap-1 sm:gap-1.5 w-full">
-                            {COLS.map((_, colIdx) => {
+                <div className="flex flex-col items-center">
+                    <div className="text-[9px] sm:text-[10px] font-mono text-red-500/60 tracking-widest uppercase mb-2">敌方阵型</div>
+                    <div className={cn("grid grid-cols-3", ROW_GAP)}>
+                        {ROWS.map((row, rowIdx) =>
+                            COLS.map((_, colIdx) => {
                                 const nodes = getEnemyNodesForPosition(rowIdx, colIdx);
                                 const node = nodes[0];
                                 if (!node) {
-                                    return <div key={`${row}-${colIdx}`} className="w-full aspect-square rounded-xl border border-dashed border-white/5 bg-white/[0.01]" />;
+                                    return <CellBase key={`${row}-${colIdx}`} className="border-white/[0.03] bg-transparent invisible" />;
                                 }
                                 return (
                                     <EnemyNodeCell
@@ -284,9 +298,9 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                                         onLeave={() => setHoveredNodeId(null)}
                                     />
                                 );
-                            })}
-                        </div>
-                    ))}
+                            })
+                        )}
+                    </div>
                 </div>
             </div>
 
