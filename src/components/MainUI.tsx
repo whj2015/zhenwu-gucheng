@@ -58,13 +58,13 @@ export default function MainUI() {
 
              {/* Desktop Sidebar — hidden on mobile */}
              <aside className="hidden lg:flex w-64 bg-black/60 border-r border-white/5 flex-col shrink-0 relative z-10 backdrop-blur-md flex-col">
-                <div className="p-6 border-b border-white/5 flex items-center gap-4">
-                     <div className="w-10 h-10 bg-orange-600/20 border border-orange-500/50 flex items-center justify-center rounded-sm rotate-45 shrink-0">
-                         <div className="-rotate-45 font-bold text-orange-500 text-xl font-serif">武</div>
+                <div className="p-5 sm:p-6 border-b border-white/5 flex items-center gap-3">
+                     <div className="w-9 h-9 sm:w-10 sm:h-10 bg-orange-600/20 border border-orange-500/50 flex items-center justify-center rounded-sm rotate-45 shrink-0">
+                         <div className="-rotate-45 font-bold text-orange-500 text-lg sm:text-xl font-serif">武</div>
                      </div>
-                     <div className="flex flex-col overflow-hidden">
-                        <span className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-widest font-bold leading-tight">Zhenwu City</span>
-                        <span className="text-base sm:text-lg font-serif italic text-slate-200 tracking-tight leading-snug">镇武孤城 {getVersionDisplay()}</span>
+                     <div className="flex flex-col min-w-0">
+                        <span className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold leading-none">Zhenwu City</span>
+                        <span className="text-sm sm:text-base font-serif italic text-slate-200 tracking-wide leading-tight whitespace-nowrap">镇武孤城 {getVersionDisplay()}</span>
                     </div>
                 </div>
                 <nav className="flex-1 px-4 py-8 space-y-3 overflow-y-auto">
