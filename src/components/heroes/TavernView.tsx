@@ -21,8 +21,8 @@ export default function TavernView() {
     const availableHeroes = Object.keys(HERO_TEMPLATES).filter(id => !hiredIds.has(id));
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 sm:mb-4 lg:mb-6 pb-3 sm:pb-4 border-b border-white/10 gap-2">
+        <div className="flex flex-col h-full overflow-hidden">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 sm:mb-4 lg:mb-6 pb-3 sm:pb-4 border-b border-white/10 gap-2 shrink-0">
                 <div>
                     <h3 className="text-sm sm:text-base lg:text-lg font-serif text-slate-200">过客留名</h3>
                     <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1">酒馆中暂歇的游侠，每次仅露面三位</p>
@@ -47,7 +47,8 @@ export default function TavernView() {
                     <p className="text-slate-500 text-xs sm:text-sm">暂无过客...</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 pb-6 sm:pb-8 overflow-y-auto custom-scrollbar flex-1">
+                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-6 sm:pb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                     {tavernPool.map((id) => {
                         const t = HERO_TEMPLATES[id];
                         if (!t) return null;
@@ -76,10 +77,10 @@ export default function TavernView() {
                                 </div>
 
                                 {/* Description */}
-                                <p className="text-[11px] sm:text-sm text-slate-400 italic mb-3 sm:mb-4 lg:mb-6 relative z-10 line-clamp-2 sm:line-clamp-none">{t.desc}</p>
-                                
+                                <p className="text-[11px] sm:text-sm text-slate-400 italic mb-2.5 sm:mb-3 lg:mb-6 relative z-10 line-clamp-2 lg:line-clamp-none flex-shrink-0">{t.desc}</p>
+
                                 {/* Stats Grid */}
-                                <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mb-3 sm:mb-4 lg:mb-6 border-t border-white/5 pt-2.5 sm:pt-4">
+                                <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mb-2.5 sm:mb-3 lg:mb-6 border-t border-white/5 pt-2 sm:pt-3 lg:pt-4 flex-shrink-0">
                                     <div className="flex flex-col items-center p-1 sm:p-1.5 lg:p-2 bg-white/5 rounded">
                                         <span className="text-[9px] sm:text-[10px] text-slate-500">武力</span>
                                         <span className="font-mono text-xs sm:text-sm text-orange-300">{t.attributes.force}</span>
@@ -99,13 +100,13 @@ export default function TavernView() {
                                 </div>
 
                                 {/* Recruit Button */}
-                                <button 
+                                <button
                                     onClick={() => recruitHero(id, cost)}
                                     disabled={!canAfford || alreadyHired}
                                     className={cn(
-                                        "w-full py-2 sm:py-2.5 lg:py-3 rounded-lg font-bold tracking-widest text-[10px] sm:text-sm transition-all relative z-10 mobile-touch-target",
-                                        alreadyHired ? "bg-white/5 text-slate-500 border border-white/10 cursor-not-allowed" 
-                                        : canAfford ? "bg-orange-600 hover:bg-orange-500 text-white shadow-lg shadow-orange-500/20" 
+                                        "w-full py-2 sm:py-2.5 lg:py-3 rounded-lg font-bold tracking-widest text-[10px] sm:text-sm transition-all relative z-10 mobile-touch-target mt-auto shrink-0",
+                                        alreadyHired ? "bg-white/5 text-slate-500 border border-white/10 cursor-not-allowed"
+                                        : canAfford ? "bg-orange-600 hover:bg-orange-500 text-white shadow-lg shadow-orange-500/20"
                                         : "bg-white/5 text-slate-500 cursor-not-allowed border border-white/10"
                                     )}
                                 >
@@ -114,6 +115,7 @@ export default function TavernView() {
                             </div>
                         )
                     })}
+                    </div>
                 </div>
             )}
 

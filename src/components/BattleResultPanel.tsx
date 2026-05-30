@@ -53,22 +53,25 @@ interface BattleResultData {
     floorNumber: number;
 }
 
-const RE_ATTACK = /(.+) attacks (.+) for (\d+) damage/;
+const RE_ATTACK = /(.+)\[(.+?)\].*? 攻击 (.+)，造成 (\d+) 点伤害/;
 const RE_ENEMY_ATTACK = /^(.+) → (.+)\[(.+)\]\s*\| \-(\d+)HP/;
+const RE_SKILL_ATTACK = /(.+?) 追击 (.+)，造成 (\d+) 点伤害/;
+const RE_CLEAVE_ATTACK = /\[偃月溅射\] 对 (.+) 造成额外 (\d+) 点伤害/;
 
 function parseBattleLogs(rawLogs: string[], heroes: any[], enemies: any[]): BattleLogEntry[] {
     const entries: BattleLogEntry[] = [];
     let currentRound = 0;
 
     rawLogs.forEach((log, idx) => {
-        if (log.includes('Round') || log.match(/^\d+:/)) {
-            const roundMatch = log.match(/(\d+):/);
+        if (log.includes('回合') || log.match(/^\d+:/)) {
+            const roundMatch = log.match(/(\d+):/) || log.match(/第 (\d+) 回合/);
             if (roundMatch) currentRound = parseInt(roundMatch[1]);
             return;
         }
+
         const attackMatch = log.match(RE_ATTACK);
         if (attackMatch) {
-            const [, attacker, target, dmgStr] = attackMatch;
+            const [, attacker, _pos, target, dmgStr] = attackMatch;
             const isPlayer = heroes.some(h => HERO_TEMPLATES[h.templateId]?.name === attacker);
             entries.push({
                 id: `log-${idx}`,
@@ -80,6 +83,36 @@ function parseBattleLogs(rawLogs: string[], heroes: any[], enemies: any[]): Batt
             });
             return;
         }
+
+        const skillAttackMatch = log.match(RE_SKILL_ATTACK);
+        if (skillAttackMatch) {
+            const [, attacker, target, dmgStr] = skillAttackMatch;
+            const isPlayer = heroes.some(h => HERO_TEMPLATES[h.templateId]?.name === attacker);
+            entries.push({
+                id: `log-${idx}`,
+                round: currentRound,
+                attacker,
+                target,
+                damage: parseInt(dmgStr),
+                isPlayer
+            });
+            return;
+        }
+
+        const cleaveMatch = log.match(RE_CLEAVE_ATTACK);
+        if (cleaveMatch) {
+            const [, target, dmgStr] = cleaveMatch;
+            entries.push({
+                id: `log-${idx}`,
+                round: currentRound,
+                attacker: '[偃月溅射]',
+                target,
+                damage: parseInt(dmgStr),
+                isPlayer: true
+            });
+            return;
+        }
+
         const enemyAttackMatch = log.match(RE_ENEMY_ATTACK);
         if (enemyAttackMatch) {
             const [, attacker, target, _pos, dmgStr] = enemyAttackMatch;
@@ -134,11 +167,11 @@ export default function BattleResultPanel({
     const totalWounded = battleData.heroStates.reduce((sum, h) => sum + (h.wounded || 0), 0);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300 p-2 lg:p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300 p-3 lg:p-6">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(30,41,59,0.4)_0%,transparent_70%)] pointer-events-none"></div>
-            
+
             <div className={cn(
-                "relative w-full max-w-4xl mx-2 lg:mx-4 bg-[#0d0f12]/95 border rounded-2xl shadow-2xl overflow-hidden",
+                "relative w-full max-w-5xl mx-auto bg-[#0d0f12]/95 border rounded-2xl shadow-2xl flex flex-col max-h-[95vh] lg:max-h-[90vh]",
                 battleData.victory ? "border-cyan-500/30" : "border-red-500/30"
             )}>
                 {battleData.victory && (
@@ -148,9 +181,9 @@ export default function BattleResultPanel({
                     <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/10 blur-[100px] pointer-events-none"></div>
                 )}
 
-                {/* Header */}
+                {/* Header - 固定高度 */}
                 <div className={cn(
-                    "relative border-b px-4 py-3 lg:px-8 lg:py-4 flex items-center justify-between",
+                    "relative border-b px-4 py-3 lg:px-8 lg:py-4 flex items-center justify-between shrink-0",
                     battleData.victory ? "bg-cyan-500/5 border-cyan-500/20" : "bg-red-500/5 border-red-500/20"
                 )}>
                     <div className="flex items-center gap-4">
@@ -175,7 +208,7 @@ export default function BattleResultPanel({
                     <button
                         onClick={battleData.victory ? onConfirm : onRetreat}
                         className={cn(
-                            "px-4 py-1.5 lg:px-6 lg:py-2 rounded-lg font-bold tracking-widest text-xs lg:text-sm transition-all shadow-lg",
+                            "px-4 py-1.5 lg:px-6 lg:py-2 rounded-lg font-bold tracking-widest text-xs lg:text-sm transition-all shadow-lg shrink-0",
                             battleData.victory 
                                 ? "bg-cyan-500/20 border border-cyan-500/50 text-cyan-200 hover:bg-cyan-500/30 hover:shadow-[0_0_20px_rgba(34,211,238,0.3)]"
                                 : "bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20 flex items-center gap-1.5"
@@ -185,10 +218,11 @@ export default function BattleResultPanel({
                     </button>
                 </div>
 
-                <div className="flex flex-col lg:flex-row h-[55vh] sm:h-[60vh] lg:h-[65vh]">
-                    {/* Left: Battle Log */}
-                    <div className="flex-1 flex flex-col lg:border-r border-white/5">
-                        <div className="px-6 py-2.5 border-b border-white/5 flex items-center gap-2 shrink-0">
+                {/* Main Content - 弹性填充剩余空间 */}
+                <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
+                    {/* Left: Battle Log - 占据大部分空间 */}
+                    <div className="flex-1 flex flex-col lg:border-r border-white/5 min-w-0">
+                        <div className="px-4 lg:px-6 py-2 lg:py-2.5 border-b border-white/5 flex items-center gap-2 shrink-0">
                             <Sword className="w-3.5 h-3.5 text-orange-400" />
                             <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">战斗记录</span>
                             <span className="ml-auto text-[10px] font-mono text-slate-600">
@@ -196,12 +230,12 @@ export default function BattleResultPanel({
                             </span>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-3 space-y-0.5 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-0.5 custom-scrollbar max-h-[35vh] lg:max-h-[calc(90vh-180px)]">
                             {displayedLogs.map((entry) => (
                                 <div
                                     key={entry.id}
                                     className={cn(
-                                        "flex items-start gap-2 py-0.5 px-2 lg:py-1 lg:px-2.5 rounded-md text-[11px] font-mono animate-in fade-in slide-in-from-left-2 duration-300",
+                                        "flex items-start gap-2 py-1 px-2.5 rounded-md text-[11px] font-mono animate-in fade-in slide-in-from-left-2 duration-300",
                                         entry.isPlayer ? "bg-cyan-500/5" : "bg-red-500/5"
                                     )}
                                 >
@@ -234,10 +268,10 @@ export default function BattleResultPanel({
                         </div>
                     </div>
 
-                    {/* Right: Result Summary */}
-                    <div className="w-full lg:w-72 flex flex-col overflow-y-auto custom-scrollbar">
+                    {/* Right: Result Summary - 固定宽度，独立滚动 */}
+                    <div className="w-full lg:w-80 xl:w-96 flex flex-col overflow-y-auto custom-scrollbar shrink-0 lg:shrink-0 border-t lg:border-t-0 lg:border-l border-white/5">
                         {/* Enemy Status */}
-                        <div className="p-2.5 lg:p-3 border-b border-white/5 shrink-0">
+                        <div className="p-3 lg:p-4 border-b border-white/5 shrink-0">
                             <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
                                 <Skull className="w-3 h-3 text-red-400" /> 敌方
                             </div>
@@ -273,7 +307,7 @@ export default function BattleResultPanel({
                         </div>
 
                         {/* Hero Status */}
-                        <div className="p-2.5 lg:p-3 border-b border-white/5 shrink-0">
+                        <div className="p-3 lg:p-4 border-b border-white/5 shrink-0">
                             <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
                                 <Shield className="w-3 h-3 text-cyan-400" /> 我方战损
                             </div>
@@ -285,7 +319,7 @@ export default function BattleResultPanel({
 
                                     return (
                                         <div key={hero.id} className={cn(
-                                            "bg-black/40 rounded-lg p-2.5 border transition-all",
+                                            "bg-black/40 rounded-lg p-2.5 lg:p-3 border transition-all",
                                             hero.isAlive ? "border-white/5" : "border-red-500/20 bg-red-500/5"
                                         )}>
                                             <div className="flex items-center justify-between mb-1.5">
@@ -386,7 +420,7 @@ export default function BattleResultPanel({
 
                         {/* Rewards */}
                         {battleData.victory && (
-                            <div className="p-2.5 lg:p-3 shrink-0">
+                            <div className="p-3 lg:p-4 shrink-0">
                                 <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
                                     <Sparkles className="w-3 h-3 text-emerald-400" /> 战利品
                                 </div>
@@ -419,7 +453,7 @@ export default function BattleResultPanel({
                         )}
 
                         {!battleData.victory && (
-                            <div className="p-2.5 lg:p-3 shrink-0">
+                            <div className="p-3 lg:p-4 shrink-0">
                                 <p className="text-xs text-slate-500 leading-relaxed">实力不济，暂避锋芒。回营修整后再战。</p>
                             </div>
                         )}
