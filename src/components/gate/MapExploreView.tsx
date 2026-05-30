@@ -1,5 +1,5 @@
 /* Extracted from GatePanel.tsx - MapExploreView - Fog of War Edition */
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useGameStore } from '../../store';
 import { simulateBattle } from '../../engine/ruins';
 import { HERO_TEMPLATES, ENEMY_TEMPLATES, POSITION_CONFIG } from '../../data';
@@ -231,16 +231,15 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
     const { ruinsRun, updateRun, heroes, addResources, healParty } = useGameStore();
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
-    if (!ruinsRun) return null;
-
-    if (!ruinsRun.grid || !ruinsRun.fogStates) {
+    useEffect(() => {
+        if (!ruinsRun) return;
+        if (ruinsRun.grid && ruinsRun.fogStates) return;
         const mapData = buildMapData(ruinsRun.nodes);
         updateRun({ grid: mapData.grid, fogStates: mapData.initialStates });
-        return null;
-    }
+    }, [ruinsRun]);
 
-    const enemyGrid = ruinsRun.grid;
-    const cellStates = ruinsRun.fogStates as CellState[];
+    const enemyGrid = ruinsRun?.grid ?? null;
+    const cellStates = (ruinsRun?.fogStates as CellState[]) ?? null;
 
     const spreadFrom = useCallback((pos: GridPos) => {
         const current = useGameStore.getState().ruinsRun?.fogStates as CellState[] | undefined;
@@ -351,6 +350,8 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                 return <React.Fragment key={pos}><EmptyCell onClick={() => handleCellClick(pos)} /></React.Fragment>;
         }
     }, [hoveredNodeId, handleCellClick]);
+
+    if (!ruinsRun || !enemyGrid || !cellStates) return null;
 
     const completedCount = ruinsRun.nodes.filter(n => n.completed).length;
     const totalCount = ruinsRun.nodes.length;
