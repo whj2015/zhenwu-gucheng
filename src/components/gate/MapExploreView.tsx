@@ -154,15 +154,15 @@ function PartyCell({ heroId, position }: { heroId: string | null; position: Posi
 
 function FogCell() {
     return (
-        <CellBase className="border-white/[0.04] bg-white/[0.015]">
-            <span className="text-sm text-white/[0.08]">?</span>
+        <CellBase className="border-white/[0.08] bg-white/[0.03]">
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm border border-dashed border-white/20" />
         </CellBase>
     );
 }
 
 function EmptyRevealedCell() {
     return (
-        <CellBase className="border-white/[0.03] bg-transparent" />
+        <CellBase className="border-dashed border-white/[0.06] bg-transparent" />
     );
 }
 
