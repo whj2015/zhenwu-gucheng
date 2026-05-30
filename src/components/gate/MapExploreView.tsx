@@ -1,5 +1,5 @@
 /* Extracted from GatePanel.tsx - MapExploreView - Fog of War Edition */
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useGameStore } from '../../store';
 import { simulateBattle } from '../../engine/ruins';
 import { HERO_TEMPLATES, ENEMY_TEMPLATES, POSITION_CONFIG } from '../../data';
@@ -10,7 +10,7 @@ import HeroAvatarCompact from './HeroAvatarCompact';
 
 type HeroTrait = 'assault' | 'flank' | 'tank' | 'support' | 'ranged';
 
-const TRAIT_COLORS: Record<HeroTrait | 'ranged', { dot: string; label: string }> = {
+const TRAIT_COLORS: Record<HeroTrait, { dot: string; label: string }> = {
     assault: { dot: 'bg-red-400', label: '突' },
     flank: { dot: 'bg-cyan-400', label: '侧' },
     tank: { dot: 'bg-blue-400', label: '坦' },
@@ -22,7 +22,7 @@ const ROWS: Array<'front' | 'middle' | 'back'> = ['front', 'middle', 'back'];
 const COLS = ['left', 'center', 'right'] as const;
 
 type GridPos = number;
-type CellState = 'hidden' | 'revealed-empty' | 'active' | 'completed';
+type CellState = 'fog' | 'empty' | 'ready' | 'done';
 
 const CELL_SIZE = "w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16";
 const GAP = "gap-1.5 sm:gap-2";
@@ -30,91 +30,72 @@ const GAP = "gap-1.5 sm:gap-2";
 function getNeighbors(pos: GridPos): GridPos[] {
     const row = Math.floor(pos / 3);
     const col = pos % 3;
-    const neighbors: GridPos[] = [];
+    const out: GridPos[] = [];
     for (let dr = -1; dr <= 1; dr++) {
         for (let dc = -1; dc <= 1; dc++) {
             if (dr === 0 && dc === 0) continue;
             const nr = row + dr, nc = col + dc;
-            if (nr >= 0 && nr < 3 && nc >= 0 && nc < 3) {
-                neighbors.push(nr * 3 + nc);
-            }
+            if (nr >= 0 && nr < 3 && nc >= 0 && nc < 3) out.push(nr * 3 + nc);
         }
     }
-    return neighbors;
+    return out;
 }
 
 function distributeNodesToGrid(nodes: RuinsNode[]): (RuinsNode | null)[] {
     const grid: (RuinsNode | null)[] = Array(9).fill(null);
     const shuffled = [...nodes].sort(() => Math.random() - 0.5);
-
-    let pos = 0;
+    let idx = 0;
     for (const node of shuffled) {
-        while (pos < 9 && grid[pos] !== null) pos++;
-        if (pos >= 9) break;
-
-        if (node.type === 'boss') {
-            grid[8] = node;
-        } else {
-            grid[pos] = node;
-            pos++;
-        }
+        if (node.type === 'boss') { grid[8] = node; continue; }
+        while (idx < 9 && grid[idx] !== null) idx++;
+        if (idx >= 9) break;
+        grid[idx] = node;
+        idx++;
     }
-
     return grid;
 }
 
-function initCellStates(grid: (RuinsNode | null)[]): CellState[] {
-    const states: CellState[] = Array(9).fill(null as unknown as CellState);
+interface MapData {
+    grid: (RuinsNode | null)[];
+    initialStates: CellState[];
+}
 
-    grid.forEach((node, i) => {
-        states[i] = node ? 'hidden' : 'revealed-empty';
-    });
+function buildMapData(nodes: RuinsNode[]): MapData {
+    const grid = distributeNodesToGrid(nodes);
+    const states: CellState[] = grid.map(n => n ? 'fog' : 'empty');
 
-    const startPositions: GridPos[] = [0, 1, 2, 3, 5, 6, 7].filter(p => grid[p] !== null);
-    const startPos = startPositions.length > 0
-        ? startPositions[Math.floor(Math.random() * startPositions.length)]
-        : grid.findIndex(n => n !== null);
+    const starts: GridPos[] = [];
+    for (let p = 0; p < 9; p++) if (grid[p] !== null) starts.push(p);
+    const start = starts.length > 0 ? starts[Math.floor(Math.random() * starts.length)] : -1;
 
-    if (startPos >= 0 && grid[startPos]) {
-        states[startPos] = 'active';
-        getNeighbors(startPos).forEach(n => {
-            if (states[n] === 'hidden') states[n] = grid[n] ? 'active' : 'revealed-empty';
-        });
+    if (start >= 0) {
+        states[start] = 'ready';
+        for (const n of getNeighbors(start)) {
+            if (states[n] === 'fog') states[n] = grid[n] ? 'ready' : 'empty';
+        }
     }
 
-    return states;
+    return { grid, initialStates: states };
 }
 
 function CellBase({ children, className }: { children: React.ReactNode; className?: string }) {
     return (
         <div className={cn(
             CELL_SIZE,
-            "rounded-lg sm:rounded-xl border flex flex-col items-center justify-center relative overflow-hidden transition-all duration-300",
+            "rounded-lg sm:rounded-xl border flex flex-col items-center justify-center relative overflow-hidden transition-all duration-200 select-none",
             className
-        )}>
-            {children}
-        </div>
+        )}>{children}</div>
     );
 }
 
 function PartyCell({ heroId, position }: { heroId: string | null; position: PositionKey }) {
     if (!heroId) {
-        const posConfig = POSITION_CONFIG[position] || POSITION_CONFIG['front-center'];
-        return (
-            <CellBase className="border-white/[0.06] bg-white/[0.015]">
-                <span className="text-[8px] sm:text-[9px] font-mono text-slate-700">{posConfig.name}</span>
-            </CellBase>
-        );
+        const pc = POSITION_CONFIG[position] || POSITION_CONFIG['front-center'];
+        return <CellBase className="border-white/[0.06] bg-white/[0.015]"><span className="text-[8px] sm:text-[9px] font-mono text-slate-700">{pc.name}</span></CellBase>;
     }
 
     const hero = useGameStore(s => s.heroes.find(h => h.id === heroId));
-    if (!hero) {
-        return (
-            <CellBase className="border-white/[0.06] bg-white/[0.015]">
-                <span className="text-sm text-slate-700">?</span>
-            </CellBase>
-        );
-    }
+    if (!hero) return <CellBase className="border-white/[0.06] bg-white/[0.015]"><span className="text-sm text-slate-700">?</span></CellBase>;
 
     const t = HERO_TEMPLATES[hero.templateId];
     if (!t) {
@@ -131,93 +112,37 @@ function PartyCell({ heroId, position }: { heroId: string | null; position: Posi
     const maxHp = t.attributes.physique * 10;
     const hpRatio = Math.max(0, Math.min(1, hero.hp / maxHp));
     const hpColor = hpRatio > 0.6 ? 'bg-emerald-500' : hpRatio > 0.3 ? 'bg-amber-500' : 'bg-red-500';
-    const trait = t?.trait as HeroTrait | undefined;
+    const trait = t.trait as HeroTrait | undefined;
     const tc = trait ? TRAIT_COLORS[trait] : null;
 
     return (
-        <CellBase className={cn(
-            "border-white/10 bg-black/40 hover:border-cyan-500/40 hover:bg-black/55 cursor-default",
-            !hero.isAlive && "opacity-35"
-        )}>
-            {tc && (
-                <div className={cn("absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full", tc.dot)} title={TRAIT_COLORS[trait as HeroTrait]?.label} />
-            )}
-            <span className="text-sm sm:text-base font-serif font-bold text-slate-200 leading-none">
-                {t?.name?.[0] || '?'}
-            </span>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50">
-                <div className={cn("h-full transition-all duration-300", hpColor)} style={{ width: `${hpRatio * 100}%` }} />
-            </div>
-        </CellBase>
-    );
+            <CellBase className={cn("border-white/10 bg-black/40 hover:border-cyan-500/40 hover:bg-black/55 cursor-default", hero.hp <= 0 && "opacity-35")}>
+                {tc && <div className={cn("absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full", tc.dot)} title={TRAIT_COLORS[trait].label} />}
+                <span className="text-sm sm:text-base font-serif font-bold text-slate-200 leading-none">{t.name[0] || '?'}</span>
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50">
+                    <div className={cn("h-full transition-all duration-300", hpColor)} style={{ width: `${hpRatio * 100}%` }} />
+                </div>
+            </CellBase>
+        );
 }
 
 function FogCell() {
     return (
-        <CellBase className="border-white/[0.08] bg-white/[0.03]">
+        <CellBase className="border-white/[0.08] bg-white/[0.03] cursor-default">
             <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm border border-dashed border-white/20" />
         </CellBase>
     );
 }
 
-function EmptyRevealedCell() {
-    return (
-        <CellBase className="border-dashed border-white/[0.06] bg-transparent" />
-    );
+function EmptyCell() {
+    return <CellBase className="border-dashed border-white/[0.08] bg-white/[0.012] cursor-default"><span /></CellBase>;
 }
 
-function ActiveEnemyCell({ node, onClick, isHovered, onHover, onLeave }: {
-    node: RuinsNode;
-    onClick: () => void;
-    isHovered: boolean;
-    onHover: () => void;
-    onLeave: () => void;
-}) {
-    const info = getNodeInfo(node);
-
-    if (node.completed) {
-        return (
-            <CellBase className="border-emerald-500/15 bg-emerald-950/10">
-                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-            </CellBase>
-        );
-    }
-
-    const typeStyles: Record<string, string> = {
-        battle: 'border-orange-500/30 bg-orange-950/15 hover:border-orange-400/60 hover:bg-orange-950/25 hover:shadow-[0_0_12px_rgba(249,115,22,0.08)]',
-        boss: 'border-red-500/30 bg-red-950/20 hover:border-red-400/60 hover:bg-red-950/30 hover:shadow-[0_0_12px_rgba(239,68,68,0.1)]',
-        camp: 'border-emerald-500/25 bg-emerald-950/10 hover:border-emerald-400/50 hover:bg-emerald-950/18',
-        armory: 'border-violet-500/25 bg-violet-950/10 hover:border-violet-400/50 hover:bg-violet-950/18',
-    };
-
+function DoneCell() {
     return (
-        <button
-            onMouseEnter={onHover}
-            onMouseLeave={onLeave}
-            onClick={onClick}
-            className={cn(
-                CELL_SIZE,
-                "rounded-lg sm:rounded-xl border flex flex-col items-center justify-center relative overflow-hidden",
-                "transition-all duration-200 cursor-pointer",
-                typeStyles[node.type] || 'border-white/10 bg-white/[0.03]',
-                isHovered && "scale-110 z-10"
-            )}
-        >
-            <span className="text-base sm:text-lg leading-none mb-0.5">{info.icon}</span>
-            {(node.type === 'battle' || node.type === 'boss') && (node as any).enemies && (
-                <span className="text-[8px] font-mono text-slate-500 leading-none">
-                    x{(node as any).enemies.length}
-                </span>
-            )}
-            {isHovered && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-black/95 backdrop-blur-md border border-white/10 rounded-lg p-2 z-30 animate-in fade-in zoom-in-95 duration-150 shadow-xl">
-                    <div className={cn("font-serif text-xs font-bold mb-0.5", info.color)}>{info.name}</div>
-                    <div className="text-[10px] text-slate-400 leading-relaxed line-clamp-2">{info.desc}</div>
-                    <div className="mt-1 text-[9px] font-mono text-cyan-400/80">点击进入</div>
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-black/95 border-r border-b border-white/10"></div>
-                </div>
-            )}
-        </button>
+        <CellBase className="border-emerald-500/15 bg-emerald-950/10 cursor-default">
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+        </CellBase>
     );
 }
 
@@ -234,27 +159,74 @@ function getNodeInfo(node: RuinsNode) {
     return { name: '', icon: '', desc: '', color: '' };
 }
 
+const TYPE_STYLES: Record<string, { normal: string; hover: string }> = {
+    battle:  { normal: 'border-orange-500/30 bg-orange-950/15', hover: 'border-orange-400/60 bg-orange-950/25 shadow-[0_0_12px_rgba(249,115,22,0.08)]' },
+    boss:    { normal: 'border-red-500/30 bg-red-950/20',     hover: 'border-red-400/60 bg-red-950/30 shadow-[0_0_12px_rgba(239,68,68,0.1)]' },
+    camp:    { normal: 'border-emerald-500/25 bg-emerald-950/10', hover: 'border-emerald-400/50 bg-emerald-950/18' },
+    armory:  { normal: 'border-violet-500/25 bg-violet-950/10',   hover: 'border-violet-400/50 bg-violet-950/18' },
+};
+
+function ReadyCell({ node, onClick, isHovered, onHover, onLeave }: {
+    node: RuinsNode; onClick: () => void;
+    isHovered: boolean; onHover: () => void; onLeave: () => void;
+}) {
+    const info = getNodeInfo(node);
+    const st = TYPE_STYLES[node.type] || { normal: 'border-white/10 bg-white/[0.03]', hover: '' };
+
+    return (
+        <button type="button" onMouseEnter={onHover} onMouseLeave={onLeave} onClick={onClick} className={cn(
+            CELL_SIZE,
+            "rounded-lg sm:rounded-xl border flex flex-col items-center justify-center relative overflow-hidden transition-all duration-200 cursor-pointer",
+            st.normal,
+            isHovered ? cn(st.hover, "scale-110 z-10") : ("hover:" + st.hover)
+        )}>
+            <span className="text-base sm:text-lg leading-none mb-0.5">{info.icon}</span>
+            {(node.type === 'battle' || node.type === 'boss') && (node as any).enemies && (
+                <span className="text-[8px] font-mono text-slate-500 leading-none">x{(node as any).enemies.length}</span>
+            )}
+            {isHovered && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-black/95 backdrop-blur-md border border-white/10 rounded-lg p-2 z-30 animate-in fade-in zoom-in-95 duration-150 shadow-xl">
+                    <div className={cn("font-serif text-xs font-bold mb-0.5", info.color)}>{info.name}</div>
+                    <div className="text-[10px] text-slate-400 leading-relaxed line-clamp-2">{info.desc}</div>
+                    <div className="mt-1 text-[9px] font-mono text-cyan-400/80">点击进入</div>
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-black/95 border-r border-b border-white/10"></div>
+                </div>
+            )}
+        </button>
+    );
+}
+
 export default function MapExploreView({ onBattleComplete }: { onBattleComplete: (data: ReturnType<typeof buildBattleResultData>, node: RuinsNode) => void }) {
     const { ruinsRun, updateRun, heroes, addResources, healParty } = useGameStore();
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-    const [ready, setReady] = useState(false);
-    const [cellStates, setCellStates] = useState<CellState[]>(Array(9).fill('hidden'));
-    const [enemyGrid, setEnemyGrid] = useState<(RuinsNode | null)[]>(Array(9).fill(null));
-    const initRef = useRef(false);
 
-    if (!ruinsRun) return null;
+    const mapData = useMemo<MapData | null>(() => {
+        if (!ruinsRun) return null;
+        return buildMapData(ruinsRun.nodes);
+    }, [ruinsRun]);
 
-    if (!initRef.current) {
-        initRef.current = true;
-        const grid = distributeNodesToGrid(ruinsRun.nodes);
-        const states = initCellStates(grid);
-        setEnemyGrid(grid);
-        setCellStates(states);
-        setReady(true);
-    }
+    const [cellStates, setCellStates] = useState<CellState[]>(() =>
+        mapData ? [...mapData.initialStates] : Array(9).fill('fog')
+    );
+
+    const enemyGrid = mapData?.grid ?? Array(9).fill(null);
+
+    if (!ruinsRun || !mapData) return null;
 
     const handleNodeClick = useCallback((pos: GridPos, node: RuinsNode) => {
-        if (!node.revealed || node.completed) return;
+        let shouldProcess = false;
+        setCellStates(prev => {
+            if (prev[pos] !== 'ready') return prev;
+            shouldProcess = true;
+            const next = [...prev];
+            next[pos] = 'done';
+            for (const n of getNeighbors(pos)) {
+                if (next[n] === 'fog') next[n] = enemyGrid[n] ? 'ready' : 'empty';
+            }
+            return next;
+        });
+
+        if (!shouldProcess) return;
 
         if (node.type === 'camp') {
             healParty(0.2);
@@ -266,24 +238,15 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                 .filter((hId): hId is string => hId !== null)
                 .map(hId => heroes.find(x => x.id === hId)!)
                 .filter(Boolean);
-
             const enemyIds = (node as any).enemies as string[];
             const enemyData = enemyIds.map((eId: string) => ({ ...ENEMY_TEMPLATES[eId], id: eId }));
-
             const res = simulateBattle(activeHeros, enemyData, HERO_TEMPLATES, ruinsRun.party);
-
             useGameStore.getState().applyCombatResults(res.remainingState, res.victory);
-
             const battleResultData = buildBattleResultData({
-                victory: res.victory,
-                logs: res.logs,
-                remainingState: res.remainingState,
-                heroes: activeHeros,
-                enemies: enemyData,
-                nodeType: node.type as 'battle' | 'boss',
+                victory: res.victory, logs: res.logs, remainingState: res.remainingState,
+                heroes: activeHeros, enemies: enemyData, nodeType: node.type as 'battle' | 'boss',
                 floorNumber: ruinsRun.currentFloor,
             });
-
             onBattleComplete(battleResultData, node);
         }
 
@@ -298,26 +261,25 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
             });
             updateRun({ nodes: updatedNodes });
         }
-
-        setCellStates(prev => {
-            if (!prev) return prev;
-            const next = [...prev];
-            next[pos] = 'completed';
-
-            const toReveal = getNeighbors(pos).filter(n => next[n] === 'hidden');
-            toReveal.forEach(n => {
-                next[n] = enemyGrid[n] ? 'active' : 'revealed-empty';
-            });
-
-            return next;
-        });
     }, [ruinsRun, heroes, addResources, healParty, updateRun, onBattleComplete, enemyGrid]);
 
     const completedCount = ruinsRun.nodes.filter(n => n.completed).length;
     const totalCount = ruinsRun.nodes.length;
-    const revealedCount = cellStates.filter(s => s !== 'hidden').length;
 
-    if (!ready) return null;
+    const renderEnemyCell = useCallback((pos: GridPos): React.ReactNode => {
+        const state = cellStates[pos];
+        const node = enemyGrid[pos];
+        switch (state) {
+            case 'fog':   return <React.Fragment key={pos}><FogCell /></React.Fragment>;
+            case 'empty': return <React.Fragment key={pos}><EmptyCell /></React.Fragment>;
+            case 'done':  return <React.Fragment key={pos}>{node ? <DoneCell /> : <EmptyCell />}</React.Fragment>;
+            case 'ready': return <React.Fragment key={pos}>{node ? (
+                <ReadyCell node={node} onClick={() => handleNodeClick(pos, node)}
+                    isHovered={hoveredNodeId === node.id} onHover={() => setHoveredNodeId(node.id)} onLeave={() => setHoveredNodeId(null)} />
+            ) : <EmptyCell />}</React.Fragment>;
+            default:      return <React.Fragment key={pos}><EmptyCell /></React.Fragment>;
+        }
+    }, [cellStates, enemyGrid, hoveredNodeId, handleNodeClick]);
 
     return (
         <div className="max-w-4xl mx-auto h-full flex flex-col animate-in fade-in duration-500 relative">
@@ -328,12 +290,9 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                     <span className="text-[10px] font-mono text-slate-600 bg-white/5 px-1.5 sm:px-2 py-0.5 rounded border border-white/5">
                         {completedCount}/{totalCount}
                     </span>
-                    <span className="text-[9px] font-mono text-slate-700 hidden sm:inline">
-                        探索 {revealedCount}/9
-                    </span>
                 </div>
                 <div className="hidden sm:flex flex-wrap gap-2 sm:gap-3 lg:gap-4 text-[9px] lg:text-[10px] font-mono text-slate-500 uppercase tracking-wider">
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-cyan-500/50"></span>可探索</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500/50"></span>可探索</span>
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500/50"></span>营地</span>
                     <span className="hidden sm:flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-violet-500/50"></span>宝箱</span>
                     <span className="hidden sm:flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500/50"></span>BOSS</span>
@@ -345,12 +304,10 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                 <div className="flex flex-col items-center">
                     <div className="text-[9px] sm:text-[10px] font-mono text-cyan-500/60 tracking-widest uppercase mb-2">我方阵型</div>
                     <div className={cn("grid grid-cols-3", GAP)}>
-                        {ROWS.map(row =>
-                            COLS.map(col => {
-                                const posKey = `${row}-${col}` as PositionKey;
-                                return <PartyCell key={posKey} heroId={ruinsRun.party[posKey]} position={posKey} />;
-                            })
-                        )}
+                        {ROWS.map(row => COLS.map(col => {
+                            const posKey = `${row}-${col}` as PositionKey;
+                            return <React.Fragment key={posKey}><PartyCell heroId={ruinsRun.party[posKey]} position={posKey} /></React.Fragment>;
+                        }))}
                     </div>
                 </div>
 
@@ -369,37 +326,7 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                 <div className="flex flex-col items-center">
                     <div className="text-[9px] sm:text-[10px] font-mono text-red-500/60 tracking-widest uppercase mb-2">敌方阵地</div>
                     <div className={cn("grid grid-cols-3", GAP)}>
-                        {Array.from({ length: 9 }, (_, pos) => {
-                            const state = cellStates[pos];
-                            const node = enemyGrid[pos];
-
-                            if (state === 'hidden') {
-                                return <FogCell key={pos} />;
-                            }
-
-                            if (state === 'revealed-empty') {
-                                return <EmptyRevealedCell key={pos} />;
-                            }
-
-                            if (state === 'completed' && node) {
-                                return <ActiveEnemyCell key={node.id} node={node} onClick={() => {}} isHovered={false} onHover={() => {}} onLeave={() => {}} />;
-                            }
-
-                            if ((state === 'active' || state === 'completed') && node) {
-                                return (
-                                    <ActiveEnemyCell
-                                        key={node.id}
-                                        node={node}
-                                        onClick={() => handleNodeClick(pos, node)}
-                                        isHovered={hoveredNodeId === node.id}
-                                        onHover={() => setHoveredNodeId(node.id)}
-                                        onLeave={() => setHoveredNodeId(null)}
-                                    />
-                                );
-                            }
-
-                            return <EmptyRevealedCell key={pos} />;
-                        })}
+                        {Array.from({ length: 9 }, (_, pos) => renderEnemyCell(pos))}
                     </div>
                 </div>
             </div>
@@ -411,9 +338,7 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                         return (
                             <div key={pos} className="flex flex-col items-center gap-0.5 sm:gap-1">
                                 <HeroAvatarCompact heroId={hId} />
-                                {!hId && (
-                                    <span className="text-[7px] sm:text-[8px] font-mono text-slate-700">{(POSITION_CONFIG[pos] || POSITION_CONFIG['front-center']).name}</span>
-                                )}
+                                {!hId && <span className="text-[7px] sm:text-[8px] font-mono text-slate-700">{(POSITION_CONFIG[pos] || POSITION_CONFIG['front-center']).name}</span>}
                             </div>
                         );
                     })}
