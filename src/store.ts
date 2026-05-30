@@ -412,6 +412,19 @@ export const useGameStore = create<GameState & {
 
         let actualCostFood = costFood * (actualAmount / amount);
         let actualCostBingxiang = costBingxiang * (actualAmount / amount);
+        
+        const newProgress = { ...state.questState.progress };
+        Object.entries(QUEST_TEMPLATES)
+            .filter(([, q]) => q.requireType === 'recruit')
+            .forEach(([qid]) => {
+                if (state.questState.completedDailyIds.includes(qid)) return;
+                if (state.questState.completedWeeklyIds.includes(qid)) return;
+                if (!state.questState.acceptedIds?.includes(qid)) return;
+                newProgress[qid] = Math.min(
+                    QUEST_TEMPLATES[qid].amount,
+                    (newProgress[qid] || 0) + actualAmount
+                );
+            });
 
         return {
           resources: {
@@ -419,7 +432,11 @@ export const useGameStore = create<GameState & {
             food: state.resources.food - actualCostFood,
             bingxiang: state.resources.bingxiang - actualCostBingxiang
           },
-          heroes: newHeroes
+          heroes: newHeroes,
+          questState: {
+              ...state.questState,
+              progress: newProgress
+          }
         };
       }),
 
