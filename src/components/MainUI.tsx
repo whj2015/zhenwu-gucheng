@@ -217,12 +217,12 @@ function TopResourceBar() {
 
     return (
         <div className="grid grid-cols-3 gap-1 sm:gap-2 lg:flex lg:gap-6 lg:overflow-visible py-0.5">
-            <ResourceItem label="人口" value={`${pop}/${maxPop}`} color="text-indigo-200" dotColor="bg-indigo-500" icon="👥" />
+            <ResourceItem label="人口" value={`${pop}/${maxPop}`} color="text-indigo-200" dotColor="bg-indigo-500" icon="👤" />
             <ResourceItem label="粮草" value={resources.food} color="text-emerald-200" dotColor="bg-emerald-500" sub={`+${foodRate}/m`} icon="🌾" />
             <ResourceItem label="木材" value={resources.wood} color="text-orange-200" dotColor="bg-orange-700" sub={`+${woodRate}/m`} icon="🪵" />
-            <ResourceItem label="兵饷" value={resources.bingxiang} color="text-amber-200" dotColor="bg-amber-500" sub={`+${bingxiangRate}/m`} icon="💰" />
-            <ResourceItem label="铁锭" value={resources.iron} color="text-slate-200" dotColor="bg-slate-400" icon="⚙️" />
-            <ResourceItem label="陨铁" value={resources.meteorite} color="text-cyan-200" dotColor="bg-cyan-400" icon="☄️" />
+            <ResourceItem label="兵饷" value={resources.bingxiang} color="text-amber-200" dotColor="bg-amber-500" sub={`+${bingxiangRate}/m`} icon="🪙" />
+            <ResourceItem label="铁锭" value={resources.iron} color="text-slate-200" dotColor="bg-slate-400" icon="⛏️" />
+            <ResourceItem label="陨铁" value={resources.meteorite} color="text-cyan-200" dotColor="bg-cyan-400" icon="✨" />
         </div>
     );
 }
