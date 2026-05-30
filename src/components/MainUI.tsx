@@ -261,8 +261,9 @@ function ResourceItem({ label, value, color, dotColor, sub, icon }: {
                  <span className={cn("font-mono text-[9px] sm:text-xs", color)}>
                      {typeof value === 'number' ? Math.floor(value).toLocaleString() : value}
                  </span>
+                 <span className="text-[7px] text-slate-500 sm:hidden">{label}</span>
              </div>
-             <span className="text-[7px] sm:text-[8px] lg:text-[10px] text-slate-500 hidden sm:inline">{label}</span>
+             <span className="text-[8px] lg:text-[10px] text-slate-500 hidden sm:inline">{label}</span>
              {sub && <span className="text-[6px] sm:text-[7px] text-slate-600 leading-none hidden lg:block">{sub}</span>}
         </div>
     );
