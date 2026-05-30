@@ -53,22 +53,25 @@ interface BattleResultData {
     floorNumber: number;
 }
 
-const RE_ATTACK = /(.+) attacks (.+) for (\d+) damage/;
+const RE_ATTACK = /(.+)\[(.+?)\].*? 攻击 (.+)，造成 (\d+) 点伤害/;
 const RE_ENEMY_ATTACK = /^(.+) → (.+)\[(.+)\]\s*\| \-(\d+)HP/;
+const RE_SKILL_ATTACK = /(.+?) 追击 (.+)，造成 (\d+) 点伤害/;
+const RE_CLEAVE_ATTACK = /\[偃月溅射\] 对 (.+) 造成额外 (\d+) 点伤害/;
 
 function parseBattleLogs(rawLogs: string[], heroes: any[], enemies: any[]): BattleLogEntry[] {
     const entries: BattleLogEntry[] = [];
     let currentRound = 0;
 
     rawLogs.forEach((log, idx) => {
-        if (log.includes('Round') || log.match(/^\d+:/)) {
-            const roundMatch = log.match(/(\d+):/);
+        if (log.includes('回合') || log.match(/^\d+:/)) {
+            const roundMatch = log.match(/(\d+):/) || log.match(/第 (\d+) 回合/);
             if (roundMatch) currentRound = parseInt(roundMatch[1]);
             return;
         }
+
         const attackMatch = log.match(RE_ATTACK);
         if (attackMatch) {
-            const [, attacker, target, dmgStr] = attackMatch;
+            const [, attacker, _pos, target, dmgStr] = attackMatch;
             const isPlayer = heroes.some(h => HERO_TEMPLATES[h.templateId]?.name === attacker);
             entries.push({
                 id: `log-${idx}`,
@@ -80,6 +83,36 @@ function parseBattleLogs(rawLogs: string[], heroes: any[], enemies: any[]): Batt
             });
             return;
         }
+
+        const skillAttackMatch = log.match(RE_SKILL_ATTACK);
+        if (skillAttackMatch) {
+            const [, attacker, target, dmgStr] = skillAttackMatch;
+            const isPlayer = heroes.some(h => HERO_TEMPLATES[h.templateId]?.name === attacker);
+            entries.push({
+                id: `log-${idx}`,
+                round: currentRound,
+                attacker,
+                target,
+                damage: parseInt(dmgStr),
+                isPlayer
+            });
+            return;
+        }
+
+        const cleaveMatch = log.match(RE_CLEAVE_ATTACK);
+        if (cleaveMatch) {
+            const [, target, dmgStr] = cleaveMatch;
+            entries.push({
+                id: `log-${idx}`,
+                round: currentRound,
+                attacker: '[偃月溅射]',
+                target,
+                damage: parseInt(dmgStr),
+                isPlayer: true
+            });
+            return;
+        }
+
         const enemyAttackMatch = log.match(RE_ENEMY_ATTACK);
         if (enemyAttackMatch) {
             const [, attacker, target, _pos, dmgStr] = enemyAttackMatch;
@@ -134,11 +167,11 @@ export default function BattleResultPanel({
     const totalWounded = battleData.heroStates.reduce((sum, h) => sum + (h.wounded || 0), 0);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300 p-2 lg:p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300 p-2 lg:p-4 overflow-y-auto">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(30,41,59,0.4)_0%,transparent_70%)] pointer-events-none"></div>
-            
+
             <div className={cn(
-                "relative w-full max-w-4xl mx-2 lg:mx-4 bg-[#0d0f12]/95 border rounded-2xl shadow-2xl overflow-hidden",
+                "relative w-full max-w-4xl mx-2 lg:mx-4 bg-[#0d0f12]/95 border rounded-2xl shadow-2xl overflow-hidden my-auto",
                 battleData.victory ? "border-cyan-500/30" : "border-red-500/30"
             )}>
                 {battleData.victory && (
@@ -185,40 +218,40 @@ export default function BattleResultPanel({
                     </button>
                 </div>
 
-                <div className="flex flex-col lg:flex-row h-[55vh] sm:h-[60vh] lg:h-[65vh]">
+                <div className="flex flex-col lg:flex-row max-h-[70vh] lg:max-h-[65vh]">
                     {/* Left: Battle Log */}
-                    <div className="flex-1 flex flex-col lg:border-r border-white/5">
-                        <div className="px-6 py-2.5 border-b border-white/5 flex items-center gap-2 shrink-0">
-                            <Sword className="w-3.5 h-3.5 text-orange-400" />
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">战斗记录</span>
-                            <span className="ml-auto text-[10px] font-mono text-slate-600">
+                    <div className="flex-1 flex flex-col lg:border-r border-white/5 min-h-[300px] lg:min-h-0">
+                        <div className="px-4 lg:px-6 py-2 lg:py-2.5 border-b border-white/5 flex items-center gap-2 shrink-0">
+                            <Sword className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-orange-400" />
+                            <span className="text-[10px] lg:text-[11px] font-bold uppercase tracking-widest text-slate-400">战斗记录</span>
+                            <span className="ml-auto text-[9px] lg:text-[10px] font-mono text-slate-600">
                                 {displayedLogs.length}/{battleData.logs.length}
                             </span>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-3 space-y-0.5 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto p-2 lg:p-3 space-y-0.5 custom-scrollbar">
                             {displayedLogs.map((entry) => (
                                 <div
                                     key={entry.id}
                                     className={cn(
-                                        "flex items-start gap-2 py-0.5 px-2 lg:py-1 lg:px-2.5 rounded-md text-[11px] font-mono animate-in fade-in slide-in-from-left-2 duration-300",
+                                        "flex items-start gap-1.5 lg:gap-2 py-0.5 px-1.5 lg:py-1 lg:px-2.5 rounded-md text-[10px] lg:text-[11px] font-mono animate-in fade-in slide-in-from-left-2 duration-300",
                                         entry.isPlayer ? "bg-cyan-500/5" : "bg-red-500/5"
                                     )}
                                 >
-                                    <span className="text-slate-600 shrink-0 w-5 text-[10px]">R{entry.round}</span>
+                                    <span className="text-slate-600 shrink-0 w-4 lg:w-5 text-[9px] lg:text-[10px]">R{entry.round}</span>
                                     <span className={cn(
-                                        "shrink-0 w-3.5 h-3.5 rounded-full flex items-center justify-center mt-0.5",
+                                        "shrink-0 w-3 h-3 lg:w-3.5 lg:h-3.5 rounded-full flex items-center justify-center mt-0.5",
                                         entry.isPlayer ? "bg-cyan-500/20 text-cyan-400" : "bg-red-500/20 text-red-400"
                                     )}>
-                                        {entry.isPlayer ? <ArrowUpRight className="w-2 h-2" /> : <ArrowDownLeft className="w-2 h-2" />}
+                                        {entry.isPlayer ? <ArrowUpRight className="w-1.5 h-1.5 lg:w-2 lg:h-2" /> : <ArrowDownLeft className="w-1.5 h-1.5 lg:w-2 lg:h-2" />}
                                     </span>
                                     <span className={cn("flex-1 truncate", entry.isPlayer ? "text-slate-200" : "text-slate-300")}>
-                                        <span className={cn("font-semibold", entry.isPlayer ? "text-cyan-300" : "text-red-300")}>{entry.attacker}</span>
-                                        <span className="text-slate-500 mx-1">→</span>
-                                        <span className="text-slate-400">{entry.target}</span>
+                                        <span className={cn("font-semibold text-[10px] lg:text-xs", entry.isPlayer ? "text-cyan-300" : "text-red-300")}>{entry.attacker}</span>
+                                        <span className="text-slate-500 mx-0.5 lg:mx-1">→</span>
+                                        <span className="text-slate-400 text-[10px] lg:text-xs">{entry.target}</span>
                                     </span>
                                     <span className={cn(
-                                        "font-bold tabular-nums shrink-0 px-1.5 py-0.5 rounded text-[10px]",
+                                        "font-bold tabular-nums shrink-0 px-1 lg:px-1.5 py-0.5 rounded text-[9px] lg:text-[10px]",
                                         entry.isPlayer ? "bg-cyan-500/10 text-cyan-400" : "bg-red-500/10 text-red-400"
                                     )}>
                                         -{entry.damage}
@@ -235,15 +268,15 @@ export default function BattleResultPanel({
                     </div>
 
                     {/* Right: Result Summary */}
-                    <div className="w-full lg:w-72 flex flex-col overflow-y-auto custom-scrollbar">
+                    <div className="w-full lg:w-72 flex flex-col overflow-y-auto custom-scrollbar max-h-[40vh] lg:max-h-none">
                         {/* Enemy Status */}
-                        <div className="p-2.5 lg:p-3 border-b border-white/5 shrink-0">
-                            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
-                                <Skull className="w-3 h-3 text-red-400" /> 敌方
+                        <div className="p-2 lg:p-2.5 lg:p-3 border-b border-white/5 shrink-0">
+                            <div className="text-[9px] lg:text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 lg:mb-2 flex items-center gap-1 lg:gap-1.5">
+                                <Skull className="w-2.5 h-2.5 lg:w-3 lg:h-3 text-red-400" /> 敌方
                             </div>
-                            <div className="space-y-1.5">
+                            <div className="space-y-1 lg:space-y-1.5">
                                 {battleData.enemyStates.map((enemy, idx) => (
-                                    <div key={`${enemy.templateId}-${idx}`} className="bg-black/40 rounded-lg p-2.5 border border-white/5">
+                                    <div key={`${enemy.templateId}-${idx}`} className="bg-black/40 rounded-lg p-2 lg:p-2.5 border border-white/5">
                                         <div className="flex items-center justify-between mb-1.5">
                                             <span className={cn("font-serif font-bold text-xs", !enemy.isAlive && "line-through text-slate-600")}>
                                                 {enemy.name}
@@ -273,11 +306,11 @@ export default function BattleResultPanel({
                         </div>
 
                         {/* Hero Status */}
-                        <div className="p-2.5 lg:p-3 border-b border-white/5 shrink-0">
-                            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
-                                <Shield className="w-3 h-3 text-cyan-400" /> 我方战损
+                        <div className="p-2 lg:p-2.5 lg:p-3 border-b border-white/5 shrink-0">
+                            <div className="text-[9px] lg:text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 lg:mb-2 flex items-center gap-1 lg:gap-1.5">
+                                <Shield className="w-2.5 h-2.5 lg:w-3 lg:h-3 text-cyan-400" /> 我方战损
                             </div>
-                            <div className="space-y-1.5">
+                            <div className="space-y-1 lg:space-y-1.5">
                                 {battleData.heroStates.map((hero) => {
                                     const hpPercent = (hero.hpAfter / hero.maxHp) * 100;
                                     const hpLost = hero.hpBefore - hero.hpAfter;
@@ -285,15 +318,15 @@ export default function BattleResultPanel({
 
                                     return (
                                         <div key={hero.id} className={cn(
-                                            "bg-black/40 rounded-lg p-2.5 border transition-all",
+                                            "bg-black/40 rounded-lg p-2 lg:p-2.5 border transition-all",
                                             hero.isAlive ? "border-white/5" : "border-red-500/20 bg-red-500/5"
                                         )}>
-                                            <div className="flex items-center justify-between mb-1.5">
-                                                <span className={cn("font-serif font-bold text-xs", !hero.isAlive && "text-red-400")}>
+                                            <div className="flex items-center justify-between mb-1 lg:mb-1.5">
+                                                <span className={cn("font-serif font-bold text-[11px] lg:text-xs", !hero.isAlive && "text-red-400")}>
                                                     {hero.name}
-                                                    {!hero.isAlive && <span className="ml-1 text-[9px] font-mono text-red-500">阵亡</span>}
+                                                    {!hero.isAlive && <span className="ml-1 text-[8px] lg:text-[9px] font-mono text-red-500">阵亡</span>}
                                                 </span>
-                                                <div className="flex items-center gap-1.5 text-[9px] font-mono">
+                                                <div className="flex items-center gap-1 lg:gap-1.5 text-[8px] lg:text-[9px] font-mono">
                                                     {troopsLost > 0 && (
                                                         <span className="text-orange-400 flex items-center gap-0.5">
                                                             <Users className="w-2.5 h-2.5" />-{troopsLost}
@@ -386,11 +419,11 @@ export default function BattleResultPanel({
 
                         {/* Rewards */}
                         {battleData.victory && (
-                            <div className="p-2.5 lg:p-3 shrink-0">
-                                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
-                                    <Sparkles className="w-3 h-3 text-emerald-400" /> 战利品
+                            <div className="p-2 lg:p-2.5 lg:p-3 shrink-0">
+                                <div className="text-[9px] lg:text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 lg:mb-2 flex items-center gap-1 lg:gap-1.5">
+                                    <Sparkles className="w-2.5 h-2.5 lg:w-3 lg:h-3 text-emerald-400" /> 战利品
                                 </div>
-                                <div className="space-y-1.5">
+                                <div className="space-y-1 lg:space-y-1.5">
                                     {(battleData.rewards.iron > 0 || battleData.rewards.meteorite > 0) && (
                                         <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2.5 space-y-1.5">
                                             {battleData.rewards.iron > 0 && (
@@ -419,8 +452,8 @@ export default function BattleResultPanel({
                         )}
 
                         {!battleData.victory && (
-                            <div className="p-2.5 lg:p-3 shrink-0">
-                                <p className="text-xs text-slate-500 leading-relaxed">实力不济，暂避锋芒。回营修整后再战。</p>
+                            <div className="p-2 lg:p-2.5 lg:p-3 shrink-0">
+                                <p className="text-[11px] lg:text-xs text-slate-500 leading-relaxed">实力不济，暂避锋芒。回营修整后再战。</p>
                             </div>
                         )}
                     </div>
