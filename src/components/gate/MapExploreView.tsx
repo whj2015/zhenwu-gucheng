@@ -87,15 +87,15 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
 
     return (
         <div className="max-w-3xl mx-auto h-full flex flex-col animate-in fade-in duration-500 relative">
-            
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                    <h3 className="font-serif text-xl lg:text-2xl text-slate-200 tracking-widest">第 {ruinsRun.currentFloor} 阵</h3>
-                    <span className="text-[10px] font-mono text-slate-600 bg-white/5 px-2 py-0.5 rounded border border-white/5">
+
+            <div className="flex items-center justify-between mb-3 sm:mb-5 lg:mb-6">
+                <div className="flex items-center gap-2 sm:gap-3">
+                    <h3 className="font-serif text-lg sm:text-xl lg:text-2xl text-slate-200 tracking-widest">第 {ruinsRun.currentFloor} 阵</h3>
+                    <span className="text-[10px] font-mono text-slate-600 bg-white/5 px-1.5 sm:px-2 py-0.5 rounded border border-white/5">
                         {completedCount}/{totalCount}
                     </span>
                 </div>
-                <div className="flex flex-wrap gap-3 lg:gap-4 text-[9px] lg:text-[10px] font-mono text-slate-500 uppercase tracking-wider">
+                <div className="hidden sm:flex flex-wrap gap-2 sm:gap-3 lg:gap-4 text-[9px] lg:text-[10px] font-mono text-slate-500 uppercase tracking-wider">
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-cyan-500/50"></span>可探索</span>
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500/50"></span>营地</span>
                     <span className="hidden sm:flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-violet-500/50"></span>宝箱</span>
@@ -104,7 +104,7 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
             </div>
 
             {/* Node Grid */}
-            <div className="flex-1 flex flex-col items-center justify-center gap-6 lg:gap-10 py-4 lg:py-6 relative">
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 sm:gap-5 lg:gap-10 py-2 sm:py-4 lg:py-6 relative overflow-hidden">
                 
                 {/* Row 0 */}
                 <div className="flex justify-center gap-4 lg:gap-8">
@@ -139,9 +139,9 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                     ))}
                 </div>
 
-                {/* Hover tooltip */}
+                {/* Hover tooltip - hidden on mobile, shown on tap */}
                 {hoveredNode && !hoveredNode.completed && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 lg:top-4 lg:right-0 lg:left-auto lg:translate-x-0 lg:mt-0 w-48 lg:w-56 bg-black/90 backdrop-blur-md border border-white/10 rounded-xl p-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200 z-20">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 sm:top-4 sm:right-0 sm:left-auto sm:translate-x-0 sm:mt-0 w-48 lg:w-56 bg-black/90 backdrop-blur-md border border-white/10 rounded-xl p-3 sm:p-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200 z-20 sm:max-w-[200px]">
                         {(() => {
                             const info = getNodeLabel(hoveredNode);
                             return (
@@ -159,15 +159,15 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
             </div>
 
             {/* Party Status Bar */}
-            <div className="mt-auto pt-4 border-t border-white/5 bg-black/30 rounded-xl p-3 lg:p-4 backdrop-blur-sm">
-                <div className="flex justify-center items-start gap-2">
+            <div className="mt-auto pt-3 sm:pt-4 border-t border-white/5 bg-black/30 rounded-xl p-2.5 sm:p-3 lg:p-4 backdrop-blur-sm">
+                <div className="grid grid-cols-3 sm:flex justify-center items-start gap-x-4 sm:gap-2 lg:gap-2 gap-y-1 sm:gap-y-0">
                     {(['front-left','front-center','front-right','middle-left','middle-center','middle-right','back-left','back-center','back-right'] as PositionKey[]).map(pos => {
                         const hId = ruinsRun.party[pos];
                         return (
-                            <div key={pos} className="flex flex-col items-center gap-1">
+                            <div key={pos} className="flex flex-col items-center gap-0.5 sm:gap-1">
                                 <HeroAvatarCompact heroId={hId} />
                                 {!hId && (
-                                    <span className="text-[8px] font-mono text-slate-700">{(POSITION_CONFIG[pos] || POSITION_CONFIG['front-center']).name}</span>
+                                    <span className="text-[7px] sm:text-[8px] font-mono text-slate-700">{(POSITION_CONFIG[pos] || POSITION_CONFIG['front-center']).name}</span>
                                 )}
                             </div>
                         );
