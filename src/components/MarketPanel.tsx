@@ -48,22 +48,22 @@ export default function MarketPanel() {
     const allTrades = [...BASE_TRADE_OPTIONS, ...UNLOCKED_TRADES.filter(t => !t.requireLevel || t.requireLevel <= mktLvl)];
 
     return (
-        <div className="max-w-4xl mx-auto h-full flex flex-col pt-3 lg:pt-4 animate-in fade-in duration-500">
-            <div className="text-center mb-6">
-                <h2 className="text-2xl lg:text-3xl font-serif text-slate-200 tracking-widest mb-2 flex items-center justify-center">
-                    <Store className="w-7 h-7 lg:w-8 lg:h-8 mr-3 text-amber-500" /> 城中集市
+        <div className="max-w-4xl mx-auto h-full flex flex-col pt-2 sm:pt-3 lg:pt-4 animate-in fade-in duration-500">
+            <div className="text-center mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-serif text-slate-200 tracking-widest mb-1.5 sm:mb-2 flex items-center justify-center">
+                    <Store className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 mr-2 sm:mr-3 text-amber-500" /> 城中集市
                 </h2>
-                <p className="text-slate-400 text-sm max-w-lg mx-auto leading-relaxed">
+                <p className="text-slate-400 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed px-2">
                     南来北往的商客汇聚于此，你可以在此将多余的产出兑换为急需的物资。
                 </p>
             </div>
 
-            <div className="flex items-center justify-between mb-5 bg-amber-500/5 border border-amber-500/10 rounded-lg px-3 lg:px-4 py-1.5 lg:py-2">
-                <div className="flex items-center gap-2 lg:gap-3">
-                    <span className="text-xs font-mono text-slate-500">Lv.{mktLvl}</span>
-                    <span className="text-[11px] text-amber-300/80 hidden sm:inline">{currentBenefit.label}</span>
+            <div className="flex flex-wrap items-center justify-between mb-3 sm:mb-5 bg-amber-500/5 border border-amber-500/10 rounded-lg px-2.5 sm:px-3 lg:px-4 py-1.5 lg:py-2 gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3">
+                    <span className="text-[10px] sm:text-xs font-mono text-slate-500">Lv.{mktLvl}</span>
+                    <span className="text-[10px] sm:text-[11px] text-amber-300/80 hidden sm:inline">{currentBenefit.label}</span>
                     {bonusRate > 0 && (
-                        <span className="text-[10px] bg-amber-500/15 text-amber-300 px-1.5 py-0.5 rounded font-mono">+{bonusRate}%收益</span>
+                        <span className="text-[9px] sm:text-[10px] bg-amber-500/15 text-amber-300 px-1.5 py-0.5 rounded font-mono">+{bonusRate}%收益</span>
                     )}
                 </div>
                 {nextBenefit && (
@@ -71,17 +71,17 @@ export default function MarketPanel() {
                         onClick={() => upgradeBuilding('marketLevel', upgradeCost)}
                         disabled={!canUpgrade}
                         className={cn(
-                            "flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-mono transition-all",
+                            "flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded text-[10px] sm:text-[11px] font-mono transition-all mobile-touch-target",
                             canUpgrade ? "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/25" : "text-slate-600 cursor-not-allowed"
                         )}
                     >
-                        <ArrowUpCircle className="w-3 h-3" />
+                        <ArrowUpCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                         升级 → {nextBenefit.label.split('，')[0]}
                     </button>
                 )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5 overflow-y-auto flex-1 custom-scrollbar pr-1 pb-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-5 overflow-y-auto flex-1 custom-scrollbar pr-1 pb-2">
                 {allTrades.map(opt => {
                     const canAfford = resources[opt.fromType] >= opt.fromAmount;
                     const fromLabel = getResourceLabel(opt.fromType);
@@ -91,51 +91,51 @@ export default function MarketPanel() {
 
                     return (
                         <div key={opt.id} className={cn(
-                            "bg-black/40 border rounded-xl p-4 lg:p-5 relative overflow-hidden group",
+                            "bg-black/40 border rounded-xl p-3 sm:p-4 lg:p-5 relative overflow-hidden group",
                             isUnlocked ? "border-white/10" : "border-white/5 opacity-50"
                         )}>
-                           <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/5 blur-3xl pointer-events-none rounded-full group-hover:bg-amber-500/10 transition-colors"></div>
+                           <div className="absolute -top-10 -right-10 w-28 h-28 sm:w-32 sm:h-32 bg-white/5 blur-3xl pointer-events-none rounded-full group-hover:bg-amber-500/10 transition-colors"></div>
 
-                           <div className="flex items-center justify-between mb-3">
-                               <h3 className="text-sm lg:text-base font-serif text-slate-200">{opt.label}</h3>
+                           <div className="flex items-center justify-between mb-2 sm:mb-3">
+                               <h3 className="text-xs sm:text-sm lg:text-base font-serif text-slate-200">{opt.label}</h3>
                                {!isUnlocked && (
-                                   <span className="text-[10px] bg-slate-800/80 text-slate-400 px-2 py-0.5 rounded font-mono">
+                                   <span className="text-[9px] sm:text-[10px] bg-slate-800/80 text-slate-400 px-1.5 sm:px-2 py-0.5 rounded font-mono">
                                        需集市 Lv.{opt.requireLevel}
                                    </span>
                                )}
                            </div>
 
-                           <div className="flex items-center justify-between bg-black/60 p-2.5 lg:p-3 rounded-lg border border-white/5 mb-4">
-                               <div className="text-center flex-1">
-                                    <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">消耗</div>
-                                    <div className="font-mono text-base lg:text-lg text-red-300">-{opt.fromAmount} <span className="text-xs text-slate-400">{fromLabel}</span></div>
+                           <div className="flex items-center justify-between bg-black/60 p-2 sm:p-2.5 lg:p-3 rounded-lg border border-white/5 mb-3 sm:mb-4">
+                               <div className="text-center flex-1 min-w-0">
+                                    <div className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-widest mb-1">消耗</div>
+                                    <div className="font-mono text-sm sm:text-base lg:text-lg text-red-300 truncate">-{opt.fromAmount} <span className="text-[10px] sm:text-xs text-slate-400">{fromLabel}</span></div>
                                </div>
-                               <div className="px-2 lg:px-3 text-slate-600">
-                                   <ArrowRightLeft className="w-4 h-4 lg:w-5 lg:h-5" />
+                               <div className="px-1.5 sm:px-2 lg:px-3 text-slate-600 shrink-0">
+                                   <ArrowRightLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
                                </div>
-                               <div className="text-center flex-1">
-                                    <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">获得</div>
-                                    <div className={cn("font-mono text-base lg:text-lg", opt.iconColor)}>
+                               <div className="text-center flex-1 min-w-0">
+                                    <div className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-widest mb-1">获得</div>
+                                    <div className={cn("font-mono text-sm sm:text-base lg:text-lg", opt.iconColor)}>
                                         +{opt.toAmount}{bonusTo > 0 && <span className="text-emerald-400 ml-0.5">(+{bonusTo})</span>}
-                                        <span className="text-xs text-slate-400">{toLabel}</span>
+                                        <span className="text-[10px] sm:text-xs text-slate-400">{toLabel}</span>
                                     </div>
                                     {bonusTo > 0 && (
-                                        <div className="text-[9px] text-emerald-400/70 mt-0.5">含集市加成 +{bonusRate}%</div>
+                                        <div className="text-[8px] sm:text-[9px] text-emerald-400/70 mt-0.5">含集市加成 +{bonusRate}%</div>
                                     )}
                                </div>
                            </div>
 
-                           <button 
+                           <button
                                 onClick={() => tradeResource(opt.fromType, opt.toType, opt.fromAmount, opt.toAmount)}
                                 disabled={!canAfford || !isUnlocked}
                                 className={cn(
-                                    "w-full py-2.5 rounded-lg font-bold tracking-widest text-sm transition-all flex items-center justify-center gap-1.5",
-                                    isUnlocked && canAfford 
-                                        ? "bg-amber-900/40 hover:bg-amber-800/60 border border-amber-500/50 text-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.1)]" 
+                                    "w-full py-2 sm:py-2.5 rounded-lg font-bold tracking-widest text-[10px] sm:text-sm transition-all flex items-center justify-center gap-1 sm:gap-1.5 mobile-touch-target",
+                                    isUnlocked && canAfford
+                                        ? "bg-amber-900/40 hover:bg-amber-800/60 border border-amber-500/50 text-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.1)]"
                                         : "bg-white/5 border border-white/10 text-slate-500 cursor-not-allowed"
                                 )}
-                           >
-                               {!isUnlocked ? <Gift className="w-3.5 h-3.5" /> : null}
+                            >
+                               {!isUnlocked ? <Gift className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : null}
                                确认交易
                            </button>
                         </div>

@@ -3,6 +3,15 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { GameState, HeroState, CraftingTask, Equipment, PositionKey, WOUNDED_NATURAL_RECOVER_RATE, getWarehouseResourceCap, QuestState, CraftingState } from './types';
 import { HERO_TEMPLATES, FORGE_UPGRADE_COSTS, CRAFTING_TEMPLATES, QUEST_TEMPLATES } from './data';
 import { generateId } from './utils';
+import { 
+    trackAction, 
+    getQuestProgress as engineGetProgress,
+    validateQuestTurnIn,
+    generateDailyQuests,
+    generateWeeklyQuests,
+    QUEST_TYPE_CONFIG,
+    type QuestType 
+} from './utils/questEngine';
 
 const safeStorage = {
   getItem: (name: string): string | null => {
@@ -63,7 +72,10 @@ const INITIAL_STATE: GameState = {
       completedWeeklyIds: [],
       lastDailyReset: Date.now(),
       lastWeeklyReset: Date.now(),
-      progress: {}
+      progress: {},
+      acceptedIds: [],
+      activeDailyIds: [],
+      activeWeeklyIds: []
   } as QuestState
 };
 
@@ -92,6 +104,7 @@ export const useGameStore = create<GameState & {
   initTavernPool: () => void;
   checkAndRefreshQuests: () => void;
   turnInQuest: (questId: string) => boolean;
+  acceptQuest: (questId: string) => boolean;
   trackQuestProgress: (progressType: string, amount: number) => void;
 }>()(
   persist(
@@ -116,10 +129,10 @@ export const useGameStore = create<GameState & {
              if (pop > maxPop) pop = maxPop;
         }
 
-        const bingxiangGained = (delta / 1000) * (pop * 0.01);
-        const foodGained = (delta / 1000) * (farmLvl * 2);
-        const woodGained = (delta / 1000) * (woodLvl * 1.5);
-        const ironGained = (delta / 1000) * (warehouseLvl * 0.8);
+        const bingxiangGained = Math.floor((delta / 1000) * (pop * 0.01));
+        const foodGained = Math.floor((delta / 1000) * (farmLvl * 2));
+        const woodGained = Math.floor((delta / 1000) * (woodLvl * 1.5));
+        const ironGained = Math.floor((delta / 1000) * (warehouseLvl * 0.8));
 
         const resourceCap = getWarehouseResourceCap(warehouseLvl);
 
@@ -135,10 +148,10 @@ export const useGameStore = create<GameState & {
           resources: {
             ...state.resources,
             population: pop,
-            bingxiang: state.resources.bingxiang + Math.floor(bingxiangGained),
-            food: state.resources.food + Math.floor(foodGained),
-            wood: state.resources.wood + Math.floor(woodGained),
-            iron: Math.min(state.resources.iron + Math.floor(ironGained), resourceCap)
+            bingxiang: state.resources.bingxiang + bingxiangGained,
+            food: state.resources.food + foodGained,
+            wood: state.resources.wood + woodGained,
+            iron: Math.min(state.resources.iron + ironGained, resourceCap)
           },
           heroes: newHeroes,
           lastTickTime: now
@@ -271,15 +284,21 @@ export const useGameStore = create<GameState & {
           durability: 100,
           maxDurability: 100
         };
+        
+        const newProgress = trackAction('craft', 1, state.questState, QUEST_TEMPLATES);
 
         return {
-          crafting: {
-              task: null,
-              consecutiveNormal: newConsecutiveNormal,
-              consecutiveFine: newConsecutiveFine,
-              totalCrafted: state.crafting.totalCrafted + 1
-          },
-          inventory: [...state.inventory, generatedEquip]
+            crafting: {
+                task: null,
+                consecutiveNormal: newConsecutiveNormal,
+                consecutiveFine: newConsecutiveFine,
+                totalCrafted: state.crafting.totalCrafted + 1
+            },
+            inventory: [...state.inventory, generatedEquip],
+            questState: {
+                ...state.questState,
+                progress: newProgress
+            }
         };
       }),
 
@@ -340,6 +359,7 @@ export const useGameStore = create<GameState & {
       addResources: (res) => set((state) => {
           const cap = getWarehouseResourceCap(state.buildings.warehouseLevel);
           const clamp = (val: number) => Math.max(0, Math.min(cap, val));
+          
           return {
               resources: {
                   ...state.resources,
@@ -392,6 +412,8 @@ export const useGameStore = create<GameState & {
 
         let actualCostFood = costFood * (actualAmount / amount);
         let actualCostBingxiang = costBingxiang * (actualAmount / amount);
+        
+        const newProgress = trackAction('recruit', actualAmount, state.questState, QUEST_TEMPLATES);
 
         return {
           resources: {
@@ -399,7 +421,11 @@ export const useGameStore = create<GameState & {
             food: state.resources.food - actualCostFood,
             bingxiang: state.resources.bingxiang - actualCostBingxiang
           },
-          heroes: newHeroes
+          heroes: newHeroes,
+          questState: {
+              ...state.questState,
+              progress: newProgress
+          }
         };
       }),
 
@@ -486,7 +512,18 @@ export const useGameStore = create<GameState & {
                   };
               }
           });
-          return { heroes: newHeroes };
+          
+          const newProgress = won 
+              ? trackAction('explore', 1, state.questState, QUEST_TEMPLATES)
+              : state.questState.progress;
+          
+          return { 
+              heroes: newHeroes,
+              questState: {
+                  ...state.questState,
+                  progress: newProgress
+              }
+          };
       }),
 
       treatWounded: (heroId, amount, costFood) => set((state) => {
@@ -567,20 +604,49 @@ export const useGameStore = create<GameState & {
           let newLastDailyReset = qs.lastDailyReset;
           let newLastWeeklyReset = qs.lastWeeklyReset;
           let newProgress = { ...qs.progress };
+          let newAcceptedIds = qs.acceptedIds || [];
+          let newActiveDailyIds = qs.activeDailyIds || [];
+          let newActiveWeeklyIds = qs.activeWeeklyIds || [];
 
+          // Check daily reset
           if (now - qs.lastDailyReset >= dayMs) {
               newDailyIds = [];
               newProgress = {};
+              newAcceptedIds = [];
               newLastDailyReset = now;
-              const dailyQuestIds = Object.entries(QUEST_TEMPLATES)
-                  .filter(([, q]) => q.category === 'daily')
-                  .map(([id]) => id);
-              dailyQuestIds.forEach(id => { newProgress[id] = 0; });
+              
+              // Generate random daily quests (pick 6 from pool)
+              const dailyPool = generateDailyQuests(QUEST_TEMPLATES, 6);
+              newActiveDailyIds = Array.from(dailyPool.keys());
+              
+              // Initialize progress for action-based quests
+              dailyPool.forEach((template, id) => {
+                  if (template.requireType !== 'resource') {
+                      newProgress[id] = 0;
+                  }
+                  // Auto-accept non-resource quests
+                  if (template.requireType !== 'resource') {
+                      newAcceptedIds.push(id);
+                  }
+              });
           }
 
+          // Check weekly reset
           if (now - qs.lastWeeklyReset >= weekMs) {
               newWeeklyIds = [];
               newLastWeeklyReset = now;
+              
+              // Generate random weekly quests (pick 2-3 from pool)
+              const weeklyPool = generateWeeklyQuests(QUEST_TEMPLATES, 3);
+              newActiveWeeklyIds = Array.from(weeklyPool.keys());
+              
+              // Initialize progress and auto-accept
+              weeklyPool.forEach((template, id) => {
+                  if (template.requireType !== 'resource') {
+                      newProgress[id] = 0;
+                      newAcceptedIds.push(id);
+                  }
+              });
           }
 
           return {
@@ -590,10 +656,32 @@ export const useGameStore = create<GameState & {
                   completedWeeklyIds: newWeeklyIds,
                   lastDailyReset: newLastDailyReset,
                   lastWeeklyReset: newLastWeeklyReset,
-                  progress: newProgress
+                  progress: newProgress,
+                  acceptedIds: newAcceptedIds,
+                  activeDailyIds: newActiveDailyIds,
+                  activeWeeklyIds: newActiveWeekIds
               }
           };
       }),
+
+      acceptQuest: (questId) => {
+          let success = false;
+          set((state) => {
+              const qs = state.questState;
+              if (qs.acceptedIds?.includes(questId)) return state;
+              if (qs.completedDailyIds.includes(questId)) return state;
+              if (qs.completedWeeklyIds.includes(questId)) return state;
+              
+              success = true;
+              return {
+                  questState: {
+                      ...qs,
+                      acceptedIds: [...(qs.acceptedIds || []), questId]
+                  }
+              };
+          });
+          return success;
+      },
 
       turnInQuest: (questId) => {
           let success = false;
@@ -601,26 +689,23 @@ export const useGameStore = create<GameState & {
               const template = QUEST_TEMPLATES[questId];
               if (!template) return state;
 
+              // Use engine to validate
+              const validation = validateQuestTurnIn(questId, template, state);
+              if (!validation.valid) return state;
+
+              // Process turn-in
               const qs = state.questState;
-              const isCompleted = qs.completedDailyIds.includes(questId) || qs.completedWeeklyIds.includes(questId);
-              if (isCompleted) return state;
-
-              const currentProgress = qs.progress[questId] || 0;
-              if (currentProgress < template.amount) return state;
-
               const newCompletedIds = template.category === 'daily'
                   ? [...qs.completedDailyIds, questId]
                   : [...qs.completedWeeklyIds, questId];
 
-              const resourceGains: Partial<GameState['resources']> = {};
-              for (const [key, val] of Object.entries(template.rewards)) {
-                  resourceGains[key as keyof GameState['resources']] =
-                      (state.resources[key as keyof GameState['resources']] || 0) + val;
-              }
-
               success = true;
               return {
-                  resources: { ...state.resources, ...resourceGains },
+                  resources: { 
+                      ...state.resources, 
+                      ...(validation.resourceGains || {}),
+                      ...(validation.resourceCosts || {})
+                  },
                   questState: {
                       ...qs,
                       [template.category === 'daily' ? 'completedDailyIds' : 'completedWeeklyIds']: newCompletedIds

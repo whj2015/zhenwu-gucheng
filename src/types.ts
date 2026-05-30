@@ -104,6 +104,9 @@ export interface QuestState {
     lastDailyReset: number;
     lastWeeklyReset: number;
     progress: Record<string, number>;
+    acceptedIds: string[];
+    activeDailyIds: string[];  // 当前活跃的每日任务ID
+    activeWeeklyIds: string[]; // 当前活跃的每周任务ID
 }
 
 export interface GameState {
