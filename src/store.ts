@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { GameState, HeroState, CraftingTask, Equipment, PositionKey, WOUNDED_NATURAL_RECOVER_RATE, getWarehouseResourceCap, QuestState, CraftingState } from './types';
+import { GameState, HeroState, CraftingTask, Equipment, PositionKey, WOUNDED_NATURAL_RECOVER_RATE, getWarehouseResourceCap, QuestState, CraftingState, RuinsNode } from './types';
 import { HERO_TEMPLATES, FORGE_UPGRADE_COSTS, CRAFTING_TEMPLATES, QUEST_TEMPLATES } from './data';
 import { generateId } from './utils';
 import { 
@@ -346,7 +346,9 @@ export const useGameStore = create<GameState & {
               nodes: nodes,
               party,
               status: 'in_progress',
-              currentNodeId: null
+              currentNodeId: null,
+              grid: null as (RuinsNode | null)[] | null,
+              fogStates: null as string[] | null
           }
       })),
 

@@ -1,5 +1,5 @@
 /* Extracted from GatePanel.tsx - MapExploreView - Fog of War Edition */
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useGameStore } from '../../store';
 import { simulateBattle } from '../../engine/ruins';
 import { HERO_TEMPLATES, ENEMY_TEMPLATES, POSITION_CONFIG } from '../../data';
@@ -231,22 +231,28 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
     const { ruinsRun, updateRun, heroes, addResources, healParty } = useGameStore();
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
-    const gridRef = useRef<(RuinsNode | null)[] | null>(null);
-    const [cellStates, setCellStates] = useState<CellState[]>(Array(9).fill('fog'));
-    const [ready, setReady] = useState(false);
+    if (!ruinsRun) return null;
+
+    if (!ruinsRun.grid || !ruinsRun.fogStates) {
+        const mapData = buildMapData(ruinsRun.nodes);
+        updateRun({ grid: mapData.grid, fogStates: mapData.initialStates });
+        return null;
+    }
+
+    const enemyGrid = ruinsRun.grid;
+    const cellStates = ruinsRun.fogStates as CellState[];
 
     const spreadFrom = useCallback((pos: GridPos) => {
-        const eg = gridRef.current;
-        if (!eg) return;
-        setCellStates(prev => {
-            const next = [...prev];
-            for (const n of getNeighbors(pos)) {
-                if (next[n] === 'fog') {
-                    next[n] = eg[n] !== null ? 'ready' : 'empty';
-                }
+        const current = useGameStore.getState().ruinsRun?.fogStates as CellState[] | undefined;
+        const eg = useGameStore.getState().ruinsRun?.grid;
+        if (!current || !eg) return;
+        const next = [...current];
+        for (const n of getNeighbors(pos)) {
+            if (next[n] === 'fog') {
+                next[n] = eg[n] !== null ? 'ready' : 'empty';
             }
-            return next;
-        });
+        }
+        useGameStore.getState().updateRun({ fogStates: next });
     }, []);
 
     const handleReadyNodeAction = useCallback((pos: GridPos, node: RuinsNode) => {
@@ -287,37 +293,42 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
             updateRun({ nodes: updatedNodes });
         }
 
-        const eg = gridRef.current;
-        setCellStates(prev => {
-            if (!eg) return prev;
-            const next = [...prev];
-            next[pos] = 'done';
-            for (const n of getNeighbors(pos)) {
-                if (next[n] === 'fog') next[n] = eg[n] !== null ? 'ready' : 'empty';
-            }
-            return next;
-        });
+        const currentFog = useGameStore.getState().ruinsRun?.fogStates as CellState[] | undefined;
+        const eg = useGameStore.getState().ruinsRun?.grid;
+        if (!currentFog || !eg) return;
+        const next = [...currentFog];
+        next[pos] = 'done';
+        for (const n of getNeighbors(pos)) {
+            if (next[n] === 'fog') next[n] = eg[n] !== null ? 'ready' : 'empty';
+        }
+        updateRun({ fogStates: next });
     }, [heroes, addResources, healParty, updateRun, onBattleComplete]);
 
     const handleCellClick = useCallback((pos: GridPos) => {
-        const state = cellStates[pos];
+        const rr = useGameStore.getState().ruinsRun;
+        if (!rr) return;
+        const states = rr.fogStates as CellState[];
+        const state = states[pos];
         if (state === 'fog') return;
-        if (!isRowAccessible(pos, cellStates)) return;
+        if (!isRowAccessible(pos, states)) return;
         if (state === 'ready') {
-            const node = gridRef.current?.[pos];
+            const node = rr.grid?.[pos];
             if (node) handleReadyNodeAction(pos, node);
             return;
         }
         if (state === 'empty' || state === 'done') {
             spreadFrom(pos);
         }
-    }, [cellStates, handleReadyNodeAction, spreadFrom]);
+    }, [handleReadyNodeAction, spreadFrom]);
 
     const renderEnemyCell = useCallback((pos: GridPos): React.ReactNode => {
-        const state = cellStates[pos];
-        const node = gridRef.current?.[pos] ?? null;
+        const rr = useGameStore.getState().ruinsRun;
+        if (!rr) return null;
+        const states = rr.fogStates as CellState[];
+        const state = states[pos];
+        const node = rr.grid?.[pos] ?? null;
 
-        if (state !== 'fog' && !isRowAccessible(pos, cellStates)) {
+        if (state !== 'fog' && !isRowAccessible(pos, states)) {
             return <React.Fragment key={pos}><LockedCell /></React.Fragment>;
         }
 
@@ -339,18 +350,7 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
             default:
                 return <React.Fragment key={pos}><EmptyCell onClick={() => handleCellClick(pos)} /></React.Fragment>;
         }
-    }, [cellStates, hoveredNodeId, handleCellClick]);
-
-    if (!ruinsRun) return null;
-
-    if (gridRef.current === null && !ready) {
-        const mapData = buildMapData(ruinsRun.nodes);
-        gridRef.current = mapData.grid;
-        setCellStates(mapData.initialStates);
-        setReady(true);
-    }
-
-    if (!ready || gridRef.current === null) return null;
+    }, [hoveredNodeId, handleCellClick]);
 
     const completedCount = ruinsRun.nodes.filter(n => n.completed).length;
     const totalCount = ruinsRun.nodes.length;

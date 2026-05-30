@@ -96,6 +96,8 @@ export interface RuinsRun {
   party: Record<PositionKey, string | null>;
   status: 'setup' | 'in_progress' | 'completed' | 'failed';
   currentNodeId: string | null;
+  grid: (RuinsNode | null)[] | null;
+  fogStates: string[] | null;
 }
 
 export interface QuestState {
