@@ -1,5 +1,5 @@
 /* Extracted from GatePanel.tsx - MapExploreView - Fog of War Edition */
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useGameStore } from '../../store';
 import { simulateBattle } from '../../engine/ruins';
 import { HERO_TEMPLATES, ENEMY_TEMPLATES, POSITION_CONFIG } from '../../data';
@@ -235,21 +235,21 @@ function getNodeInfo(node: RuinsNode) {
 export default function MapExploreView({ onBattleComplete }: { onBattleComplete: (data: ReturnType<typeof buildBattleResultData>, node: RuinsNode) => void }) {
     const { ruinsRun, updateRun, heroes, addResources, healParty } = useGameStore();
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-    const [cellStates, setCellStates] = useState<CellState[] | null>(null);
-    const [enemyGrid, setEnemyGrid] = useState<(RuinsNode | null)[] | null>(null);
+    const [ready, setReady] = useState(false);
+    const [cellStates, setCellStates] = useState<CellState[]>(Array(9).fill('hidden'));
+    const [enemyGrid, setEnemyGrid] = useState<(RuinsNode | null)[]>(Array(9).fill(null));
+    const initRef = useRef(false);
 
     if (!ruinsRun) return null;
 
-    const initialized = useMemo(() => {
-        if (enemyGrid && cellStates) return true;
+    if (!initRef.current) {
+        initRef.current = true;
         const grid = distributeNodesToGrid(ruinsRun.nodes);
         const states = initCellStates(grid);
         setEnemyGrid(grid);
         setCellStates(states);
-        return false;
-    }, [ruinsRun.nodes]);
-
-    if (!enemyGrid || !cellStates || !initialized) return null;
+        setReady(true);
+    }
 
     const handleNodeClick = useCallback((pos: GridPos, node: RuinsNode) => {
         if (!node.revealed || node.completed) return;
@@ -314,6 +314,8 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
     const completedCount = ruinsRun.nodes.filter(n => n.completed).length;
     const totalCount = ruinsRun.nodes.length;
     const revealedCount = cellStates.filter(s => s !== 'hidden').length;
+
+    if (!ready) return null;
 
     return (
         <div className="max-w-4xl mx-auto h-full flex flex-col animate-in fade-in duration-500 relative">
