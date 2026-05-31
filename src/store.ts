@@ -1,16 +1,13 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { GameState, HeroState, CraftingTask, Equipment, PositionKey, WOUNDED_NATURAL_RECOVER_RATE, getWarehouseResourceCap, QuestState, CraftingState, RuinsNode } from './types';
+import { GameState, HeroState, Equipment, PositionKey, WOUNDED_NATURAL_RECOVER_RATE, getWarehouseResourceCap, QuestState, CraftingState, RuinsNode } from './types';
 import { HERO_TEMPLATES, FORGE_UPGRADE_COSTS, CRAFTING_TEMPLATES, QUEST_TEMPLATES } from './data';
 import { generateId } from './utils';
-import { 
-    trackAction, 
-    getQuestProgress as engineGetProgress,
+import {
+    trackAction,
     validateQuestTurnIn,
     generateDailyQuests,
-    generateWeeklyQuests,
-    QUEST_TYPE_CONFIG,
-    type QuestType 
+    generateWeeklyQuests
 } from './utils/questEngine';
 
 const pendingWrites = new Map<string, ReturnType<typeof setTimeout>>();

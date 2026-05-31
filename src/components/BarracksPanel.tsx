@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useGameStore } from '../store';
 import { HERO_TEMPLATES } from '../data';
 import { cn } from '../utils';
-import { Shield, Tent, Users } from 'lucide-react';
+import { Tent, Users } from 'lucide-react';
 import HeroIcon from './HeroIcon';
 
 export default function BarracksPanel() {

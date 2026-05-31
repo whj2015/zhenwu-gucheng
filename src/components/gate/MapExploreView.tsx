@@ -5,7 +5,7 @@ import { simulateBattle } from '../../engine/ruins';
 import { HERO_TEMPLATES, ENEMY_TEMPLATES, POSITION_CONFIG } from '../../data';
 import { RuinsNode, PositionKey } from '../../types';
 import { cn } from '../../utils';
-import BattleResultPanel, { buildBattleResultData } from '../BattleResultPanel';
+import { buildBattleResultData } from '../BattleResultPanel';
 import HeroAvatarCompact from './HeroAvatarCompact';
 
 type HeroTrait = 'assault' | 'flank' | 'tank' | 'support' | 'ranged';
@@ -120,7 +120,7 @@ function PartyCell({ heroId, position }: { heroId: string | null; position: Posi
 
     return (
         <CellBase className={cn("border-white/10 bg-black/40 hover:border-cyan-500/40 hover:bg-black/55 cursor-default", hero.hp <= 0 && "opacity-35")}>
-            {tc && <div className={cn("absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full", tc.dot)} title={TRAIT_COLORS[trait].label} />}
+            {tc && <div className={cn("absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full", tc.dot)} title={tc.label} />}
             <span className="text-sm sm:text-base font-serif font-bold text-slate-200 leading-none">{t.name[0] || '?'}</span>
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50">
                 <div className={cn("h-full transition-all duration-300", hpColor)} style={{ width: `${hpRatio * 100}%` }} />

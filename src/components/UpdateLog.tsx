@@ -1,6 +1,5 @@
-import React from 'react';
 import { X, Tag, Calendar, Star, Zap, Bug, Sparkles } from 'lucide-react';
-import { CHANGELOG, CURRENT_VERSION, getVersionDisplay } from '../version';
+import { CHANGELOG, getVersionDisplay } from '../version';
 
 interface UpdateLogProps {
   onClose: () => void;

@@ -1,5 +1,4 @@
 /* Extracted from HeroesPanel.tsx - StatBox */
-import React from 'react';
 import { cn } from '../../utils';
 
 export default function StatBox({ label, base, bonus = 0, max = 0, isHp = false }: { label: string, base: number, bonus?: number, max?: number, isHp?: boolean }) {

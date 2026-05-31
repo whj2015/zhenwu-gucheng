@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useGameStore } from '../store';
 import { CRAFTING_TEMPLATES, FORGE_UPGRADE_COSTS } from '../data';
-import { Hammer, ArrowUpCircle, Clock, Sparkles, Shield, Sword, Crosshair, Star } from 'lucide-react';
+import { ArrowUpCircle, Sparkles, Shield, Sword } from 'lucide-react';
 import { formatTime } from '../utils';
 import { cn } from '../utils';
 import { CraftingCard } from './CraftingCard';
@@ -14,17 +14,10 @@ export const TYPE_ICONS: Record<string, React.ComponentType> = {
   armor: ArmorIcon,
 };
 
-const QUALITY_COLORS: Record<string, string> = {
-    normal: 'text-slate-400 border-slate-500/20',
-    fine: 'text-cyan-400 border-cyan-500/20',
-    epic: 'text-purple-400 border-purple-500/20'
-};
-
 export default function ForgePanel() {
     const buildings = useGameStore((state) => state.buildings);
     const resources = useGameStore((state) => state.resources);
     const startCrafting = useGameStore((state) => state.startCrafting);
-    const claimCrafting = useGameStore((state) => state.claimCrafting);
     const crafting = useGameStore((state) => state.crafting);
     const upgradeForge = useGameStore((state) => state.upgradeForge);
     const lvl = buildings.forgeLevel;

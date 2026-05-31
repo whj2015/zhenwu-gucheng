@@ -4,7 +4,7 @@ import { Store, ArrowUpCircle } from 'lucide-react';
 import { GameState } from '../types';
 import { TradeCard } from './TradeCard';
 
-interface TradeOption {
+export interface TradeOption {
     id: string;
     label: string;
     fromType: keyof GameState['resources'];

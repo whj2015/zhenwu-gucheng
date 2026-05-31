@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useGameStore } from '../../store';
 import { QUEST_TEMPLATES } from '../../data';
 import type { QuestTemplate } from '../../data';
@@ -48,7 +48,7 @@ export default function BoardView() {
     const getActiveDailyQuests = (): [string, QuestTemplate][] => {
         const activeIds = questState.activeDailyIds || [];
         return activeIds
-            .map(id => [id, QUEST_TEMPLATES[id]])
+            .map(id => [id, QUEST_TEMPLATES[id]] as [string, QuestTemplate])
             .filter(([, t]) => t !== undefined)
             .sort((a, b) => a[1].difficulty - b[1].difficulty);
     };
@@ -56,7 +56,7 @@ export default function BoardView() {
     const getActiveWeeklyQuests = (): [string, QuestTemplate][] => {
         const activeIds = questState.activeWeeklyIds || [];
         return activeIds
-            .map(id => [id, QUEST_TEMPLATES[id]])
+            .map(id => [id, QUEST_TEMPLATES[id]] as [string, QuestTemplate])
             .filter(([, t]) => t !== undefined)
             .sort((a, b) => a[1].difficulty - b[1].difficulty);
     };

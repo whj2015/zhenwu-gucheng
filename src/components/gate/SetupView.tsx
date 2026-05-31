@@ -1,5 +1,5 @@
 /* Extracted from GatePanel.tsx - SetupView */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useGameStore } from '../../store';
 import { generateFloor } from '../../engine/ruins';
 import { HERO_TEMPLATES, MISSIONS } from '../../data';
@@ -88,7 +88,7 @@ export default function SetupView({ missionId, onCancel }: { missionId: string, 
             id: `custom-${Date.now()}`,
             name,
             icon: '📋',
-            positions: (Object.keys(POSITION_CONFIG) as PositionKey[]).map(k => party[k]),
+            positions: (Object.keys(POSITION_CONFIG) as PositionKey[]).map(k => party[k]) as (PositionKey | null)[],
         };
         const updated = [...presets.filter(p => !p.id.startsWith('custom-')), newPreset];
         setPresets(updated);

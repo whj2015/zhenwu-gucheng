@@ -1,5 +1,4 @@
 /* Extracted from GatePanel.tsx - ResultView */
-import React from 'react';
 import { useGameStore } from '../../store';
 import { cn } from '../../utils';
 

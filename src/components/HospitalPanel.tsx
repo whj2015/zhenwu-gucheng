@@ -1,10 +1,9 @@
-import React from 'react';
 import { useGameStore } from '../store';
 import { HERO_TEMPLATES } from '../data';
 import { TREAT_COST_PER_WOUNDED } from '../types';
 import { cn } from '../utils';
 import HeroIcon from './HeroIcon';
-import { HeartPulse, Plus, Bandage, Users, Cross, ArrowUpCircle, Sparkles } from 'lucide-react';
+import { HeartPulse, Bandage, Cross, ArrowUpCircle, Sparkles } from 'lucide-react';
 
 const HOSPITAL_BENEFITS = [
     { level: 1, discount: 0, label: "基础医馆" },

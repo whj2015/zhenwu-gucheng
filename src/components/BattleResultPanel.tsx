@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { HERO_TEMPLATES } from '../data';
 import { cn } from '../utils';
 import { Sword, Shield, Skull, Trophy, ArrowDownLeft, ArrowUpRight, Users, ChevronLeft, Sparkles } from 'lucide-react';
@@ -58,7 +58,7 @@ const RE_ENEMY_ATTACK = /^(.+) → (.+)\[(.+)\]\s*\| \-(\d+)HP/;
 const RE_SKILL_ATTACK = /(.+?) 追击 (.+)，造成 (\d+) 点伤害/;
 const RE_CLEAVE_ATTACK = /\[偃月溅射\] 对 (.+) 造成额外 (\d+) 点伤害/;
 
-function parseBattleLogs(rawLogs: string[], heroes: any[], enemies: any[]): BattleLogEntry[] {
+function parseBattleLogs(rawLogs: string[], heroes: any[], _enemies: any[]): BattleLogEntry[] {
     const entries: BattleLogEntry[] = [];
     let currentRound = 0;
 

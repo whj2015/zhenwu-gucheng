@@ -36,7 +36,7 @@ export const TradeCard = memo(function TradeCard({
     bonusRate,
     tradeResource
 }: TradeCardProps) {
-    const canAfford = resources[opt.fromType] >= opt.fromAmount;
+    const canAfford = resources[opt.fromType as keyof typeof resources] >= opt.fromAmount;
     const fromLabel = getResourceLabel(opt.fromType);
     const toLabel = getResourceLabel(opt.toType);
     const isUnlocked = !opt.requireLevel || opt.requireLevel <= mktLvl;
