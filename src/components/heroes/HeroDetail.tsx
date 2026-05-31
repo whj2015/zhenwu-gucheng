@@ -2,7 +2,6 @@
 import { useGameStore } from '../../store';
 import { HERO_TEMPLATES } from '../../data';
 import { Shield, Sword } from 'lucide-react';
-import { cn } from '../../utils';
 import HeroIcon from '../HeroIcon';
 import StatBox from './StatBox';
 import EquipSlot from './EquipSlot';

@@ -1,5 +1,4 @@
 /* Extracted from GatePanel.tsx - NodeButton */
-import React from 'react';
 import { Sword, Tent, Archive, Skull } from 'lucide-react';
 import { RuinsNode } from '../../types';
 import { cn } from '../../utils';

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useGameStore } from '../../store';
 import { cn } from '../../utils';
 import type { Equipment } from '../../types';

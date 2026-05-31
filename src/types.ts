@@ -151,3 +151,31 @@ export const TROOP_MAX_ABSORB = 0.70;       // 兵卒最多减免 70% 伤害
 export const TROOP_HP_COST = 3;             // 抵消 1 点伤害消耗约 3 个兵卒
 export const WOUNDED_NATURAL_RECOVER_RATE = 0.02; // 每秒自然恢复 2% 伤兵
 export const TREAT_COST_PER_WOUNDED = 0.5;  // 治疗每个伤兵消耗 0.5 粮草（招兵的一半）
+
+export type BattleRow = 'front' | 'middle' | 'back';
+
+export interface BattleUnit {
+    id: string;
+    name: string;
+    side: 'player' | 'enemy';
+    hp: number;
+    maxHp: number;
+    row: BattleRow;
+    col: number;
+    templateId?: string;
+    isAlive: boolean;
+}
+
+export interface BattleState {
+    round: number;
+    phase: 'player' | 'enemy' | 'ended';
+    playerUnits: BattleUnit[];
+    enemyUnits: BattleUnit[];
+    selectedAttacker: string | null;
+    selectedTarget: string | null;
+    logs: string[];
+    victory: boolean | null;
+    playerAttacksThisRound: Record<string, string>;
+}
+
+export type HeroTrait = 'assault' | 'flank' | 'tank' | 'support' | 'ranged';

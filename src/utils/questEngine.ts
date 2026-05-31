@@ -5,8 +5,8 @@
  * and validation for all quest types.
  */
 
-import type { QuestTemplate } from './data';
-import type { QuestState, GameState } from './types';
+import type { QuestTemplate } from '../data';
+import type { QuestState, GameState } from '../types';
 
 export type QuestCategory = 'daily' | 'weekly';
 
@@ -188,23 +188,23 @@ export function trackAction(
     const newProgress = { ...questState.progress };
     
     Object.entries(templates)
-        .filter(([, template]) => {
+        .filter(([questId, template]) => {
             // Match quest type
             if (template.requireType !== actionType) return false;
-            
+
             // Skip completed quests
             if (template.category === 'daily') {
-                if (questState.completedDailyIds.includes(template.id || '')) return false;
+                if (questState.completedDailyIds.includes(questId)) return false;
             } else {
-                if (questState.completedWeeklyIds.includes(template.id || '')) return false;
+                if (questState.completedWeeklyIds.includes(questId)) return false;
             }
-            
+
             // Check acceptance for non-resource quests
             const config = QUEST_TYPE_CONFIG[actionType];
-            if (config.needsAcceptance && !questState.acceptedIds?.includes(template.id || '')) {
+            if (config.needsAcceptance && !questState.acceptedIds?.includes(questId)) {
                 return false;
             }
-            
+
             return true;
         })
         .forEach(([questId, template]) => {

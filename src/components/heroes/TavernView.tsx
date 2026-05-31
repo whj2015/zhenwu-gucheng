@@ -1,5 +1,5 @@
 /* Extracted from HeroesPanel.tsx - TavernView */
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useGameStore } from '../../store';
 import { HERO_TEMPLATES } from '../../data';
 import { RefreshCw } from 'lucide-react';

@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useGameStore } from '../store';
 import { Building, Hammer, Map, Users, Tent, HeartPulse, Store, Settings, Package, ScrollText } from 'lucide-react';
-import { cn } from '../utils';
 import CityPanel from './CityPanel';
 import ForgePanel from './ForgePanel';
 import HeroesPanel from './HeroesPanel';

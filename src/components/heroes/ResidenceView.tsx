@@ -1,5 +1,5 @@
 /* Extracted from HeroesPanel.tsx - ResidenceView */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useGameStore } from '../../store';
 import { HERO_TEMPLATES } from '../../data';
 import { Users } from 'lucide-react';

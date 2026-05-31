@@ -1,5 +1,4 @@
 /* Extracted from GatePanel.tsx - MissionSelectionView */
-import React from 'react';
 import { MISSIONS } from '../../data';
 import { MapPin } from 'lucide-react';
 import { cn } from '../../utils';

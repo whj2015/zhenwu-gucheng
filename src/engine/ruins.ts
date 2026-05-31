@@ -1,7 +1,6 @@
-import { RuinsNode, BattleNode, ArmoryNode, CampNode, HeroState, PositionKey, TROOP_ABSORB_PER_TROOP, TROOP_MAX_ABSORB, TROOP_HP_COST } from '../types';
-import { POSITION_CONFIG, ENEMY_TEMPLATES } from '../data';
+import { RuinsNode, HeroState, PositionKey, TROOP_ABSORB_PER_TROOP, TROOP_MAX_ABSORB, TROOP_HP_COST, BattleState, BattleUnit, BattleRow, HeroTrait } from '../types';
+import { POSITION_CONFIG, ENEMY_TEMPLATES, HERO_TEMPLATES, MISSIONS } from '../data';
 import { generateId } from '../utils';
-import { MISSIONS } from '../data';
 
 export function generateFloor(floorNumber: number, missionId: string): RuinsNode[] {
     const nodes: RuinsNode[] = [];
@@ -169,7 +168,6 @@ export function simulateBattle(heroes: HeroState[], enemyDataList: any[], templa
     }));
 
     const getAliveEnemies = () => enemyStates.filter(e => e.hp > 0);
-    const getAlivePlayers = () => playerStates.filter(ps => ps.hp > 0);
 
     const applyHeroSkillDamageReduction = (ps: PlayerState, rawDmg: number): number => {
         const se = ps.skillEffect;
@@ -471,7 +469,6 @@ export function simulateBattle(heroes: HeroState[], enemyDataList: any[], templa
                troopLoss = Math.min(state.troops, Math.ceil(absorbedDmg / TROOP_HP_COST));
                const woundedRate = Math.min(0.85, 0.30 + state.command * 0.025);
                newWounded = Math.floor(troopLoss * woundedRate);
-               const deadTroops = troopLoss - newWounded;
                state.troops -= troopLoss;
                state.wounded += newWounded;
            }
@@ -494,9 +491,6 @@ export function simulateBattle(heroes: HeroState[], enemyDataList: any[], templa
     logs.push('⏱️ 战斗超时...');
     return { victory: false, logs, remainingState: playerStates };
 }
-
-import { HERO_TEMPLATES } from '../data';
-import { BattleState, BattleUnit, BattleRow, HeroTrait } from '../data';
 
 export function initTacticalBattle(
     heroes: { id: string; templateId: string; hp: number; troops: number; wounded: number; equipment: any }[],
@@ -574,8 +568,8 @@ export function canTarget(
     targetId: string,
     battleState: BattleState
 ): { can: boolean; reason?: string } {
-    const attacker = battleState.playerUnits.find(u => u.id === attackerId && u.isAlive);
-    const target = battleState.enemyUnits.find(u => u.id === targetId && u.isAlive);
+    const attacker = battleState.playerUnits.find((u: BattleUnit) => u.id === attackerId && u.isAlive);
+    const target = battleState.enemyUnits.find((u: BattleUnit) => u.id === targetId && u.isAlive);
     if (!attacker || !target) return { can: false, reason: '无效目标' };
 
     const t = HERO_TEMPLATES[attacker.templateId || ''];
@@ -583,7 +577,7 @@ export function canTarget(
 
     if (trait === 'flank' || trait === 'ranged') return { can: true };
 
-    const aliveFrontEnemies = battleState.enemyUnits.filter(u => u.isAlive && u.row === 'front');
+    const aliveFrontEnemies = battleState.enemyUnits.filter((u: BattleUnit) => u.isAlive && u.row === 'front');
     if (aliveFrontEnemies.length > 0 && target.row !== 'front') {
         return { can: false, reason: '前方仍有敌人阻挡，无法攻击后排' };
     }
@@ -595,8 +589,8 @@ export function executePlayerAttack(battleState: BattleState): BattleState {
     const { selectedAttacker, selectedTarget, playerUnits, enemyUnits } = battleState;
     if (!selectedAttacker || !selectedTarget) return battleState;
 
-    const attacker = playerUnits.find(u => u.id === selectedAttacker && u.isAlive);
-    const target = enemyUnits.find(u => u.id === selectedTarget && u.isAlive);
+    const attacker = playerUnits.find((u: BattleUnit) => u.id === selectedAttacker && u.isAlive);
+    const target = enemyUnits.find((u: BattleUnit) => u.id === selectedTarget && u.isAlive);
     if (!attacker || !target) return battleState;
 
     const check = canTarget(selectedAttacker, selectedTarget, battleState);
@@ -630,7 +624,7 @@ export function executePlayerAttack(battleState: BattleState): BattleState {
 
     const newAttacks = { ...battleState.playerAttacksThisRound, [selectedAttacker]: selectedTarget };
 
-    const enemiesAlive = enemyUnits.some(u => u.isAlive);
+    const enemiesAlive = enemyUnits.some((u: BattleUnit) => u.isAlive);
     const newState: BattleState = {
         ...battleState,
         enemyUnits: [...enemyUnits],
@@ -648,8 +642,8 @@ export function executePlayerAttack(battleState: BattleState): BattleState {
 export function executeEnemyTurn(battleState: BattleState): BattleState {
     let { playerUnits, enemyUnits, logs, round } = battleState;
 
-    let alivePlayers = playerUnits.filter(u => u.isAlive);
-    const aliveEnemies = enemyUnits.filter(u => u.isAlive);
+    let alivePlayers = playerUnits.filter((u: BattleUnit) => u.isAlive);
+    const aliveEnemies = enemyUnits.filter((u: BattleUnit) => u.isAlive);
 
     const newLogs = [...logs];
     newLogs.push(`--- 第 ${round} 回合 敌方反击 ---`);
@@ -658,7 +652,7 @@ export function executeEnemyTurn(battleState: BattleState): BattleState {
         const et = ENEMY_TEMPLATES[enemy.templateId || ''];
         if (!alivePlayers.length) break;
 
-        const aliveFrontPlayers = alivePlayers.filter(p => p.row === 'front');
+        const aliveFrontPlayers = alivePlayers.filter((p: BattleUnit) => p.row === 'front');
         let targets = aliveFrontPlayers.length > 0 ? aliveFrontPlayers : alivePlayers;
 
         const target = targets[Math.floor(Math.random() * targets.length)];
@@ -671,12 +665,12 @@ export function executeEnemyTurn(battleState: BattleState): BattleState {
         target.hp -= dmg;
         if (target.hp <= 0) target.isAlive = false;
 
-        alivePlayers = playerUnits.filter(u => u.isAlive);
+        alivePlayers = playerUnits.filter((u: BattleUnit) => u.isAlive);
         newLogs.push(`${enemy.name} → ${target.name}  -${dmg}HP${target.hp <= 0 ? ' 💀' : ''}`);
     }
 
-    const playersAlive = playerUnits.some(u => u.isAlive);
-    const enemiesAlive = enemyUnits.some(u => u.isAlive);
+    const playersAlive = playerUnits.some((u: BattleUnit) => u.isAlive);
+    const enemiesAlive = enemyUnits.some((u: BattleUnit) => u.isAlive);
 
     return {
         ...battleState,

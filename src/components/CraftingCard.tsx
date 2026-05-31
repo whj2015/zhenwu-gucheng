@@ -1,7 +1,6 @@
-import { memo, useMemo } from 'react';
-import { Sword, Shield } from 'lucide-react';
+import { memo } from 'react';
 import { cn } from '../utils';
-import { CRAFTING_TEMPLATES, TYPE_ICONS } from './ForgePanel';
+import { TYPE_ICONS } from './ForgePanel';
 import { formatTime } from '../utils';
 
 interface CraftingCardProps {
