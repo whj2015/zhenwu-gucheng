@@ -12,7 +12,8 @@ export const RESOURCE_CONFIG = {
         FARM_FOOD: 2,
         LUMBER_WOOD: 1.5,
         WAREHOUSE_IRON: 0.8
-    }
+    },
+    EXPEDITION_COST_PER_HERO: 10
 };
 
 export const BUILDING_CONFIG = {
@@ -25,7 +26,18 @@ export const BUILDING_CONFIG = {
         lumberCampLevel: 1,
         warehouseLevel: 1
     },
-    POP_PER_HOUSE: 100
+    POP_PER_HOUSE: 100,
+    UPGRADE_COST_MULTIPLIER: 1.5,
+    BASE_COSTS: {
+        house: { wood: 100, iron: 50, bingxiang: 80 },
+        farm: { wood: 80, iron: 30, food: 50 },
+        lumberCamp: { wood: 60, iron: 40, bingxiang: 60 },
+        forge: { wood: 200, iron: 150, bingxiang: 100 },
+        hospital: { wood: 150, iron: 100, bingxiang: 120 },
+        market: { wood: 180, iron: 80, bingxiang: 140 },
+        warehouse: { wood: 120, iron: 90, bingxiang: 100 },
+        barracks: { wood: 250, iron: 200, bingxiang: 180 }
+    }
 };
 
 export const OFFLINE_CONFIG = {
@@ -62,12 +74,42 @@ export const RECOVERY_CONFIG = {
 };
 
 export const MARKET_CONFIG = {
-    BONUS_PER_LEVEL: 0.08
+    BONUS_PER_LEVEL: 0.08,
+    EXCHANGE_RATES: {
+        'food-to-wood': 2,
+        'wood-to-iron': 3,
+        'food-to-bingxiang': 4,
+        'bingxiang-to-iron': 2
+    }
 };
 
 export const TAVERN_CONFIG = {
     BASE_COST: 150,
     COST_INCREMENT: 50,
     MAX_COST: 500,
-    POOL_SIZE: 3
+    POOL_SIZE: 3,
+    RECRUIT_COSTS_BY_RARITY: {
+        N: 150,
+        R: 300,
+        SR: 600,
+        SSR: 1200
+    },
+    PITY_SYSTEM: {
+        RARE_GUARANTEE: 10,
+        EPIC_GUARANTEE: 50
+    }
+};
+
+export const ECONOMY_CONFIG = {
+    PYRAMID_LEVELS: [
+        { name: '人口', resource: 'population', source: 'house' },
+        { name: '兵饷', resource: 'bingxiang', source: 'population' },
+        { name: '粮草', resource: 'food', source: 'farm' },
+        { name: '木材', resource: 'wood', source: 'lumberCamp' },
+        { name: '铁锭', resource: 'iron', source: ['battle', 'market'] },
+        { name: '陨铁', resource: 'meteorite', source: 'boss_drop' }
+    ],
+    POPULATION_PENALTY_THRESHOLD: 0.9,
+    POPULATION_GROWTH_PENALTY: -0.5,
+    HERO_RECRUIT_POP_COST: 10
 };

@@ -136,6 +136,13 @@ export interface GameState {
   lastTickTime: number;
   tavernPool: string[];
   tavernRefreshCount: number;
+  recruitStats: {
+    totalRecruits: number;
+    sinceLastR: number;
+    sinceLastSR: number;
+    pityR: number;
+    pitySR: number;
+  };
   questState: QuestState;
 }
 
@@ -178,4 +185,28 @@ export interface BattleState {
     playerAttacksThisRound: Record<string, string>;
 }
 
-export type HeroTrait = 'assault' | 'flank' | 'tank' | 'support' | 'ranged';
+export type HeroTrait = 'assault' | 'flank' | 'tank' | 'support' | 'ranged' | 'healer';
+
+// Energy System for Manual Battle Mode
+export interface EnergyState {
+    current: number;
+    max: number;
+    perTurnGain: number;
+}
+
+export type BattleMode = 'auto' | 'manual';
+
+export type SkillActionType = 
+    | { type: 'attack'; targetId: string }
+    | { type: 'skill'; skillName: string; targetIds: string[]; cost: number }
+    | { type: 'defend' }
+    | { type: 'skip' };
+
+export interface ManualBattleState {
+    mode: BattleMode;
+    heroEnergy: Record<string, EnergyState>;
+    pendingActions: Record<string, SkillActionType | null>;
+    turnTimeLimit: number; // seconds
+    turnTimeRemaining: number;
+    isPaused: boolean;
+}

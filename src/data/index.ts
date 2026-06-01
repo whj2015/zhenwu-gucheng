@@ -11,16 +11,31 @@ export type SkillEffect =
     | { type: 'extra_action_chance'; value: number; desc: string }
     | { type: 'cleave'; value: number; desc: string }
     | { type: 'enhanced_heal'; trigger: 'position'; targetPositions: string[]; baseValue: number; enhancedValue: number; desc: string }
-    | { type: 'berserk'; hpThreshold: number; atkMultiplier: number; desc: string }
+    | { type: 'berserk'; trigger?: 'low_hp' | 'hp_below_threshold'; threshold?: number; atkBoost?: number; hpThreshold?: number; atkMultiplier?: number; defReduction?: number; desc: string }
     | { type: 'rally_cry'; intervalRounds: number; atkBuff: number; durationRounds: number; desc: string }
     | { type: 'dodge'; trigger: 'position'; targetPositions: string[]; dodgeChance: number; desc: string }
-    | { type: 'iron_will'; maxHpBonus: number; damageCap: number; desc: string };
+    | { type: 'iron_will'; maxHpBonus: number; damageCap: number; desc: string }
+    | { type: 'damage_redirect'; value: number; range: string; desc: string }
+    | { type: 'last_stand'; trigger: 'hp_below_threshold'; threshold: number; atkMultiplier: number; desc: string }
+    | { type: 'aoe_attack'; cost: { energy: number; cooldown: number }; damageMultiplier: number; selfDebuff: { def_reduction: number; duration: number }; desc: string }
+    | { type: 'damage_bonus_vs_type'; condition: { enemy_type: string[] }; damageMultiplier: number; desc: string }
+    | { type: 'party_buff'; cost: { energy: number; cooldown: number }; buff: { atk_boost: number; duration: number }; target: string; desc: string }
+    | { type: 'mass_cc'; cost: { energy: number; cooldown: number }; target: string; count: number; debuff: { stun: boolean; duration: number }; desc: string }
+    | { type: 'heal_and_cleanse'; cost: { energy: number; cooldown: number }; heal_percent: number; cleanse_debuffs: boolean; target: string; desc: string };
 
-export type HeroTrait = 'assault' | 'flank' | 'tank' | 'support' | 'ranged';
+export type Rarity = 'N' | 'R' | 'SR' | 'SSR';
+
+export interface PositionBonus {
+    pos: string;
+    bonus: Record<string, number>;
+}
+
+export type HeroTrait = 'assault' | 'flank' | 'tank' | 'support' | 'healer' | 'ranged';
 
 export interface HeroTemplate {
     name: string;
     quality: string;
+    rarity: Rarity;
     icon: string | null;
     attributes: { force: number; physique: number; agility: number; command: number };
     skillName: string;
@@ -28,6 +43,9 @@ export interface HeroTemplate {
     skillEffect?: SkillEffect;
     trait: HeroTrait;
     traitDesc: string;
+    positionBonus?: PositionBonus[];
+    flavorText?: string;
+    lore?: string;
 }
 
 export type EnemyAbility =
@@ -100,7 +118,7 @@ export interface PositionDef {
     isRear: boolean;
 }
 
-export const HERO_TEMPLATES: Record<string, HeroTemplate> = heroesRaw.heroes as Record<string, HeroTemplate>;
+export const HERO_TEMPLATES: Record<string, HeroTemplate> = heroesRaw.heroes as unknown as Record<string, HeroTemplate>;
 
 export const ENEMY_TEMPLATES: Record<string, EnemyTemplate> = enemiesRaw.enemies as Record<string, EnemyTemplate>;
 
