@@ -1,7 +1,8 @@
 /* Extracted from HeroesPanel.tsx - StatBox */
+import { memo } from 'react';
 import { cn } from '../../utils';
 
-export default function StatBox({ label, base, bonus = 0, max = 0, isHp = false }: { label: string, base: number, bonus?: number, max?: number, isHp?: boolean }) {
+export default memo(function StatBox({ label, base, bonus = 0, max = 0, isHp = false }: { label: string, base: number, bonus?: number, max?: number, isHp?: boolean }) {
     return (
         <div className="bg-white/5 p-1.5 sm:p-2 lg:p-3 border border-white/5 rounded-lg flex flex-col justify-center">
              <div className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-widest mb-0.5 sm:mb-1">{label}</div>
@@ -12,4 +13,4 @@ export default function StatBox({ label, base, bonus = 0, max = 0, isHp = false 
              </div>
         </div>
     );
-}
+});

@@ -1,18 +1,32 @@
-import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useGameStore } from '../store';
 import { Building, Hammer, Map, Users, Tent, HeartPulse, Store, Settings, Package, ScrollText } from 'lucide-react';
-import CityPanel from './CityPanel';
-import ForgePanel from './ForgePanel';
-import HeroesPanel from './HeroesPanel';
-import GatePanel from './GatePanel';
-import BarracksPanel from './BarracksPanel';
-import HospitalPanel from './HospitalPanel';
-import MarketPanel from './MarketPanel';
-import WarehousePanel from './WarehousePanel';
 import UpdateLog from './UpdateLog';
 import { ResourceItem } from './ResourceItem';
 import { TabButton } from './TabButton';
 import { getVersionDisplay } from '../version';
+
+const CityPanel = lazy(() => import('./CityPanel'));
+const ForgePanel = lazy(() => import('./ForgePanel'));
+const HeroesPanel = lazy(() => import('./HeroesPanel'));
+const GatePanel = lazy(() => import('./GatePanel'));
+const BarracksPanel = lazy(() => import('./BarracksPanel'));
+const HospitalPanel = lazy(() => import('./HospitalPanel'));
+const MarketPanel = lazy(() => import('./MarketPanel'));
+const WarehousePanel = lazy(() => import('./WarehousePanel'));
+
+function PanelSkeleton() {
+    return (
+        <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-white/5 rounded w-1/3"></div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, i) => (
+                    <div key={i} className="h-32 bg-white/5 rounded-xl"></div>
+                ))}
+            </div>
+        </div>
+    );
+}
 
 type Tab = 'city' | 'hospital' | 'market' | 'forge' | 'heroes' | 'gate' | 'barracks' | 'warehouse';
 
@@ -149,14 +163,16 @@ export default function MainUI() {
 
                   {/* Content scroll area — optimized for mobile with proper padding for bottom nav */}
                   <div className="flex-1 overflow-y-auto relative mobile-scroll custom-scrollbar pb-24 lg:pb-8 p-3 sm:p-4 lg:p-8">
-                       {activeTab === 'city' && <CityPanel />}
-                       {activeTab === 'hospital' && <HospitalPanel />}
-                       {activeTab === 'market' && <MarketPanel />}
-                       {activeTab === 'barracks' && <BarracksPanel />}
-                       {activeTab === 'forge' && <ForgePanel />}
-                       {activeTab === 'heroes' && <HeroesPanel />}
-                       {activeTab === 'warehouse' && <WarehousePanel />}
-                       {activeTab === 'gate' && <GatePanel />}
+                       <Suspense fallback={<PanelSkeleton />}>
+                           {activeTab === 'city' && <CityPanel />}
+                           {activeTab === 'hospital' && <HospitalPanel />}
+                           {activeTab === 'market' && <MarketPanel />}
+                           {activeTab === 'barracks' && <BarracksPanel />}
+                           {activeTab === 'forge' && <ForgePanel />}
+                           {activeTab === 'heroes' && <HeroesPanel />}
+                           {activeTab === 'warehouse' && <WarehousePanel />}
+                           {activeTab === 'gate' && <GatePanel />}
+                       </Suspense>
                   </div>
 
                   {/* Mobile Bottom Tab Bar - optimized layout */}
@@ -230,16 +246,23 @@ export default function MainUI() {
 }
 
 function TopResourceBar() {
-    const resources = useGameStore((state) => state.resources);
-    const buildings = useGameStore((state) => state.buildings);
+    const population = useGameStore((state) => state.resources.population);
+    const food = useGameStore((state) => state.resources.food);
+    const wood = useGameStore((state) => state.resources.wood);
+    const bingxiang = useGameStore((state) => state.resources.bingxiang);
+    const iron = useGameStore((state) => state.resources.iron);
+    const meteorite = useGameStore((state) => state.resources.meteorite);
+    const houseLevel = useGameStore((state) => state.buildings.houseLevel);
+    const farmLevel = useGameStore((state) => state.buildings.farmLevel);
+    const lumberCampLevel = useGameStore((state) => state.buildings.lumberCampLevel);
 
     const resourceData = useMemo(() => {
-        const houseLvl = buildings.houseLevel || 1;
-        const farmLvl = buildings.farmLevel || 1;
-        const woodLvl = buildings.lumberCampLevel || 1;
+        const houseLvl = houseLevel || 1;
+        const farmLvl = farmLevel || 1;
+        const woodLvl = lumberCampLevel || 1;
 
         const maxPop = houseLvl * 100;
-        const pop = Math.floor(resources.population || 100);
+        const pop = Math.floor(population || 100);
 
         return {
             pop,
@@ -248,16 +271,16 @@ function TopResourceBar() {
             foodRate: Math.floor(farmLvl * 2 * 60),
             woodRate: Math.floor(woodLvl * 1.5 * 60)
         };
-    }, [resources, buildings]);
+    }, [population, houseLevel, farmLevel, lumberCampLevel]);
 
     return (
         <div className="flex items-center gap-1 sm:gap-2 lg:gap-6 lg:overflow-visible overflow-x-auto">
             <ResourceItem label="人口" value={`${resourceData.pop}/${resourceData.maxPop}`} color="text-indigo-200" dotColor="bg-indigo-500" icon="👤" />
-            <ResourceItem label="粮草" value={resources.food} color="text-emerald-200" dotColor="bg-emerald-500" sub={`+${resourceData.foodRate}/m`} icon="🌾" />
-            <ResourceItem label="木材" value={resources.wood} color="text-orange-200" dotColor="bg-orange-700" sub={`+${resourceData.woodRate}/m`} icon="🪵" />
-            <ResourceItem label="兵饷" value={resources.bingxiang} color="text-amber-200" dotColor="bg-amber-500" sub={`+${resourceData.bingxiangRate}/m`} icon="🪙" />
-            <ResourceItem label="铁锭" value={resources.iron} color="text-slate-200" dotColor="bg-slate-400" icon="⛏️" />
-            <ResourceItem label="陨铁" value={resources.meteorite} color="text-cyan-200" dotColor="bg-cyan-400" icon="✨" />
+            <ResourceItem label="粮草" value={food} color="text-emerald-200" dotColor="bg-emerald-500" sub={`+${resourceData.foodRate}/m`} icon="🌾" />
+            <ResourceItem label="木材" value={wood} color="text-orange-200" dotColor="bg-orange-700" sub={`+${resourceData.woodRate}/m`} icon="🪵" />
+            <ResourceItem label="兵饷" value={bingxiang} color="text-amber-200" dotColor="bg-amber-500" sub={`+${resourceData.bingxiangRate}/m`} icon="🪙" />
+            <ResourceItem label="铁锭" value={iron} color="text-slate-200" dotColor="bg-slate-400" icon="⛏️" />
+            <ResourceItem label="陨铁" value={meteorite} color="text-cyan-200" dotColor="bg-cyan-400" icon="✨" />
         </div>
     );
 }
