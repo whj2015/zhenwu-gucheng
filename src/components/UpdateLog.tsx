@@ -60,15 +60,20 @@ export default function UpdateLog({ onClose }: UpdateLogProps) {
                 className={`relative ${index !== CHANGELOG.length - 1 ? 'pb-6 border-b border-white/5' : ''}`}
               >
                 {/* Version Header */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 gap-2">
                   <div className="flex items-center gap-3">
+                    {index === 0 && (
+                      <span className="px-2 py-0.5 bg-gradient-to-r from-orange-600 to-amber-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider shrink-0">
+                        最新
+                      </span>
+                    )}
                     <div className={`flex items-center gap-2 px-3 py-1.5 ${config.bgColor} border border-current/20 rounded-full`}>
                       <TypeIcon className={`w-4 h-4 ${config.color}`} />
                       <span className={`text-sm font-medium ${config.color}`}>{config.label}</span>
                     </div>
                     <span className="font-mono font-bold text-lg text-slate-200">V{version.version}</span>
                   </div>
-                  <span className="text-sm text-slate-500 font-mono">{version.date}</span>
+                  <span className="text-sm text-slate-500 font-mono shrink-0">{version.date}</span>
                 </div>
 
                 {/* Changes List */}
@@ -83,13 +88,6 @@ export default function UpdateLog({ onClose }: UpdateLogProps) {
                     </li>
                   ))}
                 </ul>
-
-                {/* Latest Badge */}
-                {index === 0 && (
-                  <div className="absolute top-0 right-0 px-2 py-0.5 bg-gradient-to-r from-orange-600 to-amber-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
-                    最新
-                  </div>
-                )}
               </div>
             );
           })}

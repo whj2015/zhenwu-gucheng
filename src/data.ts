@@ -40,4 +40,4 @@ export {
     MAX_DEPLOY_COUNT,
 } from './data/index';
 
-export type { HeroTemplate, EnemyTemplate, MissionDef, CraftingDef, QuestDef, QuestTemplate, PositionDef, SkillEffect, EnemyAbility } from './data/index';
+export type { HeroTemplate, EnemyTemplate, MissionDef, CraftingDef, QuestDef, QuestTemplate, PositionDef, SkillEffect, EnemyAbility, Rarity } from './data/index';

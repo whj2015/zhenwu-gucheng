@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { GameState, HeroState, Equipment, PositionKey, WOUNDED_NATURAL_RECOVER_RATE, getWarehouseResourceCap, QuestState, CraftingState, RuinsNode } from './types';
 import { HERO_TEMPLATES, FORGE_UPGRADE_COSTS, CRAFTING_TEMPLATES, QUEST_TEMPLATES } from './data';
+import { RESOURCE_CONFIG } from './gameConfig';
 import { generateId } from './utils';
 import {
     trackAction,
@@ -94,6 +95,13 @@ const INITIAL_STATE: GameState = {
   lastTickTime: Date.now(),
   tavernPool: [] as string[],
   tavernRefreshCount: 0,
+  recruitStats: {
+      totalRecruits: 0,
+      sinceLastR: 0,
+      sinceLastSR: 0,
+      pityR: 10,
+      pitySR: 50
+  },
   questState: {
       completedDailyIds: [],
       completedWeeklyIds: [],
@@ -121,6 +129,7 @@ export const useGameStore = create<GameState & {
   healParty: (pct: number) => void;
   recruitTroops: (heroId: string, amount: number, costFood: number, costBingxiang: number) => void;
   recruitHero: (templateId: string, costBingxiang: number) => void;
+  recruitHeroWithGacha: () => void;
   healHero: (heroId: string, amount: number, costFood: number) => void;
   tradeResource: (fromType: keyof GameState['resources'], toType: keyof GameState['resources'], fromAmount: number, toAmount: number) => void;
   applyCombatResults: (results: { id: string, hp: number, troops: number, wounded: number}[], won: boolean) => void;
@@ -366,18 +375,31 @@ export const useGameStore = create<GameState & {
          };
       }),
 
-      beginRun: (missionId, party, nodes) => set(() => ({
-          ruinsRun: {
-              missionId,
-              currentFloor: 1,
-              nodes: nodes,
-              party,
-              status: 'in_progress',
-              currentNodeId: null,
-              grid: null as (RuinsNode | null)[] | null,
-              fogStates: null as string[] | null
+      beginRun: (missionId, party, nodes) => set((state) => {
+          const heroCount = Object.values(party).filter(Boolean).length;
+          const foodCost = heroCount * RESOURCE_CONFIG.EXPEDITION_COST_PER_HERO;
+          
+          if (state.resources.food < foodCost) {
+              return state;
           }
-      })),
+          
+          return {
+              resources: {
+                  ...state.resources,
+                  food: state.resources.food - foodCost
+              },
+              ruinsRun: {
+                  missionId,
+                  currentFloor: 1,
+                  nodes: nodes,
+                  party,
+                  status: 'in_progress',
+                  currentNodeId: null,
+                  grid: null as (RuinsNode | null)[] | null,
+                  fogStates: null as string[] | null
+              }
+          };
+      }),
 
       updateRun: (updates) => set((state) => ({
           ruinsRun: state.ruinsRun ? { ...state.ruinsRun, ...updates } : null
@@ -414,14 +436,108 @@ export const useGameStore = create<GameState & {
             hp: HERO_TEMPLATES[templateId].attributes.physique * 10,
             equipment: { weapon: null, armor: null }
         };
+        
+        const heroRarity = HERO_TEMPLATES[templateId].rarity || 'N';
+        const newSinceLastR = heroRarity === 'N' ? state.recruitStats.sinceLastR + 1 : 0;
+        const newSinceLastSR = (heroRarity === 'N' || heroRarity === 'R') ? state.recruitStats.sinceLastSR + 1 : 0;
+        
         return {
             resources: {
                 ...state.resources,
                 bingxiang: state.resources.bingxiang - costBingxiang
             },
             heroes: [...state.heroes, newHero],
-            tavernPool: state.tavernPool.filter(id => id !== templateId)
+            tavernPool: state.tavernPool.filter(id => id !== templateId),
+            recruitStats: {
+                ...state.recruitStats,
+                totalRecruits: state.recruitStats.totalRecruits + 1,
+                sinceLastR: newSinceLastR,
+                sinceLastSR: newSinceLastSR
+            }
         };
+      }),
+      
+      recruitHeroWithGacha: () => set((state) => {
+          const baseCost = 150;
+          if (state.resources.bingxiang < baseCost) return state;
+          
+          const hiredIds = new Set(state.heroes.map(h => h.templateId));
+          const available = Object.entries(HERO_TEMPLATES)
+              .filter(([id]) => !hiredIds.has(id))
+              .map(([id, template]) => ({ id, rarity: template.rarity || 'N' }));
+          
+          if (available.length === 0) return state;
+          
+          const { sinceLastR, sinceLastSR, pityR, pitySR } = state.recruitStats;
+          
+          let guaranteedRarity: string | null = null;
+          if (sinceLastSR >= pitySR - 1) {
+              guaranteedRarity = 'SR';
+          } else if (sinceLastR >= pityR - 1) {
+              guaranteedRarity = 'R';
+          }
+          
+          let selectedHero: typeof available[0] | null = null;
+          
+          if (guaranteedRarity) {
+              const candidates = available.filter(h => h.rarity === guaranteedRarity);
+              if (candidates.length > 0) {
+                  selectedHero = candidates[Math.floor(Math.random() * candidates.length)];
+              }
+          }
+          
+          if (!selectedHero) {
+              const rand = Math.random() * 100;
+              let cumulative = 0;
+              
+              for (const hero of available) {
+                  let probability: number;
+                  switch (hero.rarity) {
+                      case 'SSR': probability = 3; break;
+                      case 'SR': probability = 12; break;
+                      case 'R': probability = 25; break;
+                      default: probability = 60; break;
+                  }
+                  
+                  cumulative += probability;
+                  if (rand <= cumulative) {
+                      selectedHero = hero;
+                      break;
+                  }
+              }
+              
+              if (!selectedHero) {
+                  selectedHero = available[Math.floor(Math.random() * available.length)];
+              }
+          }
+          
+          const newHero: HeroState = {
+              id: generateId(),
+              templateId: selectedHero.id,
+              level: 1,
+              exp: 0,
+              troops: 0,
+              wounded: 0,
+              hp: HERO_TEMPLATES[selectedHero.id].attributes.physique * 10,
+              equipment: { weapon: null, armor: null }
+          };
+          
+          const newSinceLastR = (selectedHero.rarity === 'N') ? sinceLastR + 1 : 0;
+          const newSinceLastSR = (selectedHero.rarity === 'N' || selectedHero.rarity === 'R') ? sinceLastSR + 1 : 0;
+          
+          return {
+              resources: {
+                  ...state.resources,
+                  bingxiang: state.resources.bingxiang - baseCost
+              },
+              heroes: [...state.heroes, newHero],
+              recruitStats: {
+                  ...state.recruitStats,
+                  totalRecruits: state.recruitStats.totalRecruits + 1,
+                  sinceLastR: newSinceLastR,
+                  sinceLastSR: newSinceLastSR
+              }
+          };
       }),
 
       recruitTroops: (heroId, amount, costFood, costBingxiang) => set((state) => {
