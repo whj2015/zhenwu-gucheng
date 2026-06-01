@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.2.0';
+export const CURRENT_VERSION = '0.2.1';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.2.1',
+    date: '2026-06-01',
+    type: 'patch',
+    changes: [
+      '📝 初始AGENTS.md版本控制规则'
+    ]
+  },
   {
     version: '0.2.0',
     date: '2026-05-31',

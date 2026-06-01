@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const VERSION_FILE = path.join(__dirname, '../src/version.ts');
 const PACKAGE_FILE = path.join(__dirname, '../package.json');
@@ -42,13 +46,11 @@ function getTodayDate() {
 function updateVersionFile(newVersion, changes, type) {
   let content = fs.readFileSync(VERSION_FILE, 'utf-8');
 
-  // Update current version
   content = content.replace(
     /export const CURRENT_VERSION = '[^']+'/,
     `export const CURRENT_VERSION = '${newVersion}'`
   );
 
-  // Add new changelog entry at the beginning of the array
   const newEntry = `  {
     version: '${newVersion}',
     date: '${getTodayDate()}',
@@ -74,7 +76,6 @@ function updatePackageJson(newVersion) {
   console.log(`✅ Updated package.json to ${newVersion}`);
 }
 
-// Main execution
 const args = process.argv.slice(2);
 const type = args.includes('--major') ? 'major' : args.includes('--minor') ? 'minor' : 'patch';
 const messageIndex = args.findIndex(arg => !arg.startsWith('--'));
