@@ -379,6 +379,7 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
     const [battleNode, setBattleNode] = useState<RuinsNode | null>(null);
     const [battleEnemies, setBattleEnemies] = useState<Array<{ id: string; name: string; hp: number; maxHp: number; isAlive: boolean }>>([]);
+    const [currentBattleLogs, setCurrentBattleLogs] = useState<string[]>([]);
 
     useEffect(() => {
         if (!ruinsRun) return;
@@ -516,8 +517,6 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
             .map(hId => heroes.find(x => x.id === hId)!)
             .filter(Boolean);
         
-        const [currentBattleLogs, setCurrentBattleLogs] = useState<string[]>([]);
-
         const heroBattleInfo = activeHeros.map(h => {
             const t = HERO_TEMPLATES[h.templateId];
             return { id: h.id, templateId: h.templateId, hp: h.hp, maxHp: (t?.attributes.physique || 10) * 10 };
