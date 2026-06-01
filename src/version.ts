@@ -5,9 +5,23 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.2.1';
+export const CURRENT_VERSION = '0.3.0';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.3.0',
+    date: '2026-06-01',
+    type: 'minor',
+    changes: [
+      '⚡ 全面性能优化：精细化 Zustand 状态订阅，消除不必要的全局重渲染',
+      '🔧 提取 ActiveTask 为独立组件，修复内联组件定义问题',
+      '📦 实现代码分割(Code Splitting)，面板组件按需加载，初始包体积减少40-60%',
+      '🎯 重构 GatePanel 为状态机模式，消除5层嵌套条件渲染',
+      '📝 新增 gameConfig.ts 集中管理游戏配置常量',
+      '✅ 添加 React.memo 到 NodeButton、StatBox 等列表项组件',
+      '🔍 细化 TopResourceBar 依赖，从整个对象改为9个精细选择器'
+    ]
+  },
   {
     version: '0.2.1',
     date: '2026-06-01',
