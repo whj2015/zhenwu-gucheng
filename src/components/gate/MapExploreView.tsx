@@ -522,8 +522,18 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
             return { id: h.id, templateId: h.templateId, hp: h.hp, maxHp: (t?.attributes.physique || 10) * 10 };
         });
 
-        const handleExecuteTurn = () => {
-            const pendingActions = useGameStore.getState().manualBattle?.pendingActions ?? {};
+        const handleExecuteTurn = (executedActions?: Array<{ heroId: string; action: SkillActionType }>) => {
+            let pendingActionsToResolve: Record<string, SkillActionType | null>;
+
+            if (executedActions && executedActions.length > 0) {
+                pendingActionsToResolve = {};
+                executedActions.forEach(a => {
+                    pendingActionsToResolve[a.heroId] = a.action;
+                });
+            } else {
+                pendingActionsToResolve = useGameStore.getState().manualBattle?.pendingActions ?? {};
+                useGameStore.getState().executeManualTurn();
+            }
             
             const heroFullInfo: HeroFullInfo[] = activeHeros.map(h => {
                 const t = HERO_TEMPLATES[h.templateId];
@@ -551,7 +561,7 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                 };
             });
 
-            const result = resolveManualBattle(heroFullInfo, enemyFullInfo, pendingActions, HERO_TEMPLATES);
+            const result = resolveManualBattle(heroFullInfo, enemyFullInfo, pendingActionsToResolve, HERO_TEMPLATES);
 
             setCurrentBattleLogs(prev => [...prev, `--- 第 ${currentBattleLogs.length + 1} 回合 ---`, ...result.logs]);
 
@@ -564,11 +574,11 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
 
             useGameStore.getState().applyCombatResults(combatResults, result.victory);
 
-            result.updatedEnemies.forEach((e, idx) => {
-                if (battleEnemies[idx]) {
-                    battleEnemies[idx] = { ...e, isAlive: e.isAlive, hp: Math.max(0, e.hp) };
-                }
-            });
+            setBattleEnemies(prev => prev.map((e, idx) => {
+                const updated = result.updatedEnemies[idx];
+                if (updated) return { ...e, isAlive: updated.isAlive, hp: Math.max(0, updated.hp) };
+                return e;
+            }));
 
             useGameStore.getState().gainTurnEnergy();
 
@@ -589,24 +599,23 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
         };
 
         const handleAutoMode = () => {
-            const autoActions: Record<string, SkillActionType | null> = {};
+            const autoActionsArray: Array<{ heroId: string; action: SkillActionType }> = [];
+
             activeHeros.forEach(h => {
                 const aliveEnemy = battleEnemies.find(e => e.isAlive);
                 if (aliveEnemy) {
-                    autoActions[h.id] = { type: 'attack', targetId: aliveEnemy.id };
+                    const action: SkillActionType = { type: 'attack', targetId: aliveEnemy.id };
+                    useGameStore.getState().setHeroAction(h.id, action);
+                    autoActionsArray.push({ heroId: h.id, action });
                 } else {
-                    autoActions[h.id] = { type: 'skip' };
-                }
-            });
-            
-            Object.entries(autoActions).forEach(([heroId, action]) => {
-                if (action) {
-                    useGameStore.getState().setHeroAction(heroId, action);
+                    const action: SkillActionType = { type: 'skip' };
+                    useGameStore.getState().setHeroAction(h.id, action);
+                    autoActionsArray.push({ heroId: h.id, action });
                 }
             });
 
             setTimeout(() => {
-                handleExecuteTurn();
+                handleExecuteTurn(autoActionsArray);
             }, 100);
         };
 
