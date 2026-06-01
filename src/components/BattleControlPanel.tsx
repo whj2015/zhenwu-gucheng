@@ -253,10 +253,13 @@ export default function BattleControlPanel({
     }, [canExecuteAction, pendingActionType, handleAttack, handleSkill]);
 
     const handleExecuteTurn = useCallback(() => {
+        const pending = manualBattle?.pendingActions ?? {};
+        const heroIdOrder = Object.keys(pending).filter(id => pending[id] !== null);
+
         const actions = executeManualTurn();
-        if (onExecuteTurn && actions.length > 0) {
+        if (onExecuteTurn && actions.length > 0 && heroIdOrder.length > 0) {
             const formattedActions = actions.map((action, idx) => ({
-                heroId: Object.keys(manualBattle?.pendingActions ?? {})[idx] ?? '',
+                heroId: heroIdOrder[idx] || '',
                 action
             }));
             onExecuteTurn(formattedActions);
