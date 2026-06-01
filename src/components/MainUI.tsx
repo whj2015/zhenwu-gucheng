@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useGameStore } from '../store';
-import { Building, Hammer, Map, Users, Tent, HeartPulse, Store, Settings, Package, ScrollText, Trophy } from 'lucide-react';
+import { Building, Hammer, Map, Users, Tent, HeartPulse, Store, Settings, Package, ScrollText, Trophy, ClipboardList } from 'lucide-react';
 import UpdateLog from './UpdateLog';
 import AchievementPanel from './AchievementPanel';
 import QuestBoard from './QuestBoard';
@@ -111,6 +111,10 @@ export default function MainUI() {
         setAchievementModal(false);
     }, []);
 
+    const handleQuestBoardOpen = useCallback(() => {
+        setQuestBoardOpen(true);
+    }, []);
+
     const handleCloseQuestBoard = useCallback(() => {
         setQuestBoardOpen(false);
     }, []);
@@ -144,6 +148,9 @@ export default function MainUI() {
                 <div className="p-4 border-t border-white/5 text-[10px] text-slate-600 font-mono tracking-widest uppercase flex justify-between items-center">
                     <span>Project Zhenwu</span>
                     <div className="flex items-center gap-2">
+                        <button onClick={handleQuestBoardOpen} className="hover:text-emerald-500 transition-colors p-1" title="查看任务">
+                            <ClipboardList className="w-4 h-4" />
+                        </button>
                         <button onClick={handleAchievementModal} className="hover:text-amber-500 transition-colors p-1" title="查看功勋簿">
                             <Trophy className="w-4 h-4" />
                         </button>
@@ -171,6 +178,9 @@ export default function MainUI() {
                       </div>
                       <TopResourceBar />
                       <div className="flex items-center gap-1.5">
+                          <button onClick={handleQuestBoardOpen} className="text-slate-500 hover:text-emerald-500 transition-colors p-1.5 shrink-0" title="查看任务">
+                              <ClipboardList className="w-4 h-4" />
+                          </button>
                           <button onClick={handleAchievementModal} className="text-slate-500 hover:text-amber-500 transition-colors p-1.5 shrink-0" title="查看功勋簿">
                               <Trophy className="w-4 h-4" />
                           </button>
