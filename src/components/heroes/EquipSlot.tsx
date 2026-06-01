@@ -14,7 +14,8 @@ interface EquipSlotProps {
 }
 
 export default function EquipSlot({ label, type, equip, icon: Icon, onUnequip, heroId }: EquipSlotProps) {
-    const { inventory, equipItem } = useGameStore();
+    const inventory = useGameStore((state) => state.inventory);
+    const equipItem = useGameStore((state) => state.equipItem);
     const [selectMode, setSelectMode] = useState(false);
 
     const availableOpts = inventory.filter(e => e.type === type);

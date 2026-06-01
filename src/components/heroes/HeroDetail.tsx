@@ -7,8 +7,8 @@ import StatBox from './StatBox';
 import EquipSlot from './EquipSlot';
 
 export default function HeroDetail({ heroId }: { heroId: string }) {
-    const { heroes, equipItem } = useGameStore();
-    const hero = heroes.find(h => h.id === heroId);
+    const hero = useGameStore((state) => state.heroes.find(h => h.id === heroId));
+    const equipItem = useGameStore((state) => state.equipItem);
     if (!hero) return null;
     
     const t = HERO_TEMPLATES[hero.templateId];

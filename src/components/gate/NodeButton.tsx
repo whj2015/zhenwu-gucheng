@@ -1,9 +1,10 @@
 /* Extracted from GatePanel.tsx - NodeButton */
+import { memo } from 'react';
 import { Sword, Tent, Archive, Skull } from 'lucide-react';
 import { RuinsNode } from '../../types';
 import { cn } from '../../utils';
 
-export default function NodeButton({ 
+export default memo(function NodeButton({ 
     node, 
     hovered, 
     onHover, 
@@ -54,4 +55,4 @@ export default function NodeButton({
             )}
         </button>
     );
-}
+});
