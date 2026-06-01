@@ -5,9 +5,26 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.4.0';
+export const CURRENT_VERSION = '0.5.0';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.5.0',
+    date: '2026-06-01',
+    type: 'minor',
+    changes: [
+      '⚔️ 新增手动战斗模式UI：能量条、技能按钮(攻击/技能/防御/跳过)、自动/手动切换',
+      '🏆 新增成就系统：24个成就覆盖战斗/收集/挑战/成长/经济/隐藏6大类，自动检测+奖励发放',
+      '📋 新增任务看板：每日/每周任务面板，支持接取、进度追踪、奖励领取、刷新倒计时',
+      '🛡️ 新增装备套装系统：4套套装(铁卫/炎锋/影行者/屠龙者)，战斗属性加成整合',
+      '✨ 为13位英雄定义独立主动技能数据(技能消耗/冷却/目标模式)',
+      '📊 BATTLE_CONFIG 扩展：能量系统参数(每回合+20/大招100/技能50)、手动模式15秒限时',
+      '🎨 HeroDetail 新增套装效果展示区域（激活件数/属性加成/稀有度光效）',
+      '🎯 MainUI 新增成就入口(🏆)和任务入口(📋)按钮',
+      '🔧 Store 新增 manualBattle 状态管理和8个手动战斗 action',
+      '📝 新增 battleSkills / achievements / equipmentSets 数据文件'
+    ]
+  },
   {
     version: '0.4.0',
     date: '2026-06-01',

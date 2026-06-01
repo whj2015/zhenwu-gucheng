@@ -1,10 +1,23 @@
 /* Extracted from HeroesPanel.tsx - HeroDetail */
 import { useGameStore } from '../../store';
 import { HERO_TEMPLATES } from '../../data';
-import { Shield, Sword, Sparkles, BookOpen } from 'lucide-react';
+import { Shield, Sword, Sparkles, BookOpen, Gem } from 'lucide-react';
 import HeroIcon, { RarityBadge } from '../HeroIcon';
 import StatBox from './StatBox';
 import EquipSlot from './EquipSlot';
+import { detectSetBonuses, calculateSetStatBonus } from '../../utils/equipmentSetEngine';
+import { RARITY_COLORS, RARITY_LABELS } from '../../data/equipmentSets';
+
+function getStatLabel(stat: string): string {
+    const labels: Record<string, string> = {
+        attack: '攻击',
+        defense: '防御',
+        agility: '敏捷',
+        hp: '血气',
+        dodge: '闪避'
+    };
+    return labels[stat] || stat;
+}
 
 export default function HeroDetail({ heroId }: { heroId: string }) {
     const hero = useGameStore((state) => state.heroes.find(h => h.id === heroId));
@@ -17,6 +30,9 @@ export default function HeroDetail({ heroId }: { heroId: string }) {
     const aDef = hero.equipment.armor?.defense || 0;
 
     const maxHp = t.attributes.physique * 10;
+
+    const setBonuses = detectSetBonuses(hero);
+    const setStatBonus = calculateSetStatBonus(hero);
 
     return (
         <div className="flex flex-col h-full relative z-10">
@@ -122,6 +138,101 @@ export default function HeroDetail({ heroId }: { heroId: string }) {
                       />
                   </div>
              </div>
+
+             {setBonuses.length > 0 && (
+                 <div className="mt-4 sm:mt-6">
+                     <h4 className="text-xs sm:text-sm tracking-widest text-slate-500 uppercase font-bold mb-2 sm:mb-3 flex items-center gap-2">
+                         <Gem className="w-3.5 h-3.5 text-purple-400" />
+                         套装效果
+                     </h4>
+                     <div className="space-y-2.5">
+                         {setBonuses.map((setInfo) => {
+                             const rarityColor = RARITY_COLORS[setInfo.rarity];
+                             const rarityLabel = RARITY_LABELS[setInfo.rarity];
+                             
+                             return (
+                                 <div
+                                     key={setInfo.setId}
+                                     className={`rounded-xl border p-3 sm:p-4 transition-all ${
+                                         setInfo.isComplete
+                                             ? `${rarityColor.bg} ${rarityColor.border} shadow-lg ${rarityColor.glow}`
+                                             : 'bg-white/5 border-white/10'
+                                     }`}
+                                 >
+                                     <div className="flex items-center gap-3 mb-2.5">
+                                         <span className="text-xl sm:text-2xl">{setInfo.icon}</span>
+                                         <div className="flex-1 min-w-0">
+                                             <div className="flex items-center gap-2 flex-wrap">
+                                                 <h5 className={`font-bold text-sm ${setInfo.isComplete ? rarityColor.text : 'text-slate-300'}`}>
+                                                     {setInfo.setName}
+                                                 </h5>
+                                                 <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono uppercase ${rarityColor.bg} ${rarityColor.text} ${rarityColor.border} border`}>
+                                                     {rarityLabel}
+                                                 </span>
+                                             </div>
+                                             <p className={`text-[10px] sm:text-xs mt-0.5 ${setInfo.isComplete ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                 {setInfo.description}
+                                             </p>
+                                         </div>
+                                         <div className={`text-right shrink-0`}>
+                                             <div className={`font-mono font-bold ${
+                                                 setInfo.isComplete ? rarityColor.text : 'text-slate-400'
+                                             }`}>
+                                                 {setInfo.activePieces}/{setInfo.requiredPieces}
+                                             </div>
+                                             <div className="text-[9px] text-slate-600">件</div>
+                                         </div>
+                                     </div>
+
+                                     {setInfo.activeBonuses.length > 0 && (
+                                         <div className="space-y-1.5 pt-2 border-t border-white/5">
+                                             {setInfo.activeBonuses.map((bonus, idx) => (
+                                                 <div key={idx} className="flex flex-wrap gap-1.5">
+                                                     <span className="text-[9px] text-slate-500">集齐{bonus.count}件:</span>
+                                                     {Object.entries(bonus.effects).map(([stat, value]) => (
+                                                         <span key={stat} className={`text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                                                             setInfo.isComplete ? `${rarityColor.bg} ${rarityColor.text}` : 'bg-white/5 text-slate-400'
+                                                         }`}>
+                                                             +{value}{getStatLabel(stat)}
+                                                         </span>
+                                                     ))}
+                                                 </div>
+                                             ))}
+                                         </div>
+                                     )}
+
+                                     {!setInfo.isComplete && (
+                                         <div className="mt-2 pt-2 border-t border-white/5">
+                                             <div className="w-full h-1 bg-black/40 rounded-full overflow-hidden">
+                                                 <div
+                                                     className={`h-full rounded-full transition-all duration-500 bg-gradient-to-r from-purple-500 to-pink-500`}
+                                                     style={{ width: `${(setInfo.activePieces / setInfo.requiredPieces) * 100}%` }}
+                                                 ></div>
+                                             </div>
+                                         </div>
+                                     )}
+                                 </div>
+                             );
+                         })}
+                     </div>
+
+                     {Object.keys(setStatBonus).length > 0 && (
+                         <div className="mt-3 p-2.5 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
+                             <div className="flex items-center gap-2 mb-2">
+                                 <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                                 <span className="text-[10px] font-bold tracking-wide text-purple-300 uppercase">总属性加成</span>
+                             </div>
+                             <div className="flex flex-wrap gap-1.5">
+                                 {Object.entries(setStatBonus).map(([stat, value]) => (
+                                     <span key={stat} className="text-[10px] sm:text-xs px-2 py-1 bg-purple-500/20 rounded text-purple-300 font-mono font-bold">
+                                         +{value}{getStatLabel(stat)}
+                                     </span>
+                                 ))}
+                             </div>
+                         </div>
+                     )}
+                 </div>
+             )}
         </div>
     );
 }

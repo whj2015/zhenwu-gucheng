@@ -107,8 +107,15 @@ export interface QuestState {
     lastWeeklyReset: number;
     progress: Record<string, number>;
     acceptedIds: string[];
-    activeDailyIds: string[];  // 当前活跃的每日任务ID
-    activeWeeklyIds: string[]; // 当前活跃的每周任务ID
+    activeDailyIds: string[];
+    activeWeeklyIds: string[];
+}
+
+export interface AchievementState {
+    unlockedIds: string[];
+    unlockTimes: Record<string, number>;
+    notifiedIds: string[];
+    totalPoints: number;
 }
 
 export interface GameState {
@@ -144,6 +151,8 @@ export interface GameState {
     pitySR: number;
   };
   questState: QuestState;
+  achievementState: AchievementState;
+  manualBattle: ManualBattleState | null;
 }
 
 export function getWarehouseResourceCap(warehouseLevel: number): number {

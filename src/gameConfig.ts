@@ -113,3 +113,20 @@ export const ECONOMY_CONFIG = {
     POPULATION_GROWTH_PENALTY: -0.5,
     HERO_RECRUIT_POP_COST: 10
 };
+
+export const BATTLE_CONFIG = {
+    ENERGY: {
+        MAX: 100,
+        INITIAL: 0,
+        PER_TURN_GAIN: 20,
+        FIRST_TURN_BONUS: 10,
+        DEFEND_ENERGY_GAIN: 20,
+        SKIP_ENERGY_GAIN: 30,
+        ULTIMATE_COST: 100,
+        SKILL_COST: 50
+    },
+    MANUAL_MODE: {
+        TURN_TIME_LIMIT: 15,
+        AUTO_TIMEOUT_ACTION: 'auto_best'
+    }
+};

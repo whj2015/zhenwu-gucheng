@@ -1,6 +1,7 @@
 import { RuinsNode, HeroState, PositionKey, TROOP_ABSORB_PER_TROOP, TROOP_MAX_ABSORB, TROOP_HP_COST, BattleState, BattleUnit, BattleRow, HeroTrait } from '../types';
 import { POSITION_CONFIG, ENEMY_TEMPLATES, HERO_TEMPLATES, MISSIONS } from '../data';
 import { generateId } from '../utils';
+import { calculateSetStatBonus } from '../utils/equipmentSetEngine';
 
 export function generateFloor(floorNumber: number, missionId: string): RuinsNode[] {
     const nodes: RuinsNode[] = [];
@@ -73,6 +74,7 @@ interface PlayerState {
     dodgeChance: number;
     ironWillCap: number | null;
     equipment: { weapon?: { attack: number }; armor?: { defense: number } } | null;
+    setBonus: Record<string, number>;
 }
 
 interface EnemyState {
@@ -127,11 +129,13 @@ export function simulateBattle(heroes: HeroState[], enemyDataList: any[], templa
             dodgeChance = skillEffect.dodgeChance;
         }
 
+        const setBonus = calculateSetStatBonus(h);
+
         return {
             id: h.id,
             templateId: h.templateId,
             hp: h.hp,
-            maxHp: t.attributes.physique * 10 * maxHpBonus,
+            maxHp: t.attributes.physique * 10 * maxHpBonus + (setBonus.hp || 0),
             troops: h.troops || 0,
             wounded: (h as any).wounded || 0,
             command: t.attributes.command || 10,
@@ -146,9 +150,10 @@ export function simulateBattle(heroes: HeroState[], enemyDataList: any[], templa
             rallyBuffRoundsLeft: 0,
             totalAtkBuff: 0,
             totalDefBuff: 0,
-            dodgeChance,
+            dodgeChance: dodgeChance + (setBonus.dodge || 0),
             ironWillCap,
             equipment: (h as any).equipment || null,
+            setBonus
         };
     });
 
@@ -207,7 +212,7 @@ export function simulateBattle(heroes: HeroState[], enemyDataList: any[], templa
     const getEffectivePlayerAttack = (ps: PlayerState): number => {
         const h = heroes.find(hh => hh.id === ps.id);
         const t = templateMap.get(ps.id)!;
-        let baseAtk = t.attributes.force + (h?.equipment?.weapon?.attack || 0) + Math.floor(ps.troops / 10);
+        let baseAtk = t.attributes.force + (h?.equipment?.weapon?.attack || 0) + Math.floor(ps.troops / 10) + (ps.setBonus.attack || 0);
 
         const hasCore = Array.from(heroPosMap.values()).some(p => p === 'middle-center');
         if (hasCore && ps.posName !== '核心') baseAtk *= 1.05;
@@ -439,7 +444,7 @@ export function simulateBattle(heroes: HeroState[], enemyDataList: any[], templa
                if (furyActive) logs.push(ab.pierceLog.replace('{name}', enemy.name).replace('{pct}', String(Math.round(ab.armorPierce*100))));
            }
 
-           const aDef = ((ps.equipment?.armor?.defense || 0) * state.defMod * (1 + state.totalDefBuff)) * pierceMult;
+           const aDef = ((ps.equipment?.armor?.defense || 0) + (ps.setBonus.defense || 0)) * state.defMod * (1 + state.totalDefBuff) * pierceMult;
            let rawDmg = Math.max(1, Math.floor(effectiveAtk - aDef));
 
            if (state.dodgeChance > 0 && Math.random() < state.dodgeChance) {
