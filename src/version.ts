@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.5.0';
+export const CURRENT_VERSION = '0.5.1';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.5.1',
+    date: '2026-06-01',
+    type: 'patch',
+    changes: [
+      '🐛 修复手动战斗系统3个核心Bug：1) 攻击/技能按钮目标选择逻辑颠倒 2) 执行回合直接调用自动结算改为手动结算函数 3) 添加完整战场可视化布局'
+    ]
+  },
   {
     version: '0.5.0',
     date: '2026-06-01',

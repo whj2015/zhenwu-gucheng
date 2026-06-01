@@ -1,15 +1,161 @@
 /* Extracted from GatePanel.tsx - MapExploreView - Fog of War Edition */
 import { useState, useCallback, useEffect, Fragment, type ReactNode } from 'react';
 import { useGameStore } from '../../store';
-import { simulateBattle } from '../../engine/ruins';
 import { HERO_TEMPLATES, ENEMY_TEMPLATES, POSITION_CONFIG } from '../../data';
-import { RuinsNode, PositionKey } from '../../types';
+import { HERO_BATTLE_SKILLS } from '../../data/battleSkills';
+import { RuinsNode, PositionKey, SkillActionType } from '../../types';
 import { cn } from '../../utils';
 import { buildBattleResultData } from '../BattleResultPanel';
 import HeroAvatarCompact from './HeroAvatarCompact';
 import BattleControlPanel from '../BattleControlPanel';
 
 type HeroTrait = 'assault' | 'flank' | 'tank' | 'support' | 'ranged';
+
+interface HeroFullInfo {
+    id: string;
+    templateId: string;
+    name: string;
+    hp: number;
+    maxHp: number;
+    force: number;
+    isAlive: boolean;
+}
+
+interface EnemyFullInfo {
+    id: string;
+    templateId: string;
+    name: string;
+    hp: number;
+    maxHp: number;
+    force: number;
+    isAlive: boolean;
+}
+
+interface ManualBattleResult {
+    updatedHeroes: HeroFullInfo[];
+    updatedEnemies: EnemyFullInfo[];
+    victory: boolean;
+    defeat: boolean;
+    logs: string[];
+}
+
+function resolveManualBattle(
+    heroes: HeroFullInfo[],
+    enemies: EnemyFullInfo[],
+    pendingActions: Record<string, SkillActionType | null>,
+    _heroTemplates: Record<string, any>
+): ManualBattleResult {
+    const logs: string[] = [];
+    const updatedHeroes = heroes.map(h => ({ ...h }));
+    const updatedEnemies = enemies.map(e => ({ ...e }));
+
+    const heroMap = new Map(updatedHeroes.map(h => [h.id, h]));
+    const enemyMap = new Map(updatedEnemies.map(e => [e.id, e]));
+
+    const getAliveHeroes = () => updatedHeroes.filter(h => h.isAlive);
+    const getAliveEnemies = () => updatedEnemies.filter(e => e.isAlive);
+
+    const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val, 0));
+
+    Object.entries(pendingActions).forEach(([heroId, action]) => {
+        if (!action) return;
+        const hero = heroMap.get(heroId);
+        if (!hero || !hero.isAlive) return;
+
+        switch (action.type) {
+            case 'attack': {
+                const target = enemyMap.get(action.targetId);
+                if (target && target.isAlive) {
+                    const baseDamage = hero.force * (0.9 + Math.random() * 0.2);
+                    const damage = Math.floor(baseDamage);
+                    target.hp = clamp(target.hp - damage, 0, target.maxHp);
+                    if (target.hp <= 0) target.isAlive = false;
+                    logs.push(`⚔ ${hero.name} 攻击 ${target.name}，造成 ${damage} 点伤害${!target.isAlive ? '，击破！' : ''}`);
+                }
+                break;
+            }
+            case 'skill': {
+                const skill = HERO_BATTLE_SKILLS[hero.templateId];
+                if (!skill) break;
+
+                switch (skill.type) {
+                    case 'attack':
+                        action.targetIds.forEach(tid => {
+                            const target = enemyMap.get(tid) || heroMap.get(tid);
+                            if (!target || !target.isAlive) return;
+                            const baseDamage = hero.force * skill.value * (0.9 + Math.random() * 0.2);
+                            const damage = Math.floor(baseDamage);
+                            target.hp = clamp(target.hp - damage, 0, target.maxHp);
+                            if (target.hp <= 0) target.isAlive = false;
+                            logs.push(`✨ ${hero.name} 施放【${skill.name}】对 ${target.name} 造成 ${damage} 点伤害${!target.isAlive ? '，击破！' : ''}`);
+                        });
+                        break;
+                    case 'heal': {
+                        action.targetIds.forEach(tid => {
+                            const target = heroMap.get(tid);
+                            if (!target || !target.isAlive) return;
+                            const healAmount = Math.floor(target.maxHp * skill.value);
+                            target.hp = clamp(target.hp + healAmount, 0, target.maxHp);
+                            logs.push(`💚 ${hero.name} 施放【${skill.name}】为 ${target.name} 恢复 ${healAmount} 点生命`);
+                        });
+                        break;
+                    }
+                    case 'buff':
+                        logs.push(`🛡 ${hero.name} 施放【${skill.name}】，进入强化状态`);
+                        break;
+                    case 'aoe': {
+                        action.targetIds.forEach(tid => {
+                            const target = enemyMap.get(tid);
+                            if (!target || !target.isAlive) return;
+                            const baseDamage = hero.force * skill.value * (0.85 + Math.random() * 0.3);
+                            const damage = Math.floor(baseDamage);
+                            target.hp = clamp(target.hp - damage, 0, target.maxHp);
+                            if (target.hp <= 0) target.isAlive = false;
+                            logs.push(`💥 ${hero.name} 施放【${skill.name}】对 ${target.name} 造成 ${damage} 点伤害${!target.isAlive ? '，击破！' : ''}`);
+                        });
+                        break;
+                    }
+                    case 'debuff':
+                        logs.push(`😈 ${hero.name} 施放【${skill.name}】，削弱敌人`);
+                        break;
+                }
+                break;
+            }
+            case 'defend':
+                logs.push(`🛡 ${hero.name} 进入防御姿态`);
+                break;
+            case 'skip':
+                logs.push(`⏭ ${hero.name} 跳过本回合`);
+                break;
+        }
+    });
+
+    getAliveEnemies().forEach(enemy => {
+        const aliveHeroes = getAliveHeroes();
+        if (aliveHeroes.length === 0) return;
+
+        const target = aliveHeroes[Math.floor(Math.random() * aliveHeroes.length)];
+        const baseDamage = enemy.force * (0.8 + Math.random() * 0.4);
+        
+        let finalDamage = Math.floor(baseDamage);
+        const defenderAction = pendingActions[target.id];
+        if (defenderAction?.type === 'defend') {
+            finalDamage = Math.floor(finalDamage * 0.5);
+        }
+
+        target.hp = clamp(target.hp - finalDamage, 0, target.maxHp);
+        if (target.hp <= 0) target.isAlive = false;
+        logs.push(`👹 ${enemy.name} 反击 ${target.name}，造成 ${finalDamage} 点伤害${!target.isAlive ? '，击倒！' : ''}${defenderAction?.type === 'defend' ? '（防御减伤50%）' : ''}`);
+    });
+
+    const victory = getAliveEnemies().length === 0;
+    const defeat = getAliveHeroes().length === 0;
+
+    if (victory) logs.push('🎉 战斗胜利！');
+    if (defeat) logs.push('💀 战斗失败...');
+
+    return { updatedHeroes, updatedEnemies, victory, defeat, logs };
+}
 
 const TRAIT_COLORS: Record<HeroTrait, { dot: string; label: string }> = {
     assault: { dot: 'bg-red-400', label: '突' },
@@ -369,48 +515,118 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
             .filter((hId): hId is string => hId !== null)
             .map(hId => heroes.find(x => x.id === hId)!)
             .filter(Boolean);
+        
+        const [currentBattleLogs, setCurrentBattleLogs] = useState<string[]>([]);
+
         const heroBattleInfo = activeHeros.map(h => {
             const t = HERO_TEMPLATES[h.templateId];
             return { id: h.id, templateId: h.templateId, hp: h.hp, maxHp: (t?.attributes.physique || 10) * 10 };
         });
 
         const handleExecuteTurn = () => {
-            setBattleMode('auto');
-            const enemyIds = (battleNode as any).enemies as string[];
-            const enemyData = enemyIds.map((eId: string) => ({ ...ENEMY_TEMPLATES[eId], id: eId }));
-            const res = simulateBattle(activeHeros, enemyData, HERO_TEMPLATES, ruinsRun.party);
-            useGameStore.getState().applyCombatResults(res.remainingState, res.victory);
-            const battleResultData = buildBattleResultData({
-                victory: res.victory, logs: res.logs, remainingState: res.remainingState,
-                heroes: activeHeros, enemies: enemyData, nodeType: battleNode.type as 'battle' | 'boss',
-                floorNumber: ruinsRun.currentFloor,
+            const pendingActions = useGameStore.getState().manualBattle?.pendingActions ?? {};
+            
+            const heroFullInfo: HeroFullInfo[] = activeHeros.map(h => {
+                const t = HERO_TEMPLATES[h.templateId];
+                return {
+                    id: h.id,
+                    templateId: h.templateId,
+                    name: t?.name || h.templateId,
+                    hp: h.hp,
+                    maxHp: (t?.attributes.physique || 10) * 10,
+                    force: t?.attributes.force || 10,
+                    isAlive: h.hp > 0
+                };
             });
-            setBattleNode(null);
-            setBattleEnemies([]);
-            onBattleComplete(battleResultData, battleNode);
+
+            const enemyFullInfo: EnemyFullInfo[] = battleEnemies.map(e => {
+                const et = ENEMY_TEMPLATES[e.id];
+                return {
+                    id: e.id,
+                    templateId: e.id,
+                    name: e.name,
+                    hp: e.hp,
+                    maxHp: e.maxHp,
+                    force: et?.attack || 8,
+                    isAlive: e.isAlive
+                };
+            });
+
+            const result = resolveManualBattle(heroFullInfo, enemyFullInfo, pendingActions, HERO_TEMPLATES);
+
+            setCurrentBattleLogs(prev => [...prev, `--- 第 ${currentBattleLogs.length + 1} 回合 ---`, ...result.logs]);
+
+            const combatResults = result.updatedHeroes.map(h => ({
+                id: h.id,
+                hp: Math.max(0, h.hp),
+                troops: heroes.find(x => x.id === h.id)?.troops || 0,
+                wounded: heroes.find(x => x.id === h.id)?.wounded || 0
+            }));
+
+            useGameStore.getState().applyCombatResults(combatResults, result.victory);
+
+            result.updatedEnemies.forEach((e, idx) => {
+                if (battleEnemies[idx]) {
+                    battleEnemies[idx] = { ...e, isAlive: e.isAlive, hp: Math.max(0, e.hp) };
+                }
+            });
+
+            useGameStore.getState().gainTurnEnergy();
+
+            if (result.victory || result.defeat) {
+                const battleResultData = buildBattleResultData({
+                    victory: result.victory,
+                    logs: [...currentBattleLogs, ...result.logs],
+                    remainingState: combatResults,
+                    heroes: activeHeros,
+                    enemies: enemyFullInfo.map(e => ({ id: e.id, name: e.name, hp: e.hp, maxHp: e.maxHp })),
+                    nodeType: battleNode.type as 'battle' | 'boss',
+                    floorNumber: ruinsRun.currentFloor,
+                });
+                setBattleNode(null);
+                setBattleEnemies([]);
+                onBattleComplete(battleResultData, battleNode);
+            }
         };
 
         const handleAutoMode = () => {
-            handleExecuteTurn();
+            const autoActions: Record<string, SkillActionType | null> = {};
+            activeHeros.forEach(h => {
+                const aliveEnemy = battleEnemies.find(e => e.isAlive);
+                if (aliveEnemy) {
+                    autoActions[h.id] = { type: 'attack', targetId: aliveEnemy.id };
+                } else {
+                    autoActions[h.id] = { type: 'skip' };
+                }
+            });
+            
+            Object.entries(autoActions).forEach(([heroId, action]) => {
+                if (action) {
+                    useGameStore.getState().setHeroAction(heroId, action);
+                }
+            });
+
+            setTimeout(() => {
+                handleExecuteTurn();
+            }, 100);
+        };
+
+        const handleExit = () => {
+            setBattleNode(null);
+            setBattleEnemies([]);
+            useGameStore.getState().clearManualBattle();
         };
 
         return (
             <div className="h-full flex flex-col animate-in fade-in duration-300">
-                <div className="flex items-center justify-between mb-3 px-1">
-                    <h3 className="font-serif text-lg text-slate-200 tracking-widest">⚔ 战斗中</h3>
-                    <button
-                        onClick={() => { setBattleNode(null); setBattleEnemies([]); }}
-                        className="text-[10px] font-mono text-slate-500 hover:text-red-400 transition-colors"
-                    >退出战斗</button>
-                </div>
-                <div className="flex-1 min-h-0">
-                    <BattleControlPanel
-                        heroes={heroBattleInfo}
-                        enemies={battleEnemies}
-                        onExecuteTurn={handleExecuteTurn}
-                        onAutoMode={handleAutoMode}
-                    />
-                </div>
+                <BattleControlPanel
+                    heroes={heroBattleInfo}
+                    enemies={battleEnemies}
+                    battleLogs={currentBattleLogs}
+                    onExecuteTurn={handleExecuteTurn}
+                    onAutoMode={handleAutoMode}
+                    onExit={handleExit}
+                />
             </div>
         );
     }
