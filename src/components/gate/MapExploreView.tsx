@@ -7,6 +7,7 @@ import { RuinsNode, PositionKey } from '../../types';
 import { cn } from '../../utils';
 import { buildBattleResultData } from '../BattleResultPanel';
 import HeroAvatarCompact from './HeroAvatarCompact';
+import BattleControlPanel from '../BattleControlPanel';
 
 type HeroTrait = 'assault' | 'flank' | 'tank' | 'support' | 'ranged';
 
@@ -228,8 +229,10 @@ function ReadyCell({ node, onClick, isHovered, onHover, onLeave }: {
 }
 
 export default function MapExploreView({ onBattleComplete }: { onBattleComplete: (data: ReturnType<typeof buildBattleResultData>, node: RuinsNode) => void }) {
-    const { ruinsRun, updateRun, heroes, addResources, healParty } = useGameStore();
+    const { ruinsRun, updateRun, heroes, addResources, healParty, initManualBattle, setBattleMode } = useGameStore();
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+    const [battleNode, setBattleNode] = useState<RuinsNode | null>(null);
+    const [battleEnemies, setBattleEnemies] = useState<Array<{ id: string; name: string; hp: number; maxHp: number; isAlive: boolean }>>([]);
 
     useEffect(() => {
         if (!ruinsRun) return;
@@ -270,14 +273,19 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                 .filter(Boolean);
             const enemyIds = (node as any).enemies as string[];
             const enemyData = enemyIds.map((eId: string) => ({ ...ENEMY_TEMPLATES[eId], id: eId }));
-            const res = simulateBattle(activeHeros, enemyData, HERO_TEMPLATES, rr.party);
-            useGameStore.getState().applyCombatResults(res.remainingState, res.victory);
-            const battleResultData = buildBattleResultData({
-                victory: res.victory, logs: res.logs, remainingState: res.remainingState,
-                heroes: activeHeros, enemies: enemyData, nodeType: node.type as 'battle' | 'boss',
-                floorNumber: rr.currentFloor,
-            });
-            onBattleComplete(battleResultData, node);
+            const enemyInfo = enemyData.map(e => ({
+                id: e.id,
+                name: e.name,
+                hp: e.hp,
+                maxHp: e.hp,
+                isAlive: true
+            }));
+
+            setBattleNode(node);
+            setBattleEnemies(enemyInfo);
+
+            initManualBattle(activeHeros.map(h => h.id));
+            setBattleMode('manual');
         }
 
         const parts = node.id.split('-');
@@ -355,6 +363,57 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
 
     const completedCount = ruinsRun.nodes.filter(n => n.completed).length;
     const totalCount = ruinsRun.nodes.length;
+
+    if (battleNode && battleEnemies.length > 0) {
+        const activeHeros = Object.values(ruinsRun.party)
+            .filter((hId): hId is string => hId !== null)
+            .map(hId => heroes.find(x => x.id === hId)!)
+            .filter(Boolean);
+        const heroBattleInfo = activeHeros.map(h => {
+            const t = HERO_TEMPLATES[h.templateId];
+            return { id: h.id, templateId: h.templateId, hp: h.hp, maxHp: (t?.attributes.physique || 10) * 10 };
+        });
+
+        const handleExecuteTurn = () => {
+            setBattleMode('auto');
+            const enemyIds = (battleNode as any).enemies as string[];
+            const enemyData = enemyIds.map((eId: string) => ({ ...ENEMY_TEMPLATES[eId], id: eId }));
+            const res = simulateBattle(activeHeros, enemyData, HERO_TEMPLATES, ruinsRun.party);
+            useGameStore.getState().applyCombatResults(res.remainingState, res.victory);
+            const battleResultData = buildBattleResultData({
+                victory: res.victory, logs: res.logs, remainingState: res.remainingState,
+                heroes: activeHeros, enemies: enemyData, nodeType: battleNode.type as 'battle' | 'boss',
+                floorNumber: ruinsRun.currentFloor,
+            });
+            setBattleNode(null);
+            setBattleEnemies([]);
+            onBattleComplete(battleResultData, battleNode);
+        };
+
+        const handleAutoMode = () => {
+            handleExecuteTurn();
+        };
+
+        return (
+            <div className="h-full flex flex-col animate-in fade-in duration-300">
+                <div className="flex items-center justify-between mb-3 px-1">
+                    <h3 className="font-serif text-lg text-slate-200 tracking-widest">⚔ 战斗中</h3>
+                    <button
+                        onClick={() => { setBattleNode(null); setBattleEnemies([]); }}
+                        className="text-[10px] font-mono text-slate-500 hover:text-red-400 transition-colors"
+                    >退出战斗</button>
+                </div>
+                <div className="flex-1 min-h-0">
+                    <BattleControlPanel
+                        heroes={heroBattleInfo}
+                        enemies={battleEnemies}
+                        onExecuteTurn={handleExecuteTurn}
+                        onAutoMode={handleAutoMode}
+                    />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-4xl mx-auto h-full flex flex-col animate-in fade-in duration-500 relative">
