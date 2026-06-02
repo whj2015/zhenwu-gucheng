@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.9';
+export const CURRENT_VERSION = '0.6.10';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.10',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复布阵页面出发按钮在特定分辨率下被遮挡的问题 — 网格/英雄列表区域增加 overflow-y-auto 独立滚动'
+    ]
+  },
   {
     version: '0.6.9',
     date: '2026-06-02',

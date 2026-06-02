@@ -199,7 +199,7 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                  </div>
              </div>
 
-             <div className="flex-1 flex flex-col lg:flex-row gap-2 lg:gap-4 min-h-0">
+             <div className="flex-1 flex flex-col lg:flex-row gap-2 lg:gap-4 min-h-0 overflow-y-auto custom-scrollbar">
                   {/* 3x3 Grid */}
                   <div className="flex-1 bg-black/40 border border-white/5 rounded-xl p-2 lg:p-4 relative overflow-hidden">
                        <div className="relative z-10 flex flex-col gap-1.5 lg:gap-2 h-full">
