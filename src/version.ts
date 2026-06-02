@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.13';
+export const CURRENT_VERSION = '0.6.14';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.14',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🎨 布阵页面全面视觉美化 — 网格区渐变背景+光晕、出发按钮改为全宽渐变操作栏(出征远途)、门客列表重新设计、整体间距和圆角统一优化'
+    ]
+  },
   {
     version: '0.6.13',
     date: '2026-06-02',

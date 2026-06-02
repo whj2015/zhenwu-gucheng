@@ -108,41 +108,41 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
     const canDeploy = deployedCount >= 1 && deployedCount <= MAX_DEPLOY_COUNT;
 
     return (
-        <div className="max-w-2xl lg:max-w-4xl mx-auto flex flex-col animate-in slide-in-from-right-4 duration-300">
-             {/* Header with back button integrated */}
-             <div className="flex items-center justify-between mb-2 lg:mb-3 pt-1">
+        <div className="max-w-3xl lg:max-w-5xl mx-auto flex flex-col animate-in slide-in-from-right-4 duration-300 gap-3 lg:gap-4">
+             {/* Header */}
+             <div className="flex items-center justify-between">
                  <div className="flex items-center gap-2 lg:gap-3">
                      <button onClick={onCancel} className="text-slate-400 hover:text-white flex items-center space-x-1 text-xs lg:text-sm transition-colors shrink-0">
-                         <ChevronLeft className="w-3.5 h-3.5 lg:w-4 lg:h-4" /> <span>返回</span>
+                         <ChevronLeft className="w-4 h-4" /> <span>返回</span>
                      </button>
-                     <div className="h-4 lg:h-5 w-px bg-white/10"></div>
-                     <Skull className="w-4 h-4 lg:w-5 lg:h-5 text-orange-400 shrink-0" />
+                     <div className="h-5 w-px bg-white/10"></div>
+                     <Skull className="w-5 h-5 text-orange-400 shrink-0" />
                      <div>
-                         <h2 className="text-xs lg:text-base font-serif text-slate-200 leading-none">{mission?.name}</h2>
-                         <p className="text-[9px] lg:text-[10px] text-slate-500 mt-0.5">布阵 · 最多 {MAX_DEPLOY_COUNT} 人</p>
+                         <h2 className="text-sm lg:text-base font-serif text-slate-200 leading-none">{mission?.name}</h2>
+                         <p className="text-[10px] text-slate-500 mt-0.5">布阵 · 最多 {MAX_DEPLOY_COUNT} 人</p>
                      </div>
                  </div>
                  <div className={cn(
-                     "text-[10px] lg:text-[11px] font-mono px-2 lg:px-2.5 py-0.5 lg:py-1 rounded-md border shrink-0",
-                     canDeploy ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-white/5 border-white/10 text-slate-600"
+                     "text-xs font-mono px-3 py-1 rounded-lg border font-bold shrink-0",
+                     canDeploy ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.1)]" : "bg-white/5 border-white/10 text-slate-600"
                  )}>
                      {deployedCount}/{MAX_DEPLOY_COUNT}
                  </div>
              </div>
 
              {/* Preset Bar */}
-             <div className="flex gap-1 lg:gap-1.5 mb-2 lg:mb-3 items-center flex-wrap">
+             <div className="flex gap-1.5 items-center flex-wrap">
                  {presets.map(preset => (
                      <div key={preset.id} className="group relative flex items-center">
                          <button
                              onClick={() => applyPreset(preset)}
                              className={cn(
-                                 "flex items-center gap-1 lg:gap-1.5 px-1.5 lg:px-2.5 py-1 lg:py-1.5 rounded-lg border text-[10px] lg:text-[11px] transition-all shrink-0",
-                                 "border-white/10 bg-white/[0.03] hover:border-orange-500/30 hover:bg-orange-500/5 hover:text-orange-200 text-slate-400"
+                                 "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-all shrink-0",
+                                 "border-white/10 bg-white/[0.04] hover:border-orange-500/40 hover:bg-orange-500/8 hover:text-orange-200 text-slate-400"
                              )}
                          >
-                             <span className="text-xs lg:text-sm">{preset.icon}</span>
-                             <span className="font-medium tracking-wide hidden sm:inline">{preset.name}</span>
+                             <span>{preset.icon}</span>
+                             <span className="font-medium tracking-wide">{preset.name}</span>
                          </button>
                          {preset.id.startsWith('custom-') && (
                              <button
@@ -155,21 +155,35 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                      </div>
                  ))}
                  
-                 <div className="flex items-center gap-1 lg:gap-1.5 ml-auto shrink-0">
+                 <div className="flex items-center gap-1.5 ml-auto shrink-0">
                  {!showSaveInput ? (
+                     <>
                      <button
                          onClick={() => setShowSaveInput(true)}
                          className={cn(
-                             "flex items-center gap-0.5 lg:gap-1 px-1.5 lg:px-2 py-1 lg:py-1.5 rounded-lg border text-[10px] lg:text-[11px] transition-all shrink-0",
+                             "flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs transition-all shrink-0",
                              deployedCount > 0 
-                                 ? "border-cyan-500/20 text-cyan-400/60 hover:border-cyan-500/40 hover:text-cyan-300 hover:bg-cyan-500/5"
-                                 : "border-white/5 text-slate-700 cursor-not-allowed opacity-40"
+                                 ? "border-cyan-500/25 text-cyan-400 hover:border-cyan-500/50 hover:text-cyan-300 hover:bg-cyan-500/8"
+                                 : "border-white/8 text-slate-700 cursor-not-allowed opacity-40"
                          )}
                      >
-                         <Save className="w-2.5 h-2.5 lg:w-3 lg:h-3" /> <span className="hidden sm:inline">存阵</span>
+                         <Save className="w-3.5 h-3.5" /> 存阵
                      </button>
+                     <button
+                         onClick={clearAll}
+                         className={cn(
+                             "flex items-center gap-1 px-2 py-1.5 rounded-lg border text-xs transition-all shrink-0",
+                             deployedCount > 0 
+                                 ? "border-red-500/20 text-red-400/70 hover:border-red-500/40 hover:text-red-300 hover:bg-red-500/5"
+                                 : "border-white/8 text-slate-700 cursor-not-allowed opacity-40"
+                         )}
+                         disabled={deployedCount === 0}
+                     >
+                         <X className="w-3 h-3" />
+                     </button>
+                     </>
                  ) : (
-                     <div className="flex items-center gap-1 lg:gap-1.5 shrink-0 animate-in fade-in duration-150">
+                     <div className="flex items-center gap-1.5 shrink-0 animate-in fade-in duration-150">
                          <input
                              type="text"
                              value={newPresetName}
@@ -177,35 +191,26 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                              onKeyDown={e => e.key === 'Enter' && handleSavePreset()}
                              placeholder="阵型名称..."
                              autoFocus
-                             className="w-20 lg:w-28 bg-black/40 border border-white/15 rounded-md px-1.5 lg:px-2 py-1 text-[10px] lg:text-[11px] text-slate-200 placeholder-slate-600 outline-none focus:border-cyan-500/50 font-mono"
+                             className="w-28 bg-black/50 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 outline-none focus:border-cyan-500/50 font-mono"
                          />
-                         <button onClick={handleSavePreset} className="px-1.5 lg:px-2 py-1 rounded-md bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-[10px] lg:text-[11px] hover:bg-cyan-500/30 transition-all">保存</button>
-                         <button onClick={() => { setShowSaveInput(false); setNewPresetName(''); }} className="px-1 lg:px-1.5 py-1 rounded text-slate-500 hover:text-slate-300 text-[10px] lg:text-[11px]">取消</button>
+                         <button onClick={handleSavePreset} className="px-2.5 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs hover:bg-cyan-500/30 transition-all">保存</button>
+                         <button onClick={() => { setShowSaveInput(false); setNewPresetName(''); }} className="px-2 py-1.5 rounded-lg text-slate-500 hover:text-slate-300 text-xs">取消</button>
                      </div>
                  )}
-
-                 <button
-                     onClick={clearAll}
-                     className={cn(
-                         "flex items-center gap-0.5 lg:gap-1 px-1.5 lg:px-2 py-1 lg:py-1.5 rounded-lg border text-[10px] lg:text-[11px] transition-all shrink-0",
-                         deployedCount > 0 
-                             ? "border-red-500/20 text-red-400/60 hover:border-red-500/40 hover:text-red-300 hover:bg-red-500/5"
-                             : "border-white/5 text-slate-700 cursor-not-allowed opacity-40"
-                     )}
-                     disabled={deployedCount === 0}
-                 >
-                     <X className="w-2.5 h-2.5 lg:w-3 lg:h-3" />
-                 </button>
                  </div>
              </div>
 
-             <div className="flex flex-col lg:flex-row gap-2 lg:gap-4">
+             {/* Main Content: Grid + Hero List */}
+             <div className="flex flex-col lg:flex-row gap-3 lg:gap-4">
                   {/* 3x3 Grid */}
-                  <div className="flex-1 bg-black/40 border border-white/5 rounded-xl p-2 lg:p-4 relative">
-                       <div className="relative z-10 flex flex-col gap-1.5 lg:gap-2">
+                  <div className="flex-1 rounded-xl border border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent p-3 lg:p-5 relative overflow-hidden">
+                       {/* Subtle grid glow */}
+                       <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/[0.04] via-transparent to-orange-900/[0.03] pointer-events-none"></div>
+                       
+                       <div className="relative z-10 flex flex-col gap-2 lg:gap-3">
                            {rows.map(row => (
-                               <div key={row} className="flex gap-1.5 lg:gap-2 items-stretch">
-                                   <div className="w-5 lg:w-8 flex items-center justify-center text-[8px] lg:text-[9px] font-mono text-slate-700 uppercase tracking-wider shrink-0 select-none">
+                               <div key={row} className="flex gap-2 lg:gap-3 items-stretch">
+                                   <div className="w-7 lg:w-9 flex items-center justify-center text-[10px] lg:text-xs font-mono text-slate-600 uppercase tracking-widest shrink-0 select-none font-bold">
                                        {row === 'front' ? '前' : row === 'middle' ? '中' : '后'}
                                    </div>
                                    {cols.map(col => {
@@ -220,26 +225,31 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                                                key={pos}
                                                onClick={() => handleSlotClick(pos)}
                                                className={cn(
-                                                   "relative flex-1 rounded-lg border transition-all duration-150 flex flex-col items-center justify-center gap-0.5 min-h-[44px] sm:min-h-[52px] lg:min-h-[72px]",
+                                                   "relative flex-1 rounded-xl border transition-all duration-200 flex flex-col items-center justify-center gap-1 min-h-[56px] sm:min-h-[64px] lg:min-h-[80px]",
                                                    heroId
-                                                       ? "bg-cyan-500/8 border-cyan-500/25 hover:border-cyan-400 hover:bg-cyan-500/12 cursor-pointer group"
+                                                       ? "bg-cyan-500/10 border-cyan-400/30 hover:border-cyan-400/60 hover:bg-cyan-500/15 cursor-pointer group shadow-[inset_0_1px_0_rgba(6,182,212,0.08)]"
                                                        : availableHeroes.length > 0 && deployedCount < MAX_DEPLOY_COUNT
-                                                           ? "border-dashed border-white/10 bg-white/[0.02] hover:border-orange-500/40 hover:bg-orange-500/5 cursor-pointer"
-                                                           : "border-white/5 bg-transparent cursor-not-allowed opacity-35"
+                                                           ? "border-dashed border-white/12 bg-white/[0.02] hover:border-orange-500/40 hover:bg-orange-500/6 cursor-pointer hover:shadow-[0_0_12px_rgba(249,115,22,0.05)]"
+                                                           : "border-white/[0.04] bg-transparent cursor-not-allowed opacity-30"
                                                )}
                                            >
+                                               {/* Active slot glow */}
+                                               {heroId && (
+                                                   <div className="absolute inset-0 rounded-xl bg-cyan-400/[0.03] group-hover:bg-cyan-400/[0.06] transition-colors pointer-events-none"></div>
+                                               )}
+                                               
                                                {heroId && hero && tpl ? (
                                                    <>
-                                                       <HeroIcon icon={tpl.icon} name={tpl.name} className="text-xs lg:text-sm text-slate-200 leading-none" />
-                                                       <span className={cn("text-[7px] lg:text-[8px] font-mono px-1 py-0.5 rounded", cfg.tagColor, "bg-black/40")}>{cfg.tag}</span>
+                                                       <HeroIcon icon={tpl.icon} name={tpl.name} className="text-base lg:text-lg text-slate-100 leading-none relative z-10" />
+                                                       <span className={cn("text-[9px] lg:text-[10px] font-mono px-1.5 py-0.5 rounded-md", cfg.tagColor, "bg-black/50 backdrop-blur-sm z-10")}>{cfg.tag}</span>
                                                        {(hero.equipment.weapon || hero.equipment.armor) && (
-                                                           <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-cyan-400"></div>
+                                                           <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)] z-10"></div>
                                                        )}
                                                    </>
                                                ) : (
                                                    <>
-                                                       <span className="text-xs lg:text-sm leading-none">{cfg.icon}</span>
-                                                       <span className={cn("text-[7px] lg:text-[8px] font-mono", cfg.tagColor)}>{cfg.desc}</span>
+                                                       <span className="text-base lg:text-lg leading-none opacity-60">{cfg.icon}</span>
+                                                       <span className={cn("text-[9px] lg:text-[10px] font-mono", cfg.tagColor, "opacity-50")}>{cfg.desc}</span>
                                                    </>
                                                )}
                                            </button>
@@ -250,15 +260,18 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                        </div>
                   </div>
 
-                  {/* Hero List - horizontal scroll on mobile, vertical list on desktop */}
-                  <div className="w-full lg:w-48 xl:w-52 bg-black/40 border border-white/5 rounded-xl p-2 lg:p-3 flex flex-col shrink-0 overflow-hidden max-h-[25vh] lg:max-h-none">
-                       <div className="text-[9px] uppercase tracking-widest font-bold text-slate-600 mb-1.5 lg:mb-2 flex items-center justify-between shrink-0">
-                           <span>门客</span>
-                           <span className="font-normal text-slate-700">{availableHeroes.length} 待选</span>
+                  {/* Hero List */}
+                  <div className="w-full lg:w-52 xl:w-56 rounded-xl border border-white/[0.06] bg-black/30 p-2.5 lg:p-3 flex flex-col shrink-0">
+                       <div className="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-2 flex items-center justify-between shrink-0 pb-2 border-b border-white/[0.04]">
+                           <span className="flex items-center gap-1.5">
+                               <span className="w-1.5 h-1.5 rounded-full bg-slate-500/50"></span>
+                               门客
+                           </span>
+                           <span className="font-normal text-slate-600 normal-case tracking-normal tabular-nums">{availableHeroes.length}/{heroes.length}</span>
                        </div>
 
                        {/* Mobile: horizontal scrollable chips */}
-                       <div className="lg:hidden flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar flex gap-1.5 min-h-0">
+                       <div className="lg:hidden flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar flex gap-2 min-h-0 pt-1">
                            {heroes.map(h => {
                                const t = HERO_TEMPLATES[h.templateId];
                                const isDeployed = deployedIds.has(h.id);
@@ -266,21 +279,21 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                                    <div
                                        key={h.id}
                                        className={cn(
-                                           "rounded-lg border p-1.5 flex items-center gap-1.5 shrink-0 transition-all h-fit",
+                                           "rounded-xl border p-2 flex items-center gap-2 shrink-0 transition-all h-fit min-w-[80px]",
                                            isDeployed
-                                               ? "border-cyan-500/20 bg-cyan-500/5 opacity-50 w-16"
-                                               : "border-white/5 bg-white/[0.02] w-[72px]"
+                                               ? "border-cyan-500/20 bg-cyan-500/8 opacity-50"
+                                               : "border-white/[0.06] bg-white/[0.02]"
                                        )}
                                    >
-                                       <div className="w-6 h-6 rounded-md bg-black/40 border border-white/10 flex items-center justify-center shrink-0 overflow-hidden">
-                                           <HeroIcon icon={t.icon} name={t.name} className="w-full h-full flex items-center justify-center text-[9px] text-slate-300" />
+                                       <div className="w-8 h-8 rounded-lg bg-black/50 border border-white/[0.08] flex items-center justify-center shrink-0 overflow-hidden">
+                                           <HeroIcon icon={t.icon} name={t.name} className="w-full h-full flex items-center justify-center text-[11px] text-slate-300" />
                                        </div>
                                        <div className="flex-1 min-w-0">
-                                           <div className="font-serif font-bold text-[10px] text-slate-200 truncate leading-tight">{t.name}</div>
-                                           <div className="text-[7px] font-mono text-slate-600 leading-tight">HP{h.hp}</div>
+                                           <div className="font-serif font-bold text-[11px] text-slate-200 truncate leading-tight">{t.name}</div>
+                                           <div className="text-[9px] font-mono text-slate-600 leading-tight">HP{h.hp}</div>
                                        </div>
                                        {isDeployed && (
-                                           <span className="text-[8px] text-cyan-500 shrink-0">✓</span>
+                                           <span className="text-cyan-500 shrink-0 text-xs">✓</span>
                                        )}
                                    </div>
                                );
@@ -288,7 +301,7 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                        </div>
 
                        {/* Desktop: vertical scrollable list */}
-                       <div className="hidden lg:block flex-1 overflow-y-auto custom-scrollbar space-y-1 pr-0.5">
+                       <div className="hidden lg:block flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1 pt-1">
                            {heroes.map(h => {
                                const t = HERO_TEMPLATES[h.templateId];
                                const isDeployed = deployedIds.has(h.id);
@@ -296,21 +309,21 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                                    <div
                                        key={h.id}
                                        className={cn(
-                                           "rounded-lg border p-2 flex items-center gap-2 text-left transition-all",
+                                           "rounded-lg border px-2.5 py-2 flex items-center gap-2.5 text-left transition-all",
                                            isDeployed
-                                               ? "border-cyan-500/20 bg-cyan-500/5 opacity-50"
-                                               : "border-white/5 bg-white/[0.02]"
+                                               ? "border-cyan-500/15 bg-cyan-500/6 opacity-50"
+                                               : "border-white/[0.05] bg-white/[0.01] hover:bg-white/[0.03] hover:border-white/[0.08]"
                                        )}
                                    >
-                                       <div className="w-7 h-7 rounded-md bg-black/40 border border-white/10 flex items-center justify-center shrink-0 overflow-hidden">
-                                           <HeroIcon icon={t.icon} name={t.name} className="w-full h-full flex items-center justify-center text-[10px] text-slate-300" />
+                                       <div className="w-8 h-8 rounded-lg bg-black/50 border border-white/[0.08] flex items-center justify-center shrink-0 overflow-hidden">
+                                           <HeroIcon icon={t.icon} name={t.name} className="w-full h-full flex items-center justify-center text-[11px] text-slate-300" />
                                        </div>
                                        <div className="flex-1 min-w-0">
                                            <div className="font-serif font-bold text-[11px] text-slate-200 truncate leading-tight">{t.name}</div>
-                                           <div className="text-[8px] font-mono text-slate-600">HP{h.hp} 兵{h.troops} 统{t.attributes.command}</div>
+                                           <div className="text-[9px] font-mono text-slate-600 mt-0.5">HP{h.hp} · 兵{h.troops} · 统{t.attributes.command}</div>
                                        </div>
                                        {isDeployed && (
-                                           <span className="text-[8px] text-cyan-500 shrink-0">✓</span>
+                                           <span className="text-cyan-500 shrink-0 text-[10px]">✓</span>
                                        )}
                                    </div>
                                );
@@ -319,10 +332,11 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                   </div>
              </div>
 
-             {/* Deploy Button */}
-             <div className="mt-2 lg:mt-3 pt-2 lg:pt-3 border-t border-white/5 flex justify-between items-center">
-                 <div className="text-[9px] lg:text-[11px] text-slate-600 hidden sm:block">
-                     点击空格放置 · 点击已部署取下 · 布好阵后可存为预设
+             {/* Deploy Button Area — Full-width action bar */}
+             <div className="rounded-xl border border-white/[0.06] bg-gradient-to-r from-black/50 to-black/30 p-3 lg:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                 <div className="flex items-center gap-2 text-slate-500 text-xs">
+                     <div className="w-1 h-1 rounded-full bg-orange-500/40 animate-pulse"></div>
+                     <span>点击空格放置英雄 · 再次点击取下 · 布好阵后点击出发</span>
                  </div>
                  <button 
                      onClick={() => {
@@ -332,14 +346,20 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                      }}
                      disabled={!canDeploy}
                      className={cn(
-                         "px-4 lg:px-8 py-1.5 lg:py-2 border text-xs lg:text-sm font-bold tracking-widest transition-all flex items-center gap-1.5 lg:gap-2 ml-auto",
+                         "relative w-full sm:w-auto px-8 py-2.5 rounded-lg font-bold text-sm tracking-wider transition-all flex items-center justify-center gap-2 overflow-hidden",
                          canDeploy 
-                             ? "border-orange-500/50 bg-orange-500/20 text-orange-100 hover:bg-orange-500/30 hover:shadow-[0_0_15px_rgba(249,115,22,0.15)]"
-                             : "border-white/10 bg-white/5 text-slate-700 cursor-not-allowed"
+                             ? "bg-gradient-to-r from-orange-600 to-orange-500 text-white hover:from-orange-500 hover:to-orange-400 shadow-[0_4px_16px_rgba(234,88,12,0.25)] hover:shadow-[0_4px_24px_rgba(234,88,12,0.35)] active:scale-[0.98]"
+                             : "bg-white/[0.04] text-slate-600 cursor-not-allowed border border-white/[0.06]"
                      )}
                  >
-                     <Navigation className="w-3 h-3 lg:w-3.5 lg:h-3.5" />
-                     出发
+                     {canDeploy && (
+                         <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/[0.08] pointer-events-none"></div>
+                     )}
+                     <Navigation className="w-4 h-4 relative z-10" />
+                     <span className="relative z-10">出征远途</span>
+                     {canDeploy && (
+                         <span className="relative z-10 text-[10px] font-normal opacity-70 ml-1">→</span>
+                     )}
                  </button>
              </div>
         </div>
