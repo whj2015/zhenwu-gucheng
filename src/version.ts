@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.17';
+export const CURRENT_VERSION = '0.6.18';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.18',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🎨 布阵页面全面自适应重构 — h-full+overflow-hidden约束整体高度，flex-1/min-h-0让网格自动填充剩余空间，格子用py-2自然适配移动端+lg:aspect-square桌面正方形，HeroList限制max-h-[30vh]，出发栏compact'
+    ]
+  },
   {
     version: '0.6.17',
     date: '2026-06-02',

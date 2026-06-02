@@ -38,7 +38,6 @@ function savePresets(presets: SavedPreset[]) {
 
 const ROWS: PositionRow[] = ['front', 'middle', 'back'];
 const COLS: PositionCol[] = ['left', 'center', 'right'];
-
 const ROW_LABELS: Record<PositionRow, string> = { front: '前', middle: '中', back: '后' };
 
 export default function SetupView({ missionId, onCancel, onDeploy }: { missionId: string; onCancel: () => void; onDeploy?: () => void }) {
@@ -108,10 +107,44 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
         savePresets(updated);
     };
 
+    const renderGridCell = (row: PositionRow, col: PositionCol) => {
+        const pos = `${row}-${col}` as PositionKey;
+        const cfg = POSITION_CONFIG[pos] || POSITION_CONFIG['front-center'];
+        const heroId = party[pos];
+        const hero = heroId ? heroes.find(h => h.id === heroId) : null;
+        const tpl = hero ? HERO_TEMPLATES[hero.templateId] : null;
+        return (
+            <button key={pos} onClick={() => handleSlotClick(pos)} className={cn(
+                "relative rounded-xl border transition-all duration-200 flex flex-col items-center justify-center gap-0.5 lg:gap-1 py-2 sm:py-3 lg:aspect-square lg:py-0",
+                heroId
+                    ? "bg-cyan-500/10 border-cyan-400/30 hover:border-cyan-400/60 hover:bg-cyan-500/15 cursor-pointer group"
+                    : availableHeroes.length > 0 && deployedCount < MAX_DEPLOY_COUNT
+                        ? "border-dashed border-white/12 bg-white/[0.02] hover:border-orange-500/40 hover:bg-orange-500/6 cursor-pointer"
+                        : "border-white/[0.04] bg-transparent cursor-not-allowed opacity-30"
+            )}>
+                {heroId && <div className="absolute inset-0 rounded-xl bg-cyan-400/[0.03] group-hover:bg-cyan-400/[0.06] transition-colors pointer-events-none" />}
+                {heroId && hero && tpl ? (
+                    <>
+                        <HeroIcon icon={tpl.icon} name={tpl.name} className="text-base lg:text-lg text-slate-100 leading-none relative z-10" />
+                        <span className={cn("text-[9px] lg:text-[10px] font-mono px-1.5 py-0.5 rounded-md", cfg.tagColor, "bg-black/50 z-10")}>{cfg.tag}</span>
+                        {(hero.equipment.weapon || hero.equipment.armor) && (
+                            <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)] z-10" />
+                        )}
+                    </>
+                ) : (
+                    <>
+                        <span className="text-base lg:text-lg leading-none opacity-60">{cfg.icon}</span>
+                        <span className={cn("text-[9px] lg:text-[10px] font-mono", cfg.tagColor, "opacity-50")}>{cfg.desc}</span>
+                    </>
+                )}
+            </button>
+        );
+    };
+
     return (
-        <div className="max-w-3xl lg:max-w-5xl mx-auto flex flex-col animate-in slide-in-from-right-4 duration-300 gap-3 lg:gap-4">
+        <div className="max-w-3xl lg:max-w-5xl mx-auto h-full flex flex-col animate-in slide-in-from-right-4 duration-300 gap-2 sm:gap-3 overflow-hidden px-1">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2 lg:gap-3">
                     <button onClick={onCancel} className="text-slate-400 hover:text-white flex items-center space-x-1 text-xs lg:text-sm transition-colors shrink-0">
                         <ChevronLeft className="w-4 h-4" /> <span>返回</span>
@@ -132,7 +165,7 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
             </div>
 
             {/* Preset Bar */}
-            <div className="flex gap-1.5 items-center flex-wrap">
+            <div className="flex gap-1.5 items-center flex-wrap shrink-0">
                 {presets.map(preset => (
                     <div key={preset.id} className="group relative flex items-center">
                         <button onClick={() => applyPreset(preset)} className={cn(
@@ -180,78 +213,45 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                 </div>
             </div>
 
-            {/* Main Content: Grid + Hero List */}
-            <div className="flex flex-col lg:flex-row gap-3 lg:gap-4">
-                {/* 3x3 Grid — CSS Grid for perfect squares */}
-                <div className="flex-1 rounded-xl border border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent p-3 lg:p-5 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/[0.04] via-transparent to-orange-900/[0.03] pointer-events-none"></div>
-                    <div className="relative z-10 grid grid-cols-[auto_1fr_1fr_1fr] gap-2 lg:gap-3 items-stretch">
-                        {ROWS.map(row => (
-                            <div key={row} className="contents">
-                                <div className="flex items-center justify-center text-[10px] lg:text-xs font-mono text-slate-600 uppercase tracking-widest select-none font-bold">{ROW_LABELS[row]}</div>
-                                {COLS.map(col => {
-                                    const pos = `${row}-${col}` as PositionKey;
-                                    const cfg = POSITION_CONFIG[pos] || POSITION_CONFIG['front-center'];
-                                    const heroId = party[pos];
-                                    const hero = heroId ? heroes.find(h => h.id === heroId) : null;
-                                    const tpl = hero ? HERO_TEMPLATES[hero.templateId] : null;
-                                    return (
-                                        <button key={pos} onClick={() => handleSlotClick(pos)} className={cn(
-                                            "relative rounded-xl border transition-all duration-200 flex flex-col items-center justify-center gap-1",
-                                            "min-h-[52px] sm:min-h-[60px] lg:aspect-square lg:min-h-0",
-                                            heroId
-                                                ? "bg-cyan-500/10 border-cyan-400/30 hover:border-cyan-400/60 hover:bg-cyan-500/15 cursor-pointer group"
-                                                : availableHeroes.length > 0 && deployedCount < MAX_DEPLOY_COUNT
-                                                    ? "border-dashed border-white/12 bg-white/[0.02] hover:border-orange-500/40 hover:bg-orange-500/6 cursor-pointer"
-                                                    : "border-white/[0.04] bg-transparent cursor-not-allowed opacity-30"
-                                        )}>
-                                            {heroId && <div className="absolute inset-0 rounded-xl bg-cyan-400/[0.03] group-hover:bg-cyan-400/[0.06] transition-colors pointer-events-none" />}
-                                            {heroId && hero && tpl ? (
-                                                <>
-                                                    <HeroIcon icon={tpl.icon} name={tpl.name} className="text-base lg:text-lg text-slate-100 leading-none relative z-10" />
-                                                    <span className={cn("text-[9px] lg:text-[10px] font-mono px-1.5 py-0.5 rounded-md", cfg.tagColor, "bg-black/50 z-10")}>{cfg.tag}</span>
-                                                    {(hero.equipment.weapon || hero.equipment.armor) && (
-                                                        <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)] z-10" />
-                                                    )}
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span className="text-base lg:text-lg leading-none opacity-60">{cfg.icon}</span>
-                                                    <span className={cn("text-[9px] lg:text-[10px] font-mono", cfg.tagColor, "opacity-50")}>{cfg.desc}</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        ))}
+            {/* Main Content: Grid + Hero List — flex-1 shrinks to fill remaining space */}
+            <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2 sm:gap-3 lg:gap-4">
+                {/* 3x3 Grid */}
+                <div className="flex-1 min-h-0 rounded-xl border border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent p-2 sm:p-3 lg:p-5 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/[0.04] via-transparent to-orange-900/[0.03] pointer-events-none" />
+                    <div className="relative z-10 h-full grid grid-cols-[auto_1fr_1fr_1fr] gap-1.5 sm:gap-2 lg:gap-3 items-center">
+                        <div className="flex items-center justify-center text-[10px] lg:text-xs font-mono text-slate-600 uppercase tracking-widest select-none font-bold">{ROW_LABELS.front}</div>
+                        {COLS.map(col => renderGridCell('front', col))}
+                        <div className="flex items-center justify-center text-[10px] lg:text-xs font-mono text-slate-600 uppercase tracking-widest select-none font-bold">{ROW_LABELS.middle}</div>
+                        {COLS.map(col => renderGridCell('middle', col))}
+                        <div className="flex items-center justify-center text-[10px] lg:text-xs font-mono text-slate-600 uppercase tracking-widest select-none font-bold">{ROW_LABELS.back}</div>
+                        {COLS.map(col => renderGridCell('back', col))}
                     </div>
                 </div>
 
                 {/* Hero List */}
-                <div className="w-full lg:w-52 xl:w-56 rounded-xl border border-white/[0.06] bg-black/30 p-2.5 lg:p-3 flex flex-col shrink-0">
-                    <div className="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-2 flex items-center justify-between shrink-0 pb-2 border-b border-white/[0.04]">
+                <div className="w-full lg:w-52 xl:w-56 rounded-xl border border-white/[0.06] bg-black/30 p-2 lg:p-3 flex flex-col shrink-0 max-h-[30vh] lg:max-h-none">
+                    <div className="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-1.5 lg:mb-2 flex items-center justify-between shrink-0 pb-1.5 lg:pb-2 border-b border-white/[0.04]">
                         <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-slate-500/50" />门客</span>
                         <span className="font-normal text-slate-600 normal-case tracking-normal tabular-nums">{availableHeroes.length}/{heroes.length}</span>
                     </div>
                     {/* Mobile: horizontal scroll */}
-                    <div className="lg:hidden flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar flex gap-2 min-h-0 pt-1">
+                    <div className="lg:hidden flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar flex gap-1.5 min-h-0">
                         {heroes.map(h => {
                             const t = HERO_TEMPLATES[h.templateId];
                             const isDeployed = deployedIds.has(h.id);
                             return (
                                 <div key={h.id} className={cn(
-                                    "rounded-xl border p-2 flex items-center gap-2 shrink-0 transition-all h-fit min-w-[80px]",
+                                    "rounded-lg border p-1.5 flex items-center gap-1.5 shrink-0 transition-all h-fit min-w-[72px]",
                                     isDeployed ? "border-cyan-500/20 bg-cyan-500/8 opacity-50" : "border-white/[0.06] bg-white/[0.02]"
                                 )}>
-                                    <div className="w-8 h-8 rounded-lg bg-black/50 border border-white/[0.08] flex items-center justify-center shrink-0 overflow-hidden">
-                                        <HeroIcon icon={t.icon} name={t.name} className="w-full h-full flex items-center justify-center text-[11px] text-slate-300" />
+                                    <div className="w-7 h-7 rounded-md bg-black/50 border border-white/[0.08] flex items-center justify-center shrink-0 overflow-hidden">
+                                        <HeroIcon icon={t.icon} name={t.name} className="w-full h-full flex items-center justify-center text-[10px] text-slate-300" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="font-serif font-bold text-[11px] text-slate-200 truncate leading-tight">{t.name}</div>
-                                        <div className="text-[9px] font-mono text-slate-600 leading-tight">HP{h.hp}</div>
+                                        <div className="font-serif font-bold text-[10px] text-slate-200 truncate leading-tight">{t.name}</div>
+                                        <div className="text-[8px] font-mono text-slate-600 leading-tight">HP{h.hp}</div>
                                     </div>
-                                    {isDeployed && <span className="text-cyan-500 shrink-0 text-xs">✓</span>}
+                                    {isDeployed && <span className="text-cyan-500 shrink-0 text-[9px]">✓</span>}
                                 </div>
                             );
                         })}
@@ -282,27 +282,26 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
             </div>
 
             {/* Deploy Bar */}
-            <div className="flex items-center gap-3 pt-3 border-t border-white/[0.06]">
-                <div className="flex-1 flex items-center gap-1.5 min-w-0 overflow-x-auto">
+            <div className="flex items-center gap-2 shrink-0 pt-2 border-t border-white/[0.06]">
+                <div className="flex-1 flex items-center gap-1 min-w-0 overflow-x-auto">
                     {deployedCount > 0 ? (
                         Object.entries(party).filter(([, id]) => id).map(([pos, heroId]) => {
                             const hero = heroes.find(h => h.id === heroId);
                             const tpl = hero ? HERO_TEMPLATES[hero.templateId] : null;
                             return (
-                                <div key={pos} className="flex items-center gap-1 px-2 py-1 rounded-md bg-cyan-500/8 border border-cyan-500/15 shrink-0">
-                                    <HeroIcon icon={tpl?.icon || '?'} name={tpl?.name || ''} className="text-[11px] text-slate-300" />
-                                    <span className="text-[10px] font-serif text-slate-400 truncate max-w-[60px]">{tpl?.name}</span>
-                                    <span className="text-[8px] font-mono text-slate-600">{POSITION_CONFIG[pos]?.tag}</span>
+                                <div key={pos} className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-cyan-500/8 border border-cyan-500/15 shrink-0">
+                                    <HeroIcon icon={tpl?.icon || '?'} name={tpl?.name || ''} className="text-[10px] text-slate-300" />
+                                    <span className="text-[9px] font-serif text-slate-400 truncate max-w-[50px]">{tpl?.name}</span>
                                 </div>
                             );
                         })
                     ) : (
-                        <span className="text-xs text-slate-600 italic">尚未部署英雄...</span>
+                        <span className="text-[10px] text-slate-600 italic">点击空格放置门客</span>
                     )}
                 </div>
                 <button onClick={() => { if (!canDeploy) return; beginRun(missionId, party, generateFloor(1, missionId)); onDeploy?.(); }}
                     disabled={!canDeploy} className={cn(
-                        "shrink-0 px-5 py-2 rounded-lg font-bold text-sm tracking-wider transition-all flex items-center gap-1.5",
+                        "shrink-0 px-4 py-1.5 rounded-lg font-bold text-sm tracking-wider transition-all flex items-center gap-1.5",
                         canDeploy ? "bg-orange-500/90 hover:bg-orange-500 text-white shadow-[0_2px_12px_rgba(234,88,12,0.25)] active:scale-[0.97]"
                             : "bg-white/[0.04] text-slate-600 cursor-not-allowed"
                     )}>
