@@ -208,55 +208,53 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                        <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/[0.04] via-transparent to-orange-900/[0.03] pointer-events-none"></div>
                        
                        <div className="relative z-10 grid grid-cols-[auto_1fr_1fr_1fr] gap-2 lg:gap-3 items-center">
-                           {rows.map(row => (
-                               <>
-                                   <div key={`label-${row}`} className="flex items-center justify-center text-[10px] lg:text-xs font-mono text-slate-600 uppercase tracking-widest select-none font-bold row-span-1">
-                                       {row === 'front' ? '前' : row === 'middle' ? '中' : '后'}
-                                   </div>
-                                   {cols.map(col => {
-                                       const pos: PositionKey = `${row}-${col}` as PositionKey;
-                                       const cfg = POSITION_CONFIG[pos] || POSITION_CONFIG['front-center'];
-                                       const heroId = party[pos];
-                                       const hero = heroId ? heroes.find(h => h.id === heroId) : null;
-                                       const tpl = hero ? HERO_TEMPLATES[hero.templateId] : null;
+                           {rows.flatMap(row => [
+                               <div key={`label-${row}`} className="flex items-center justify-center text-[10px] lg:text-xs font-mono text-slate-600 uppercase tracking-widest select-none font-bold">
+                                   {row === 'front' ? '前' : row === 'middle' ? '中' : '后'}
+                               </div>,
+                               ...cols.map(col => {
+                                   const pos: PositionKey = `${row}-${col}` as PositionKey;
+                                   const cfg = POSITION_CONFIG[pos] || POSITION_CONFIG['front-center'];
+                                   const heroId = party[pos];
+                                   const hero = heroId ? heroes.find(h => h.id === heroId) : null;
+                                   const tpl = hero ? HERO_TEMPLATES[hero.templateId] : null;
 
-                                       return (
-                                           <button
-                                               key={pos}
-                                               onClick={() => handleSlotClick(pos)}
-                                               className={cn(
-                                                   "relative aspect-square rounded-xl border transition-all duration-200 flex flex-col items-center justify-center gap-1",
-                                                   heroId
-                                                       ? "bg-cyan-500/10 border-cyan-400/30 hover:border-cyan-400/60 hover:bg-cyan-500/15 cursor-pointer group shadow-[inset_0_1px_0_rgba(6,182,212,0.08)]"
-                                                       : availableHeroes.length > 0 && deployedCount < MAX_DEPLOY_COUNT
-                                                           ? "border-dashed border-white/12 bg-white/[0.02] hover:border-orange-500/40 hover:bg-orange-500/6 cursor-pointer hover:shadow-[0_0_12px_rgba(249,115,22,0.05)]"
-                                                           : "border-white/[0.04] bg-transparent cursor-not-allowed opacity-30"
-                                               )}
-                                           >
-                                               {/* Active slot glow */}
-                                               {heroId && (
-                                                   <div className="absolute inset-0 rounded-xl bg-cyan-400/[0.03] group-hover:bg-cyan-400/[0.06] transition-colors pointer-events-none"></div>
-                                               )}
-                                               
-                                               {heroId && hero && tpl ? (
-                                                   <>
-                                                       <HeroIcon icon={tpl.icon} name={tpl.name} className="text-base lg:text-lg text-slate-100 leading-none relative z-10" />
-                                                       <span className={cn("text-[9px] lg:text-[10px] font-mono px-1.5 py-0.5 rounded-md", cfg.tagColor, "bg-black/50 backdrop-blur-sm z-10")}>{cfg.tag}</span>
-                                                       {(hero.equipment.weapon || hero.equipment.armor) && (
-                                                           <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)] z-10"></div>
-                                                       )}
-                                                   </>
-                                               ) : (
-                                                   <>
-                                                       <span className="text-base lg:text-lg leading-none opacity-60">{cfg.icon}</span>
-                                                       <span className={cn("text-[9px] lg:text-[10px] font-mono", cfg.tagColor, "opacity-50")}>{cfg.desc}</span>
-                                                   </>
-                                               )}
-                                           </button>
-                                       );
-                                   })}
-                               </div>
-                           ))}
+                                   return (
+                                       <button
+                                           key={pos}
+                                           onClick={() => handleSlotClick(pos)}
+                                           className={cn(
+                                               "relative aspect-square rounded-xl border transition-all duration-200 flex flex-col items-center justify-center gap-1",
+                                               heroId
+                                                   ? "bg-cyan-500/10 border-cyan-400/30 hover:border-cyan-400/60 hover:bg-cyan-500/15 cursor-pointer group shadow-[inset_0_1px_0_rgba(6,182,212,0.08)]"
+                                                   : availableHeroes.length > 0 && deployedCount < MAX_DEPLOY_COUNT
+                                                       ? "border-dashed border-white/12 bg-white/[0.02] hover:border-orange-500/40 hover:bg-orange-500/6 cursor-pointer hover:shadow-[0_0_12px_rgba(249,115,22,0.05)]"
+                                                       : "border-white/[0.04] bg-transparent cursor-not-allowed opacity-30"
+                                           )}
+                                       >
+                                           {/* Active slot glow */}
+                                           {heroId && (
+                                               <div className="absolute inset-0 rounded-xl bg-cyan-400/[0.03] group-hover:bg-cyan-400/[0.06] transition-colors pointer-events-none"></div>
+                                           })}
+                                           
+                                           {heroId && hero && tpl ? (
+                                               <>
+                                                   <HeroIcon icon={tpl.icon} name={tpl.name} className="text-base lg:text-lg text-slate-100 leading-none relative z-10" />
+                                                   <span className={cn("text-[9px] lg:text-[10px] font-mono px-1.5 py-0.5 rounded-md", cfg.tagColor, "bg-black/50 backdrop-blur-sm z-10")}>{cfg.tag}</span>
+                                                   {(hero.equipment.weapon || hero.equipment.armor) && (
+                                                       <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_4px_rgba(34,211,238,0.5)] z-10"></div>
+                                                   )}
+                                               </>
+                                           ) : (
+                                               <>
+                                                   <span className="text-base lg:text-lg leading-none opacity-60">{cfg.icon}</span>
+                                                   <span className={cn("text-[9px] lg:text-[10px] font-mono", cfg.tagColor, "opacity-50")}>{cfg.desc}</span>
+                                               </>
+                                           )}
+                                       </button>
+                                   );
+                               })
+                           ])}
                        </div>
                   </div>
 
