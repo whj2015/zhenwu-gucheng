@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.16';
+export const CURRENT_VERSION = '0.6.17';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.17',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复移动端正方形格子霸屏 — 移动端用固定最小高度(52px/60px)，仅桌面端(lg:)启用aspect-square正方形'
+    ]
+  },
   {
     version: '0.6.16',
     date: '2026-06-02',

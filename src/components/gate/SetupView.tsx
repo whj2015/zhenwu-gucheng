@@ -197,7 +197,8 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                                     const tpl = hero ? HERO_TEMPLATES[hero.templateId] : null;
                                     return (
                                         <button key={pos} onClick={() => handleSlotClick(pos)} className={cn(
-                                            "relative aspect-square rounded-xl border transition-all duration-200 flex flex-col items-center justify-center gap-1",
+                                            "relative rounded-xl border transition-all duration-200 flex flex-col items-center justify-center gap-1",
+                                            "min-h-[52px] sm:min-h-[60px] lg:aspect-square lg:min-h-0",
                                             heroId
                                                 ? "bg-cyan-500/10 border-cyan-400/30 hover:border-cyan-400/60 hover:bg-cyan-500/15 cursor-pointer group"
                                                 : availableHeroes.length > 0 && deployedCount < MAX_DEPLOY_COUNT
