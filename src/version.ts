@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.15';
+export const CURRENT_VERSION = '0.6.16';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.16',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🎨 布阵3x3格子改为正方形 — 用CSS Grid布局(grid-cols-4)+aspect-square替代flex拉伸，每个格子严格1:1比例'
+    ]
+  },
   {
     version: '0.6.15',
     date: '2026-06-02',

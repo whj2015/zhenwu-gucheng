@@ -202,15 +202,15 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
 
              {/* Main Content: Grid + Hero List */}
              <div className="flex flex-col lg:flex-row gap-3 lg:gap-4">
-                  {/* 3x3 Grid */}
+                  {/* 3x3 Grid — CSS Grid for perfect squares */}
                   <div className="flex-1 rounded-xl border border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent p-3 lg:p-5 relative overflow-hidden">
                        {/* Subtle grid glow */}
                        <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/[0.04] via-transparent to-orange-900/[0.03] pointer-events-none"></div>
                        
-                       <div className="relative z-10 flex flex-col gap-2 lg:gap-3">
+                       <div className="relative z-10 grid grid-cols-[auto_1fr_1fr_1fr] gap-2 lg:gap-3 items-center">
                            {rows.map(row => (
-                               <div key={row} className="flex gap-2 lg:gap-3 items-stretch">
-                                   <div className="w-7 lg:w-9 flex items-center justify-center text-[10px] lg:text-xs font-mono text-slate-600 uppercase tracking-widest shrink-0 select-none font-bold">
+                               <>
+                                   <div key={`label-${row}`} className="flex items-center justify-center text-[10px] lg:text-xs font-mono text-slate-600 uppercase tracking-widest select-none font-bold row-span-1">
                                        {row === 'front' ? '前' : row === 'middle' ? '中' : '后'}
                                    </div>
                                    {cols.map(col => {
@@ -225,7 +225,7 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                                                key={pos}
                                                onClick={() => handleSlotClick(pos)}
                                                className={cn(
-                                                   "relative flex-1 rounded-xl border transition-all duration-200 flex flex-col items-center justify-center gap-1 min-h-[56px] sm:min-h-[64px] lg:min-h-[80px]",
+                                                   "relative aspect-square rounded-xl border transition-all duration-200 flex flex-col items-center justify-center gap-1",
                                                    heroId
                                                        ? "bg-cyan-500/10 border-cyan-400/30 hover:border-cyan-400/60 hover:bg-cyan-500/15 cursor-pointer group shadow-[inset_0_1px_0_rgba(6,182,212,0.08)]"
                                                        : availableHeroes.length > 0 && deployedCount < MAX_DEPLOY_COUNT
