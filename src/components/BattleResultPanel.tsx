@@ -60,6 +60,7 @@ const RE_MANUAL_ENEMY_ATTACK = /([\u4e00-\u9fa5]+) 攻击 ([\u4e00-\u9fa5]+)，(
 const RE_SKILL_ATTACK = /([\u4e00-\u9fa5]+) 追击 ([\u4e00-\u9fa5]+)，造成 (\d+) 点伤害/;
 const RE_SKILL_MANUAL = /[✨🌟]\s*(.+?) 施放【.+?】对 (.+?) 造成 (\d+) 点伤害/;
 const RE_CLEAVE_ATTACK = /\[偃月溅射\] 对 (.+) 造成额外 (\d+) 点伤害/;
+const RE_FALLBACK = /([\u4e00-\u9fa5]+)(?:率兵卒)?攻击 ([\u4e00-\u9fa5]+).*?(\d+)/;
 
 const HERO_NAME_SET_CACHE = new WeakMap<object, Set<string>>();
 
@@ -80,7 +81,13 @@ function parseBattleLogs(rawLogs: string[], heroes: any[], _enemies: any[]): Bat
     let currentRound = 0;
     const heroNames = getHeroNameSet(heroes);
 
+    console.log('[BattleResultPanel] === parseBattleLogs ===');
+    console.log('[BattleResultPanel] heroNames:', [...heroNames]);
+    console.log('[BattleResultPanel] rawLogs (%d lines):', rawLogs.length);
+
     rawLogs.forEach((log, idx) => {
+        console.log(`[BattleResultPanel]   [${idx}] ${log.substring(0, 80)}`);
+
         if (log.includes('回合') || log.match(/^\d+:/)) {
             const roundMatch = log.match(/(\d+):/) || log.match(/第 (\d+) 回合/);
             if (roundMatch) currentRound = parseInt(roundMatch[1]);
@@ -98,9 +105,8 @@ function parseBattleLogs(rawLogs: string[], heroes: any[], _enemies: any[]): Bat
         if (manualAttackMatch) {
             const [, attacker, target, dmgStr] = manualAttackMatch;
             const isPlayer = heroNames.has(attacker);
-            if (isPlayer || attacker === target) {
-                entries.push({ id: `log-${idx}`, round: currentRound, attacker, target, damage: parseInt(dmgStr), isPlayer });
-            }
+            entries.push({ id: `log-${idx}`, round: currentRound, attacker, target, damage: parseInt(dmgStr), isPlayer });
+            console.log(`[BattleResultPanel]   => RE_MANUAL_ATTACK: ${attacker} -> ${target} (${dmgStr}), isPlayer=${isPlayer}`);
             return;
         }
 
@@ -141,7 +147,20 @@ function parseBattleLogs(rawLogs: string[], heroes: any[], _enemies: any[]): Bat
             }
             return;
         }
+
+        const fallbackMatch = log.match(RE_FALLBACK);
+        if (fallbackMatch) {
+            const [, attacker, target, dmgStr] = fallbackMatch;
+            const isPlayer = heroNames.has(attacker);
+            entries.push({ id: `log-${idx}`, round: currentRound, attacker, target, damage: parseInt(dmgStr), isPlayer });
+            console.log(`[BattleResultPanel]   => FALLBACK: ${attacker} -> ${target} (${dmgStr}), isPlayer=${isPlayer}`);
+            return;
+        }
     });
+
+    console.log('[BattleResultPanel] parsed entries:', entries.length);
+    console.log('[BattleResultPanel] player entries:', entries.filter(e => e.isPlayer).length);
+    console.log('[BattleResultPanel] enemy entries:', entries.filter(e => !e.isPlayer).length);
     return entries;
 }
 
