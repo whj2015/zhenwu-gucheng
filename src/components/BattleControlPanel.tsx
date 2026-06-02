@@ -307,11 +307,11 @@ export default function BattleControlPanel({
         setSelectedTargetId(null);
     }, []);
 
-    const executeTurn = useCallback(() => {
-        const actionCount = Object.keys(turnActions).filter(k => turnActions[k] !== null).length;
+    const resolveAndApply = useCallback((actions: Record<string, SkillActionType | null>) => {
+        const actionCount = Object.keys(actions).filter(k => actions[k] !== null).length;
         console.log('=== EXECUTE TURN ===');
         console.log('actionCount:', actionCount, 'of', aliveHeroes.length, 'heroes');
-        console.log('turnActions:', JSON.stringify(turnActions));
+        console.log('actions:', JSON.stringify(actions));
         console.log('heroes before:', heroes.map(h => ({ id: h.id, name: h.name, hp: h.hp, maxHp: h.maxHp, force: h.force })));
         console.log('enemies before:', enemies.map(e => ({ id: e.id, name: e.name, hp: e.hp, maxHp: e.maxHp, force: e.force, alive: e.isAlive })));
 
@@ -321,7 +321,7 @@ export default function BattleControlPanel({
             return;
         }
 
-        const result = resolveTurn(heroes, enemies, turnActions);
+        const result = resolveTurn(heroes, enemies, actions);
 
         console.log('result logs:', result.logs);
         console.log('victory:', result.victory, 'defeat:', result.defeat);
@@ -351,11 +351,15 @@ export default function BattleControlPanel({
         setPendingActionType(null);
 
         gainTurnEnergy();
-    }, [heroes, enemies, turnActions, turnCount, logs, onBattleEnd, gainTurnEnergy]);
+    }, [heroes, enemies, turnCount, logs, onBattleEnd, gainTurnEnergy, aliveHeroes]);
+
+    const executeTurn = useCallback(() => {
+        resolveAndApply(turnActions);
+    }, [turnActions, resolveAndApply]);
 
     const handleAutoExecute = useCallback(() => {
         const autoActions: Record<string, SkillActionType> = {};
-        aliveHeroes.forEach(h => {
+        heroes.filter(h => h.hp > 0).forEach(h => {
             const aliveEnemy = enemies.find(e => e.isAlive);
             if (aliveEnemy) {
                 autoActions[h.id] = { type: 'attack', targetId: aliveEnemy.id };
@@ -363,9 +367,8 @@ export default function BattleControlPanel({
                 autoActions[h.id] = { type: 'skip' };
             }
         });
-        setTurnActions(autoActions);
-        setTimeout(() => executeTurn(), 100);
-    }, [aliveHeroes, enemies, executeTurn]);
+        resolveAndApply(autoActions);
+    }, [heroes, enemies, resolveAndApply]);
 
     const toggleMode = useCallback(() => {
         setMode(m => m === 'manual' ? 'auto' : 'manual');

@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.5.4';
+export const CURRENT_VERSION = '0.5.5';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.5.5',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复自动战斗模式 setState 异步竞态导致第2回合起行动指令丢失的 bug'
+    ]
+  },
   {
     version: '0.5.4',
     date: '2026-06-02',
