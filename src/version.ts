@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.18';
+export const CURRENT_VERSION = '0.6.19';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.19',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 彻底修复出发按钮被遮挡 — 去掉h-full/overflow-hidden/flex-1/min-h-0等所有高度约束，布阵页面作为普通文档流内容跟随MainUI滚动区域，利用父级pb-24自动为底部导航栏留空间'
+    ]
+  },
   {
     version: '0.6.18',
     date: '2026-06-02',

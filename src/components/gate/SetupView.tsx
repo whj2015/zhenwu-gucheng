@@ -142,7 +142,7 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
     };
 
     return (
-        <div className="max-w-3xl lg:max-w-5xl mx-auto h-full flex flex-col animate-in slide-in-from-right-4 duration-300 gap-2 sm:gap-3 overflow-hidden px-1">
+        <div className="max-w-3xl lg:max-w-5xl mx-auto flex flex-col animate-in slide-in-from-right-4 duration-300 gap-2 sm:gap-3 px-1">
             {/* Header */}
             <div className="flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2 lg:gap-3">
@@ -213,12 +213,12 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                 </div>
             </div>
 
-            {/* Main Content: Grid + Hero List — flex-1 shrinks to fill remaining space */}
-            <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2 sm:gap-3 lg:gap-4">
+            {/* Main Content: Grid + Hero List */}
+            <div className="flex flex-col lg:flex-row gap-2 sm:gap-3 lg:gap-4">
                 {/* 3x3 Grid */}
-                <div className="flex-1 min-h-0 rounded-xl border border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent p-2 sm:p-3 lg:p-5 relative overflow-hidden">
+                <div className="flex-1 rounded-xl border border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent p-2 sm:p-3 lg:p-5 relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/[0.04] via-transparent to-orange-900/[0.03] pointer-events-none" />
-                    <div className="relative z-10 h-full grid grid-cols-[auto_1fr_1fr_1fr] gap-1.5 sm:gap-2 lg:gap-3 items-center">
+                    <div className="relative z-10 grid grid-cols-[auto_1fr_1fr_1fr] gap-1.5 sm:gap-2 lg:gap-3 items-center">
                         <div className="flex items-center justify-center text-[10px] lg:text-xs font-mono text-slate-600 uppercase tracking-widest select-none font-bold">{ROW_LABELS.front}</div>
                         {COLS.map(col => renderGridCell('front', col))}
                         <div className="flex items-center justify-center text-[10px] lg:text-xs font-mono text-slate-600 uppercase tracking-widest select-none font-bold">{ROW_LABELS.middle}</div>
@@ -229,7 +229,7 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                 </div>
 
                 {/* Hero List */}
-                <div className="w-full lg:w-52 xl:w-56 rounded-xl border border-white/[0.06] bg-black/30 p-2 lg:p-3 flex flex-col shrink-0 max-h-[30vh] lg:max-h-none">
+                <div className="w-full lg:w-52 xl:w-56 rounded-xl border border-white/[0.06] bg-black/30 p-2 lg:p-3 flex flex-col shrink-0">
                     <div className="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-1.5 lg:mb-2 flex items-center justify-between shrink-0 pb-1.5 lg:pb-2 border-b border-white/[0.04]">
                         <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-slate-500/50" />门客</span>
                         <span className="font-normal text-slate-600 normal-case tracking-normal tabular-nums">{availableHeroes.length}/{heroes.length}</span>
