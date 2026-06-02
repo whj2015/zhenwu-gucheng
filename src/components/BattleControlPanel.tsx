@@ -54,7 +54,7 @@ function resolveTurn(
     const heroMap = Object.fromEntries(updatedHeroes.map(h => [h.id, h]));
     const enemyMap = Object.fromEntries(updatedEnemies.map(e => [e.id, e]));
 
-    const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v, 0));
+    const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
     for (const [heroId, action] of Object.entries(actions)) {
         if (!action) continue;

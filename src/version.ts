@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.5.2';
+export const CURRENT_VERSION = '0.5.3';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.5.3',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复 clamp 函数导致所有 HP 归零的致命 bug（Math.min 多余参数 0）'
+    ]
+  },
   {
     version: '0.5.2',
     date: '2026-06-02',
