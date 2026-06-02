@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.5.10';
+export const CURRENT_VERSION = '0.6.0';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.0',
+    date: '2026-06-02',
+    type: 'minor',
+    changes: [
+      '⚔️ 战斗系统接入兵力机制：兵卒减伤(1.5%/人,上限70%)、伤害消耗兵卒(~3人/HP)、UI显示兵卒数、战斗结果回传兵力变化'
+    ]
+  },
   {
     version: '0.5.10',
     date: '2026-06-02',

@@ -382,15 +382,15 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
 
         const initialHeroes = uniqueHeroes.map(h => {
             const t = HERO_TEMPLATES[h.templateId];
-            return { id: h.id, templateId: h.templateId, hp: h.hp, maxHp: (t?.attributes.physique || 10) * 10 };
+            return { id: h.id, templateId: h.templateId, hp: h.hp, maxHp: (t?.attributes.physique || 10) * 10, troops: h.troops || 0 };
         });
 
-        const handleBattleEnd = (result: { victory: boolean; defeat: boolean; logs: string[]; finalHeroes: Array<{ id: string; hp: number }> }) => {
+        const handleBattleEnd = (result: { victory: boolean; defeat: boolean; logs: string[]; finalHeroes: Array<{ id: string; hp: number; troops: number }> }) => {
             const combatResults = result.finalHeroes.map(h => ({
                 id: h.id,
                 hp: Math.max(0, h.hp),
-                troops: heroes.find(x => x.id === h.id)?.troops || 0,
-                wounded: heroes.find(x => x.id === h.id)?.wounded || 0
+                troops: Math.max(0, h.troops),
+                wounded: 0
             }));
             useGameStore.getState().applyCombatResults(combatResults, result.victory);
             const battleResultData = buildBattleResultData({

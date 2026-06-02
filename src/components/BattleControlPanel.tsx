@@ -4,10 +4,10 @@ import { HERO_BATTLE_SKILLS, type BattleSkill } from '../data/battleSkills';
 import { BATTLE_CONFIG } from '../gameConfig';
 import { cn } from '../utils';
 import HeroIcon from './HeroIcon';
-import type { SkillActionType } from '../types';
+import { TROOP_ABSORB_PER_TROOP, TROOP_MAX_ABSORB, TROOP_HP_COST, type SkillActionType } from '../types';
 import {
     Swords, Shield, SkipForward, Play, Pause,
-    Timer, Sparkles, Target, Bot, Hand, Skull, Heart, X
+    Timer, Sparkles, Target, Bot, Hand, Skull, Heart, X, Users
 } from 'lucide-react';
 
 interface LiveHero {
@@ -20,6 +20,7 @@ interface LiveHero {
     force: number;
     energy: number;
     maxEnergy: number;
+    troops: number;
 }
 
 interface LiveEnemy {
@@ -55,6 +56,27 @@ function resolveTurn(
 
     const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
+    function applyDamageToHero(target: LiveHero, rawDmg: number, sourceName: string, defendReduced: boolean): number {
+        if (rawDmg <= 0 || target.hp <= 0) return 0;
+
+        const absorbRate = Math.min(TROOP_MAX_ABSORB, target.troops * TROOP_ABSORB_PER_TROOP);
+        const absorbedDmg = Math.floor(rawDmg * absorbRate);
+        const hpDmg = rawDmg - absorbedDmg;
+        const troopsLost = target.troops > 0 ? Math.min(target.troops, Math.ceil(absorbedDmg * TROOP_HP_COST)) : 0;
+
+        target.troops = Math.max(0, target.troops - troopsLost);
+        target.hp = clamp(target.hp - hpDmg, 0, target.maxHp);
+
+        const parts: string[] = [];
+        if (troopsLost > 0) parts.push(`兵卒抵挡${absorbedDmg}(-${troopsLost}人)`);
+        if (hpDmg > 0) parts.push(`本体受创${hpDmg}`);
+        if (defendReduced) parts.push('防御减伤');
+
+        logs.push(`👹 ${sourceName} 攻击 ${target.name}，${parts.join('，') || '无伤'}`);
+
+        return rawDmg;
+    }
+
     for (const [heroId, action] of Object.entries(actions)) {
         if (!action) continue;
         const hero = heroMap[heroId];
@@ -67,7 +89,7 @@ function resolveTurn(
                 const dmg = Math.floor(hero.force * (0.9 + Math.random() * 0.2));
                 target.hp = clamp(target.hp - dmg, 0, target.maxHp);
                 if (target.hp <= 0) target.isAlive = false;
-                logs.push(`⚔ ${hero.name} 攻击 ${target.name}，造成 ${dmg} 点伤害${!target.isAlive ? '，击破！' : ''}`);
+                logs.push(`⚔ ${hero.name} 率兵卒攻击 ${target.name}，造成 ${dmg} 点伤害${!target.isAlive ? '，击破！' : ''}`);
                 break;
             }
             case 'skill': {
@@ -83,8 +105,12 @@ function resolveTurn(
                             if (!t || t.hp <= 0) return;
                             const mult = skill.type === 'aoe' ? 0.85 : 1.0;
                             const dmg = Math.floor(hero.force * skill.value * mult * (0.9 + Math.random() * 0.2));
-                            t.hp = clamp(t.hp - dmg, 0, t.hp > 50 ? t.hp : 999);
-                            if (t.hp <= 0 && t.id.startsWith('enemy_')) (t as any).isAlive = false;
+                            if ('isAlive' in t && t.id.startsWith('enemy_')) {
+                                t.hp = clamp(t.hp - dmg, 0, t.maxHp);
+                                if (t.hp <= 0) (t as any).isAlive = false;
+                            } else {
+                                applyDamageToHero(t as unknown as LiveHero, dmg, hero.name, false);
+                            }
                             logs.push(`✨ ${hero.name} 施放【${skill.name}】对 ${(t as any).name ?? '目标'} 造成 ${dmg} 点伤害`);
                         });
                         break;
@@ -108,12 +134,12 @@ function resolveTurn(
             }
             case 'defend': {
                 hero.energy = Math.min(hero.maxEnergy, hero.energy + BATTLE_CONFIG.ENERGY.DEFEND_ENERGY_GAIN);
-                logs.push(`🛡 ${hero.name} 进入防御姿态 (+${BATTLE_CONFIG.ENERGY.DEFEND_ENERGY_GAIN}⚡)`);
+                logs.push(`🛡 ${hero.name} 进入防御姿态 (+${BATTLE_CONFIG.ENERGY.DEFEND_ENERGY_GAIN}⚡) [兵卒:${hero.troops}]`);
                 break;
             }
             case 'skip': {
                 hero.energy = Math.min(hero.maxEnergy, hero.energy + BATTLE_CONFIG.ENERGY.SKIP_ENERGY_GAIN);
-                logs.push(`⏭️ ${hero.name} 跳过本回合 (+${BATTLE_CONFIG.ENERGY.SKIP_ENERGY_GAIN}⚡)`);
+                logs.push(`⏭️ ${hero.name} 跳过本回合 (+${BATTLE_CONFIG.ENERGY.SKIP_ENERGY_GAIN}⚡) [兵卒:${hero.troops}]`);
                 break;
             }
         }
@@ -124,9 +150,9 @@ function resolveTurn(
         if (aliveHeros.length === 0) return;
         const target = aliveHeros[Math.floor(Math.random() * aliveHeros.length)];
         let dmg = Math.floor(enemy.force * (0.8 + Math.random() * 0.4));
-        if (actions[target.id]?.type === 'defend') dmg = Math.floor(dmg * 0.5);
-        target.hp = clamp(target.hp - dmg, 0, target.maxHp);
-        logs.push(`👹 ${enemy.name} 反击 ${target.name}，造成 ${dmg} 点伤害${actions[target.id]?.type === 'defend' ? '（防御减伤）' : ''}`);
+        const isDefending = actions[target.id]?.type === 'defend';
+        if (isDefending) dmg = Math.floor(dmg * 0.5);
+        applyDamageToHero(target, dmg, enemy.name, isDefending);
     });
 
     updatedHeroes.forEach(h => {
@@ -152,9 +178,9 @@ export default function BattleControlPanel({
     onBattleEnd,
     onExit
 }: {
-    initialHeroes: Array<{ id: string; templateId: string; hp: number; maxHp: number }>;
+    initialHeroes: Array<{ id: string; templateId: string; hp: number; maxHp: number; troops: number }>;
     initialEnemies: Array<{ id: string; name: string; hp: number; maxHp: number; isAlive: boolean }>;
-    onBattleEnd?: (result: { victory: boolean; defeat: boolean; logs: string[]; finalHeroes: Array<{ id: string; hp: number }> }) => void;
+    onBattleEnd?: (result: { victory: boolean; defeat: boolean; logs: string[]; finalHeroes: Array<{ id: string; hp: number; troops: number }> }) => void;
     onExit?: () => void;
 }) {
     const [heroes, setHeroes] = useState<LiveHero[]>(() =>
@@ -167,7 +193,8 @@ export default function BattleControlPanel({
                 hp: h.hp, maxHp: h.maxHp,
                 force: t?.attributes.force ?? 10,
                 energy: BATTLE_CONFIG.ENERGY.INITIAL,
-                maxEnergy: BATTLE_CONFIG.ENERGY.MAX
+                maxEnergy: BATTLE_CONFIG.ENERGY.MAX,
+                troops: h.troops ?? 0
             };
         })
     );
@@ -326,7 +353,7 @@ export default function BattleControlPanel({
 
         console.log('result logs:', result.logs);
         console.log('victory:', result.victory, 'defeat:', result.defeat);
-        console.log('heroes after:', result.newHeroes.map(h => ({ id: h.id, hp: h.hp })));
+        console.log('heroes after:', result.newHeroes.map(h => ({ id: h.id, hp: h.hp, troops: h.troops })));
         console.log('enemies after:', result.newEnemies.map(e => ({ id: e.id, hp: e.hp, alive: e.isAlive })));
 
         setLogs(prev => [...prev, `--- 第 ${turnCount} 回合 ---`, ...result.logs]);
@@ -340,7 +367,7 @@ export default function BattleControlPanel({
                 victory: result.victory,
                 defeat: result.defeat,
                 logs: [...logs, `--- 第 ${turnCount} 回合 ---`, ...result.logs],
-                finalHeroes: result.newHeroes.map(h => ({ id: h.id, hp: Math.max(0, h.hp) }))
+                finalHeroes: result.newHeroes.map(h => ({ id: h.id, hp: Math.max(0, h.hp), troops: h.troops }))
             });
             return;
         }
@@ -518,7 +545,12 @@ export default function BattleControlPanel({
                                                 ) : dead ? (
                                                     <span className="text-red-600">✗</span>
                                                 ) : (
-                                                    <span className="text-violet-400">⚡{hero.energy}</span>
+                                                    <>
+                                                        <span className="text-violet-400">⚡{hero.energy}</span>
+                                                        <span className={cn("flex items-center gap-0.5", hero.troops > 0 ? "text-cyan-400" : "text-slate-600")}>
+                                                            <Users className="w-2.5 h-2.5" />{hero.troops}
+                                                        </span>
+                                                    </>
                                                 )}
                                             </div>
                                         </div>
@@ -585,7 +617,7 @@ export default function BattleControlPanel({
                             <div>
                                 <div className="font-serif font-bold">{selectedHero.name}</div>
                                 <div className="text-xs font-mono text-slate-400 mt-0.5">
-                                    HP {selectedHero.hp}/{selectedHero.maxHp} · ⚡{selectedHero.energy}/{selectedHero.maxEnergy}
+                                    HP {selectedHero.hp}/{selectedHero.maxHp} · ⚡{selectedHero.energy}/{selectedHero.maxEnergy} · <span className={cn(selectedHero.troops > 0 ? "text-cyan-400" : "text-slate-600")}><Users className="w-3 h-3 inline" />{selectedHero.troops}</span>
                                 </div>
                             </div>
                         </div>
