@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useGameStore } from '../store';
 import { HERO_TEMPLATES } from '../data';
 import { HERO_BATTLE_SKILLS, type BattleSkill } from '../data/battleSkills';
 import { BATTLE_CONFIG } from '../gameConfig';
@@ -107,12 +106,16 @@ function resolveTurn(
                 hero.energy = Math.max(0, hero.energy - (skill.cost || 0));
                 break;
             }
-            case 'defend':
-                logs.push(`🛡 ${hero.name} 进入防御姿态`);
+            case 'defend': {
+                hero.energy = Math.min(hero.maxEnergy, hero.energy + BATTLE_CONFIG.ENERGY.DEFEND_ENERGY_GAIN);
+                logs.push(`🛡 ${hero.name} 进入防御姿态 (+${BATTLE_CONFIG.ENERGY.DEFEND_ENERGY_GAIN}⚡)`);
                 break;
-            case 'skip':
-                logs.push(`⏭️ ${hero.name} 跳过本回合`);
+            }
+            case 'skip': {
+                hero.energy = Math.min(hero.maxEnergy, hero.energy + BATTLE_CONFIG.ENERGY.SKIP_ENERGY_GAIN);
+                logs.push(`⏭️ ${hero.name} 跳过本回合 (+${BATTLE_CONFIG.ENERGY.SKIP_ENERGY_GAIN}⚡)`);
                 break;
+            }
         }
     }
 
@@ -124,6 +127,12 @@ function resolveTurn(
         if (actions[target.id]?.type === 'defend') dmg = Math.floor(dmg * 0.5);
         target.hp = clamp(target.hp - dmg, 0, target.maxHp);
         logs.push(`👹 ${enemy.name} 反击 ${target.name}，造成 ${dmg} 点伤害${actions[target.id]?.type === 'defend' ? '（防御减伤）' : ''}`);
+    });
+
+    updatedHeroes.forEach(h => {
+        if (h.hp > 0 && actions[h.id]) {
+            h.energy = Math.min(h.maxEnergy, h.energy + BATTLE_CONFIG.ENERGY.PER_TURN_GAIN);
+        }
     });
 
     const aliveEnemies = updatedEnemies.filter(e => e.isAlive).length;
@@ -148,8 +157,6 @@ export default function BattleControlPanel({
     onBattleEnd?: (result: { victory: boolean; defeat: boolean; logs: string[]; finalHeroes: Array<{ id: string; hp: number }> }) => void;
     onExit?: () => void;
 }) {
-    const gainTurnEnergy = useGameStore(s => s.gainTurnEnergy);
-
     const [heroes, setHeroes] = useState<LiveHero[]>(() =>
         initialHeroes.map(h => {
             const t = HERO_TEMPLATES[h.templateId];
@@ -349,9 +356,7 @@ export default function BattleControlPanel({
         setSelectedHeroId(null);
         setSelectedTargetId(null);
         setPendingActionType(null);
-
-        gainTurnEnergy();
-    }, [heroes, enemies, turnCount, logs, onBattleEnd, gainTurnEnergy, aliveHeroes]);
+    }, [heroes, enemies, turnCount, logs, onBattleEnd, aliveHeroes]);
 
     const executeTurn = useCallback(() => {
         resolveAndApply(turnActions);
