@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.12';
+export const CURRENT_VERSION = '0.6.13';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.13',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🎨 优化布阵页面布局样式 — 去除网格行 flex-1/h-full 拉伸，消除多余空白，恢复紧凑排列'
+    ]
+  },
   {
     version: '0.6.12',
     date: '2026-06-02',

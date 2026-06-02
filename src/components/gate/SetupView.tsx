@@ -201,10 +201,10 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
 
              <div className="flex flex-col lg:flex-row gap-2 lg:gap-4">
                   {/* 3x3 Grid */}
-                  <div className="flex-1 bg-black/40 border border-white/5 rounded-xl p-2 lg:p-4 relative overflow-hidden">
-                       <div className="relative z-10 flex flex-col gap-1.5 lg:gap-2 h-full">
+                  <div className="flex-1 bg-black/40 border border-white/5 rounded-xl p-2 lg:p-4 relative">
+                       <div className="relative z-10 flex flex-col gap-1.5 lg:gap-2">
                            {rows.map(row => (
-                               <div key={row} className="flex gap-1.5 lg:gap-2 flex-1 items-stretch">
+                               <div key={row} className="flex gap-1.5 lg:gap-2 items-stretch">
                                    <div className="w-5 lg:w-8 flex items-center justify-center text-[8px] lg:text-[9px] font-mono text-slate-700 uppercase tracking-wider shrink-0 select-none">
                                        {row === 'front' ? '前' : row === 'middle' ? '中' : '后'}
                                    </div>
