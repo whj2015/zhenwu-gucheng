@@ -453,14 +453,14 @@ export default function BattleControlPanel({
                             <Heart className="w-3.5 h-3.5" /> 我方军阵
                         </div>
                         <div className="grid grid-cols-3 gap-2">
-                            {heroes.map(hero => {
+                            {heroes.map((hero, idx) => {
                                 const isSelected = selectedHeroId === hero.id;
                                 const hasAction = turnActions[hero.id] !== undefined;
                                 const dead = hero.hp <= 0;
                                 const hpPct = Math.max(0, (hero.hp / hero.maxHp) * 100);
 
                                 return (
-                                    <button key={hero.id} onClick={() => !dead && handleSelectHero(hero.id)}
+                                    <button key={`hero-${hero.id}-${idx}`} onClick={() => !dead && handleSelectHero(hero.id)}
                                         disabled={dead}
                                         className={cn(
                                             "relative p-2.5 rounded-xl border transition-all",
@@ -504,12 +504,12 @@ export default function BattleControlPanel({
                             <Skull className="w-3.5 h-3.5" /> 敌方阵容
                         </div>
                         <div className="space-y-2">
-                            {enemies.map(enemy => {
+                            {enemies.map((enemy, idx) => {
                                 const isSelected = selectedTargetId === enemy.id;
                                 const hpPct = enemy.isAlive ? (enemy.hp / enemy.maxHp) * 100 : 0;
 
                                 return (
-                                    <button key={enemy.id} onClick={() => handleSelectEnemy(enemy.id)}
+                                    <button key={`enemy-${enemy.id}-${idx}`} onClick={() => handleSelectEnemy(enemy.id)}
                                         disabled={!enemy.isAlive}
                                         className={cn(
                                             "w-full p-3 rounded-xl border transition-all text-left",
@@ -591,8 +591,8 @@ export default function BattleControlPanel({
                                     <div className="space-y-2">
                                         <div className="text-sm font-bold text-red-300"><Target className="w-4 h-4 inline mr-1" />选择攻击目标</div>
                                         <div className="grid grid-cols-2 gap-2">
-                                            {enemies.filter(e => e.isAlive).map(e => (
-                                                <button key={e.id} onClick={() => setSelectedTargetId(e.id)}
+                                            {enemies.filter(e => e.isAlive).map((e, idx) => (
+                                                <button key={`target-${e.id}-${idx}`} onClick={() => setSelectedTargetId(e.id)}
                                                     className={cn("p-2 rounded-lg border text-left transition-all",
                                                         selectedTargetId === e.id
                                                             ? "bg-red-500/20 border-red-500/50 text-red-200"
@@ -652,8 +652,8 @@ export default function BattleControlPanel({
             <div className="border-t border-white/10 bg-[#0a0c0f]/90 backdrop-blur-sm px-4 py-3 shrink-0">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        {aliveHeroes.slice(0, 4).map(h => (
-                            <div key={h.id} className={cn("flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono",
+                        {aliveHeroes.slice(0, 4).map((h, idx) => (
+                            <div key={`bar-${h.id}-${idx}`} className={cn("flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono",
                                 turnActions[h.id] ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-slate-500"
                             )}>
                                 <span className="truncate max-w-[3rem]">{h.name}</span>

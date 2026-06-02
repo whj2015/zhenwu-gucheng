@@ -273,8 +273,8 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                 .filter(Boolean);
             const enemyIds = (node as any).enemies as string[];
             const enemyData = enemyIds.map((eId: string) => ({ ...ENEMY_TEMPLATES[eId], id: eId }));
-            const enemyInfo = enemyData.map(e => ({
-                id: e.id,
+            const enemyInfo = enemyData.map((e, idx) => ({
+                id: `${e.id}_${idx}`,
                 name: e.name,
                 hp: e.hp,
                 maxHp: e.hp,
@@ -370,7 +370,11 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
             .map(hId => heroes.find(x => x.id === hId)!)
             .filter(Boolean);
 
-        const initialHeroes = activeHeros.map(h => {
+        const uniqueHeroes = Array.from(
+            new Map(activeHeros.map(h => [h.id, h])).values()
+        );
+
+        const initialHeroes = uniqueHeroes.map(h => {
             const t = HERO_TEMPLATES[h.templateId];
             return { id: h.id, templateId: h.templateId, hp: h.hp, maxHp: (t?.attributes.physique || 10) * 10 };
         });

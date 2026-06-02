@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.5.1';
+export const CURRENT_VERSION = '0.5.2';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.5.2',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复战斗系统重复 React key（liukou）导致的状态异常和战斗直接结算问题'
+    ]
+  },
   {
     version: '0.5.1',
     date: '2026-06-01',
