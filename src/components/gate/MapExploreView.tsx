@@ -1,5 +1,5 @@
 /* Extracted from GatePanel.tsx - MapExploreView - Fog of War Edition */
-import { useState, useCallback, useEffect, Fragment, type ReactNode } from 'react';
+import { useState, useCallback, useEffect, useRef, Fragment, type ReactNode } from 'react';
 import { useGameStore } from '../../store';
 import { HERO_TEMPLATES, ENEMY_TEMPLATES, POSITION_CONFIG } from '../../data';
 import { RuinsNode, PositionKey } from '../../types';
@@ -232,10 +232,24 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
     const battleNode = activeBattle?.node ?? null;
     const battleEnemies = activeBattle?.enemies ?? [];
+    const activeBattleRef = useRef(activeBattle);
+    activeBattleRef.current = activeBattle;
 
     useEffect(() => {
         return () => {
-            if (activeBattle?.node) {
+            if (activeBattleRef.current?.node) {
+                const rr = useGameStore.getState().ruinsRun;
+                if (rr) {
+                    const pos = rr.grid?.findIndex(n => n?.id === activeBattleRef.current!.node!.id) ?? -1;
+                    if (pos >= 0) {
+                        const currentFog = rr.fogStates as CellState[] | undefined;
+                        if (currentFog) {
+                            const next = [...currentFog];
+                            next[pos] = 'ready';
+                            useGameStore.getState().updateRun({ fogStates: next });
+                        }
+                    }
+                }
                 clearActiveBattle();
             }
         };
@@ -292,6 +306,17 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
 
             initManualBattle(activeHeros.map(h => h.id));
             setBattleMode('manual');
+
+            const currentFog = useGameStore.getState().ruinsRun?.fogStates as CellState[] | undefined;
+            const eg = useGameStore.getState().ruinsRun?.grid;
+            if (!currentFog || !eg) return;
+            const next = [...currentFog];
+            next[pos] = 'done';
+            for (const n of getNeighbors(pos)) {
+                if (next[n] === 'fog') next[n] = eg[n] !== null ? 'ready' : 'empty';
+            }
+            updateRun({ fogStates: next });
+            return;
         }
 
         const parts = node.id.split('-');
@@ -403,10 +428,42 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                 floorNumber: ruinsRun.currentFloor,
             });
             clearActiveBattle();
+
+            if (battleNode) {
+                const rr = useGameStore.getState().ruinsRun;
+                if (rr) {
+                    const parts = battleNode.id.split('-');
+                    if (parts.length >= 3 && result.victory) {
+                        const row = parseInt(parts[1].replace('r',''));
+                        const nextRow = row + 1;
+                        const updatedNodes = rr.nodes.map(n => {
+                            if (n.id === battleNode.id) return { ...n, completed: true };
+                            if (n.id.includes(`r${nextRow}-`) || (row === 1 && n.type === 'boss')) return { ...n, revealed: true };
+                            return n;
+                        });
+                        useGameStore.getState().updateRun({ nodes: updatedNodes });
+                    }
+                }
+            }
+
             onBattleComplete(battleResultData, battleNode);
         };
 
         const handleExit = () => {
+            if (battleNode) {
+                const rr = useGameStore.getState().ruinsRun;
+                if (rr) {
+                    const pos = rr.grid?.findIndex(n => n?.id === battleNode.id) ?? -1;
+                    if (pos >= 0) {
+                        const currentFog = rr.fogStates as CellState[] | undefined;
+                        if (currentFog) {
+                            const next = [...currentFog];
+                            next[pos] = 'ready';
+                            useGameStore.getState().updateRun({ fogStates: next });
+                        }
+                    }
+                }
+            }
             clearActiveBattle();
         };
 
@@ -420,6 +477,10 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                 />
             </div>
         );
+    }
+
+    if (battleNode && battleEnemies.length === 0) {
+        clearActiveBattle();
     }
 
     return (

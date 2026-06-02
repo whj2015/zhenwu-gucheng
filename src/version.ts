@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.1';
+export const CURRENT_VERSION = '0.6.2';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.2',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复战斗中断敌人消失导致无法退出：战斗节点不再立即标记done(延后到战斗结束时)、修复cleanup闭包陷阱(改用ref)、增加异常状态安全网自动清理'
+    ]
+  },
   {
     version: '0.6.1',
     date: '2026-06-02',
