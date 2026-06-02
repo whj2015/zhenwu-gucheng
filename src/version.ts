@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.7';
+export const CURRENT_VERSION = '0.6.8';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.8',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复战斗胜利后敌方格位不消失：cleanup useEffect 中 Zustand useSyncExternalStore 同步重渲染存在竞态条件 — clearActiveBattle() 后 activeBattleRef 未及时更新为 null，导致组件卸载时 cleanup 仍看到旧 ref 值并错误地将 fogStates[pos] 重置为 ready。新增 battleEndedNormallyRef 标志，handleBattleEnd/handleExit 设其为 true 后 cleanup 跳过 reset 逻辑'
+    ]
+  },
   {
     version: '0.6.7',
     date: '2026-06-02',

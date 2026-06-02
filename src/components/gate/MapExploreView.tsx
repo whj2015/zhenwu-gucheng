@@ -234,19 +234,24 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
     const battleEnemies = activeBattle?.enemies ?? [];
     const activeBattleRef = useRef(activeBattle);
     activeBattleRef.current = activeBattle;
+    const battleEndedNormallyRef = useRef(false);
 
     useEffect(() => {
         return () => {
             if (activeBattleRef.current?.node) {
-                const rr = useGameStore.getState().ruinsRun;
-                if (rr) {
-                    const pos = rr.grid?.findIndex(n => n?.id === activeBattleRef.current!.node!.id) ?? -1;
-                    if (pos >= 0) {
-                        const currentFog = rr.fogStates as CellState[] | undefined;
-                        if (currentFog) {
-                            const next = [...currentFog];
-                            next[pos] = 'ready';
-                            useGameStore.getState().updateRun({ fogStates: next });
+                // Only reset fogStates if battle was NOT ended via handleBattleEnd/handleExit.
+                // If the battle ended normally, those handlers already manage fogStates.
+                if (!battleEndedNormallyRef.current) {
+                    const rr = useGameStore.getState().ruinsRun;
+                    if (rr) {
+                        const pos = rr.grid?.findIndex(n => n?.id === activeBattleRef.current!.node!.id) ?? -1;
+                        if (pos >= 0) {
+                            const currentFog = rr.fogStates as CellState[] | undefined;
+                            if (currentFog) {
+                                const next = [...currentFog];
+                                next[pos] = 'ready';
+                                useGameStore.getState().updateRun({ fogStates: next });
+                            }
                         }
                     }
                 }
@@ -411,6 +416,7 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
         });
 
         const handleBattleEnd = (result: { victory: boolean; defeat: boolean; logs: string[]; finalHeroes: Array<{ id: string; hp: number; troops: number }> }) => {
+            battleEndedNormallyRef.current = true;
             const combatResults = result.finalHeroes.map(h => ({
                 id: h.id,
                 hp: Math.max(0, h.hp),
@@ -469,6 +475,7 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
         };
 
         const handleExit = () => {
+            battleEndedNormallyRef.current = true;
             if (battleNode) {
                 const rr = useGameStore.getState().ruinsRun;
                 if (rr) {
