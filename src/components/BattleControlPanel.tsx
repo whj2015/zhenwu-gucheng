@@ -219,11 +219,12 @@ export default function BattleControlPanel({
     const [pendingActionType, setPendingActionType] = useState<'attack' | 'skill' | null>(null);
     const [showSkillDetail, setShowSkillDetail] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [renderTrigger, setRenderTrigger] = useState(0);
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const autoLoopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastClickRef = useRef<{ id: string; time: number } | null>(null);
-    console.log('[RENDER_TOP] mode:', mode, 'turn:', turnCount);
+    console.log('[RENDER_TOP] mode:', mode, 'turn:', turnCount, 'trigger:', renderTrigger, 'enemies:', JSON.stringify(enemies.map(e => ({ hp: e.hp, alive: e.isAlive }))));
 
     useEffect(() => {
         if (mode === 'manual' && !isPaused) {
@@ -391,13 +392,9 @@ export default function BattleControlPanel({
 
         setLogs(prev => [...prev, `--- 第 ${currentTurnCount} 回合 ---`, ...result.logs]);
         setHeroes(result.newHeroes);
-        setEnemies(prev => {
-            console.log('[SET_ENEMIES] prev:', JSON.stringify(prev.map(e => ({ hp: e.hp, alive: e.isAlive }))));
-            const next = result.newEnemies;
-            console.log('[SET_ENEMIES] next:', JSON.stringify(next.map(e => ({ hp: e.hp, alive: e.isAlive }))));
-            console.log('[SET_ENEMIES] same ref?', prev === next);
-            return next;
-        });
+        console.log('[SET_ENEMIES] setting:', JSON.stringify(result.newEnemies.map(e => ({ hp: e.hp, alive: e.isAlive }))));
+        setEnemies(result.newEnemies);
+        setRenderTrigger(c => c + 1);
         setTurnCount(c => c + 1);
 
         if (result.victory || result.defeat) {

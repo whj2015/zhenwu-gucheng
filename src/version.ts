@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.7';
+export const CURRENT_VERSION = '0.6.8';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.8',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 继续修复敌人不显示"击破"：新增`renderTrigger`状态计数器，每次`setEnemies`后强制触发重渲染，确保React处理状态变更'
+    ]
+  },
   {
     version: '0.6.7',
     date: '2026-06-02',
