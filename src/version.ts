@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.10';
+export const CURRENT_VERSION = '0.6.11';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.11',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复布阵页面出发按钮在特定分辨率下被底部导航遮挡 — 改用 flex sticky footer 布局：外层 overflow-hidden + header/preset/footer shrink-0 + 中间区域独立滚动，出发按钮始终钉在可见区底部'
+    ]
+  },
   {
     version: '0.6.10',
     date: '2026-06-02',
