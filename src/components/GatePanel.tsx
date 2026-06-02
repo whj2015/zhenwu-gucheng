@@ -108,7 +108,7 @@ export default function GatePanel() {
             return <ResultView onReturn={() => setViewState({ phase: 'main' })} />;
 
         case 'mission':
-            return <SetupView missionId={viewState.missionId} onCancel={() => setViewState({ phase: 'main' })} onDeploy={() => setViewState({ phase: 'exploring' })} />;
+return <SetupView missionId={viewState.missionId} onCancel={() => setViewState({ phase: 'main' })} onDeploy={() => setViewState({ phase: 'exploring' })} />;
 
         case 'board':
             return (
@@ -144,7 +144,7 @@ export default function GatePanel() {
             if (ruinsRun && ruinsRun.status !== 'setup') {
                 if (ruinsRun.status === 'in_progress') {
                     setViewState({ phase: 'exploring' });
-                    return <MapExploreView onBattleComplete={handleBattleComplete} />;
+return <MapExploreView onBattleComplete={handleBattleComplete} />;
                 }
                 setViewState({ phase: 'result' });
                 return <ResultView onReturn={() => setViewState({ phase: 'main' })} />;

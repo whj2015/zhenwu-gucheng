@@ -107,7 +107,7 @@ export interface QuestState {
     lastWeeklyReset: number;
     progress: Record<string, number>;
     acceptedIds: string[];
-    activeDailyIds: string[];
+activeDailyIds: string[];
     activeWeeklyIds: string[];
 }
 

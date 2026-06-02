@@ -40,7 +40,7 @@ export default function MainUI() {
     const [offlineModal, setOfflineModal] = useState<{ amount: number } | null>(null);
     const [resetModal, setResetModal] = useState(false);
     const [updateLogModal, setUpdateLogModal] = useState(false);
-    const [achievementModal, setAchievementModal] = useState(false);
+const [achievementModal, setAchievementModal] = useState(false);
     const [questBoardOpen, setQuestBoardOpen] = useState(false);
 
     const tickRef = useRef(tick);
@@ -103,7 +103,7 @@ export default function MainUI() {
         setUpdateLogModal(false);
     }, []);
 
-    const handleAchievementModal = useCallback(() => {
+const handleAchievementModal = useCallback(() => {
         setAchievementModal(true);
     }, []);
 
@@ -117,8 +117,7 @@ export default function MainUI() {
 
     const handleCloseQuestBoard = useCallback(() => {
         setQuestBoardOpen(false);
-    }, []);
-
+    });
     return (
         <div className="flex w-full h-screen bg-[#0d0f12] text-slate-200 font-sans overflow-hidden relative select-none">
              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,#1e293b_0%,transparent_70%)] opacity-40 pointer-events-none"></div>
@@ -148,7 +147,7 @@ export default function MainUI() {
                 <div className="p-4 border-t border-white/5 text-[10px] text-slate-600 font-mono tracking-widest uppercase flex justify-between items-center">
                     <span>Project Zhenwu</span>
                     <div className="flex items-center gap-2">
-                        <button onClick={handleQuestBoardOpen} className="hover:text-emerald-500 transition-colors p-1" title="查看任务">
+<button onClick={handleQuestBoardOpen} className="hover:text-emerald-500 transition-colors p-1" title="查看任务">
                             <ClipboardList className="w-4 h-4" />
                         </button>
                         <button onClick={handleAchievementModal} className="hover:text-amber-500 transition-colors p-1" title="查看功勋簿">
@@ -178,7 +177,7 @@ export default function MainUI() {
                       </div>
                       <TopResourceBar />
                       <div className="flex items-center gap-1.5">
-                          <button onClick={handleQuestBoardOpen} className="text-slate-500 hover:text-emerald-500 transition-colors p-1.5 shrink-0" title="查看任务">
+<button onClick={handleQuestBoardOpen} className="text-slate-500 hover:text-emerald-500 transition-colors p-1.5 shrink-0" title="查看任务">
                               <ClipboardList className="w-4 h-4" />
                           </button>
                           <button onClick={handleAchievementModal} className="text-slate-500 hover:text-amber-500 transition-colors p-1.5 shrink-0" title="查看功勋簿">
@@ -273,8 +272,7 @@ export default function MainUI() {
              {updateLogModal && (
                 <UpdateLog onClose={handleCloseUpdateLog} />
              )}
-
-             {/* Achievement Panel */}
+{/* Achievement Panel */}
              <AchievementPanel
                 isOpen={achievementModal}
                 onClose={handleCloseAchievement}

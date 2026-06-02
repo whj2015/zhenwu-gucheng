@@ -31,9 +31,8 @@ export default function HeroDetail({ heroId }: { heroId: string }) {
 
     const maxHp = t.attributes.physique * 10;
 
-    const setBonuses = detectSetBonuses(hero);
+const setBonuses = detectSetBonuses(hero);
     const setStatBonus = calculateSetStatBonus(hero);
-
     return (
         <div className="flex flex-col h-full relative z-10">
              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 lg:gap-8 items-start border-b border-white/10 pb-4 sm:pb-6 lg:pb-8 mb-4 sm:mb-6 lg:mb-8">
@@ -138,8 +137,7 @@ export default function HeroDetail({ heroId }: { heroId: string }) {
                       />
                   </div>
              </div>
-
-             {setBonuses.length > 0 && (
+{setBonuses.length > 0 && (
                  <div className="mt-4 sm:mt-6">
                      <h4 className="text-xs sm:text-sm tracking-widest text-slate-500 uppercase font-bold mb-2 sm:mb-3 flex items-center gap-2">
                          <Gem className="w-3.5 h-3.5 text-purple-400" />

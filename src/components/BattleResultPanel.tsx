@@ -79,10 +79,9 @@ function getHeroNameSet(heroes: any[]): Set<string> {
 function parseBattleLogs(rawLogs: string[], heroes: any[], _enemies: any[]): BattleLogEntry[] {
     const entries: BattleLogEntry[] = [];
     let currentRound = 0;
-    const heroNames = getHeroNameSet(heroes);
+const heroNames = getHeroNameSet(heroes);
 
     rawLogs.forEach((log, idx) => {
-
         if (log.includes('回合') || log.match(/^\d+:/)) {
             const roundMatch = log.match(/(\d+):/) || log.match(/第 (\d+) 回合/);
             if (roundMatch) currentRound = parseInt(roundMatch[1]);
@@ -92,7 +91,7 @@ function parseBattleLogs(rawLogs: string[], heroes: any[], _enemies: any[]): Bat
         const attackMatch = log.match(RE_ATTACK);
         if (attackMatch) {
             const [, attacker, _pos, target, dmgStr] = attackMatch;
-            entries.push({ id: `log-${idx}`, round: currentRound, attacker, target, damage: parseInt(dmgStr), isPlayer: heroNames.has(attacker) });
+entries.push({ id: `log-${idx}`, round: currentRound, attacker, target, damage: parseInt(dmgStr), isPlayer: heroNames.has(attacker) });
             return;
         }
 
@@ -107,7 +106,7 @@ function parseBattleLogs(rawLogs: string[], heroes: any[], _enemies: any[]): Bat
         const skillAttackMatch = log.match(RE_SKILL_ATTACK);
         if (skillAttackMatch) {
             const [, attacker, target, dmgStr] = skillAttackMatch;
-            entries.push({ id: `log-${idx}`, round: currentRound, attacker, target, damage: parseInt(dmgStr), isPlayer: heroNames.has(attacker) });
+entries.push({ id: `log-${idx}`, round: currentRound, attacker, target, damage: parseInt(dmgStr), isPlayer: heroNames.has(attacker) });
             return;
         }
 
@@ -121,14 +120,14 @@ function parseBattleLogs(rawLogs: string[], heroes: any[], _enemies: any[]): Bat
         const cleaveMatch = log.match(RE_CLEAVE_ATTACK);
         if (cleaveMatch) {
             const [, target, dmgStr] = cleaveMatch;
-            entries.push({ id: `log-${idx}`, round: currentRound, attacker: '[偃月溅射]', target, damage: parseInt(dmgStr), isPlayer: true });
+entries.push({ id: `log-${idx}`, round: currentRound, attacker: '[偃月溅射]', target, damage: parseInt(dmgStr), isPlayer: true });
             return;
         }
 
         const enemyAttackMatch = log.match(RE_ENEMY_ATTACK);
         if (enemyAttackMatch) {
             const [, attacker, target, _pos, dmgStr] = enemyAttackMatch;
-            entries.push({ id: `log-${idx}`, round: currentRound, attacker, target, damage: parseInt(dmgStr), isPlayer: false });
+entries.push({ id: `log-${idx}`, round: currentRound, attacker, target, damage: parseInt(dmgStr), isPlayer: false });
             return;
         }
 
@@ -150,7 +149,6 @@ function parseBattleLogs(rawLogs: string[], heroes: any[], _enemies: any[]): Bat
             return;
         }
     });
-
     return entries;
 }
 
@@ -547,13 +545,13 @@ export function buildBattleResultData({
 
     const enemyStates: EnemyBattleState[] = enemyData.map(e => {
         const dmg = damageMap.get(e.name) || { dealt: 0, taken: 0 };
-        const actualHpAfter = Math.max(0, e.hp - dmg.taken);
+const actualHpAfter = Math.max(0, e.hp - dmg.taken);
 
         return {
             templateId: e.id || e.name,
             name: e.name,
             hpBefore: e.hp,
-            hpAfter: victory ? 0 : actualHpAfter,
+hpAfter: victory ? 0 : actualHpAfter,
             maxHp: e.hp,
             damageTaken: dmg.taken,
             isAlive: victory ? false : actualHpAfter > 0,

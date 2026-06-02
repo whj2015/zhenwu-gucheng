@@ -228,7 +228,7 @@ function ReadyCell({ node, onClick, isHovered, onHover, onLeave }: {
 }
 
 export default function MapExploreView({ onBattleComplete }: { onBattleComplete: (data: ReturnType<typeof buildBattleResultData>, node: RuinsNode) => void }) {
-    const { ruinsRun, updateRun, heroes, addResources, healParty, initManualBattle, setBattleMode, activeBattle, setActiveBattle, clearActiveBattle } = useGameStore();
+const { ruinsRun, updateRun, heroes, addResources, healParty, initManualBattle, setBattleMode, activeBattle, setActiveBattle, clearActiveBattle } = useGameStore();
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
     const battleNode = activeBattle?.node ?? null;
     const battleEnemies = activeBattle?.enemies ?? [];
@@ -400,7 +400,7 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
     const completedCount = ruinsRun.nodes.filter(n => n.completed).length;
     const totalCount = ruinsRun.nodes.length;
 
-    if (battleNode && battleEnemies.length > 0) {
+if (battleNode && battleEnemies.length > 0) {
         const activeHeros = Object.values(ruinsRun.party)
             .filter((hId): hId is string => hId !== null)
             .map(hId => heroes.find(x => x.id === hId)!)
@@ -508,7 +508,6 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
     if (battleNode && battleEnemies.length === 0) {
         clearActiveBattle();
     }
-
     return (
         <div className="max-w-4xl mx-auto h-full flex flex-col animate-in fade-in duration-500 relative">
 
