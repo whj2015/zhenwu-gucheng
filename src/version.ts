@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.5.3';
+export const CURRENT_VERSION = '0.5.4';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.5.4',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '✨ 自动战斗模式自动连续执行回合 + 🐛 修复结算页面日志解析不兼容新战斗引擎的问题'
+    ]
+  },
   {
     version: '0.5.3',
     date: '2026-06-02',

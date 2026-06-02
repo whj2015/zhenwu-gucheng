@@ -54,8 +54,11 @@ interface BattleResultData {
 }
 
 const RE_ATTACK = /(.+)\[(.+?)\].*? 攻击 (.+)，造成 (\d+) 点伤害/;
+const RE_MANUAL_ATTACK = /[⚔️⚔]\s*(.+?) 攻击 (.+?)，造成 (\d+) 点伤害/;
 const RE_ENEMY_ATTACK = /^(.+) → (.+)\[(.+)\]\s*\| \-(\d+)HP/;
+const RE_MANUAL_ENEMY_ATTACK = /[👹💀]\s*(.+?) 反击 (.+?)，造成 (\d+) 点伤害/;
 const RE_SKILL_ATTACK = /(.+?) 追击 (.+)，造成 (\d+) 点伤害/;
+const RE_SKILL_MANUAL = /[✨🌟]\s*(.+?) 施放【.+?】对 (.+?) 造成 (\d+) 点伤害/;
 const RE_CLEAVE_ATTACK = /\[偃月溅射\] 对 (.+) 造成额外 (\d+) 点伤害/;
 
 function parseBattleLogs(rawLogs: string[], heroes: any[], _enemies: any[]): BattleLogEntry[] {
@@ -84,6 +87,21 @@ function parseBattleLogs(rawLogs: string[], heroes: any[], _enemies: any[]): Bat
             return;
         }
 
+        const manualAttackMatch = log.match(RE_MANUAL_ATTACK);
+        if (manualAttackMatch) {
+            const [, attacker, target, dmgStr] = manualAttackMatch;
+            const isPlayer = heroes.some(h => HERO_TEMPLATES[h.templateId]?.name === attacker);
+            entries.push({
+                id: `log-${idx}`,
+                round: currentRound,
+                attacker,
+                target,
+                damage: parseInt(dmgStr),
+                isPlayer
+            });
+            return;
+        }
+
         const skillAttackMatch = log.match(RE_SKILL_ATTACK);
         if (skillAttackMatch) {
             const [, attacker, target, dmgStr] = skillAttackMatch;
@@ -95,6 +113,20 @@ function parseBattleLogs(rawLogs: string[], heroes: any[], _enemies: any[]): Bat
                 target,
                 damage: parseInt(dmgStr),
                 isPlayer
+            });
+            return;
+        }
+
+        const skillManualMatch = log.match(RE_SKILL_MANUAL);
+        if (skillManualMatch) {
+            const [, attacker, target, dmgStr] = skillManualMatch;
+            entries.push({
+                id: `log-${idx}`,
+                round: currentRound,
+                attacker,
+                target,
+                damage: parseInt(dmgStr),
+                isPlayer: true
             });
             return;
         }
@@ -124,6 +156,21 @@ function parseBattleLogs(rawLogs: string[], heroes: any[], _enemies: any[]): Bat
                 damage: parseInt(dmgStr),
                 isPlayer: false
             });
+            return;
+        }
+
+        const manualEnemyAttackMatch = log.match(RE_MANUAL_ENEMY_ATTACK);
+        if (manualEnemyAttackMatch) {
+            const [, attacker, target, dmgStr] = manualEnemyAttackMatch;
+            entries.push({
+                id: `log-${idx}`,
+                round: currentRound,
+                attacker,
+                target,
+                damage: parseInt(dmgStr),
+                isPlayer: false
+            });
+            return;
         }
     });
     return entries;

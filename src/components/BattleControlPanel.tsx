@@ -186,6 +186,7 @@ export default function BattleControlPanel({
     const [showSkillDetail, setShowSkillDetail] = useState(false);
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const autoLoopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         if (mode === 'manual' && !isPaused) {
@@ -204,6 +205,18 @@ export default function BattleControlPanel({
             handleAutoExecute();
         }
     }, [timeLeft]);
+
+    useEffect(() => {
+        if (autoLoopRef.current) clearTimeout(autoLoopRef.current);
+        if (mode !== 'auto' || isPaused) return;
+        const aliveEnemyCount = enemies.filter(e => e.isAlive).length;
+        const aliveHeroCount = heroes.filter(h => h.hp > 0).length;
+        if (aliveEnemyCount === 0 || aliveHeroCount === 0) return;
+        autoLoopRef.current = setTimeout(() => {
+            handleAutoExecute();
+        }, 800);
+        return () => { if (autoLoopRef.current) clearTimeout(autoLoopRef.current); };
+    }, [mode, turnCount, isPaused, heroes, enemies]);
 
     const selectedHero = heroes.find(h => h.id === selectedHeroId) ?? null;
     const selectedSkill: BattleSkill | undefined = selectedHero
@@ -363,19 +376,27 @@ export default function BattleControlPanel({
     }, []);
 
     if (mode === 'auto') {
+        const aliveEnemyCount = enemies.filter(e => e.isAlive).length;
+        const aliveHeroCount = heroes.filter(h => h.hp > 0).length;
+        const battleOver = aliveEnemyCount === 0 || aliveHeroCount === 0;
         return (
             <div className="h-full flex flex-col items-center justify-center gap-6 bg-[#0d0f12] animate-in fade-in duration-300">
                 <div className="text-center space-y-3">
-                    <Bot className="w-16 h-16 text-violet-400 mx-auto animate-pulse" />
-                    <div className="font-serif text-xl font-bold text-slate-200">自动战斗中...</div>
+                    <Bot className={cn("w-16 h-16 mx-auto", battleOver ? "text-slate-600" : "text-violet-400 animate-pulse")} />
+                    <div className="font-serif text-xl font-bold text-slate-200">
+                        {battleOver ? (aliveHeroCount === 0 ? '战斗失败' : '战斗胜利') : '自动战斗中...'}
+                    </div>
                     <div className="text-sm text-slate-500">第 {turnCount} 回合</div>
                 </div>
                 <div className="flex items-center gap-3">
                     <button onClick={toggleMode} className="px-4 py-2 rounded-lg bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/30 transition-all text-sm font-bold">
                         <Hand className="w-4 h-4 inline mr-1" /> 切换手动
                     </button>
-                    <button onClick={handleAutoExecute} className="px-4 py-2 rounded-lg bg-orange-500/20 border border-orange-500/40 text-orange-300 hover:bg-orange-500/30 transition-all text-sm font-bold">
-                        ⚔ 执行回合
+                    <button onClick={togglePause} disabled={battleOver}
+                        className={cn("px-4 py-2 rounded-lg border transition-all text-sm font-bold",
+                            isPaused ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : "bg-amber-500/20 border-amber-500/40 text-amber-300"
+                        )}>
+                        {isPaused ? (<>▶ 继续</>) : (<>⏸ 暂停</>)}
                     </button>
                     {onExit && (
                         <button onClick={onExit} className="p-2 rounded-lg bg-white/5 text-slate-400 hover:bg-red-500/20 hover:text-red-400 transition-all">
@@ -384,9 +405,9 @@ export default function BattleControlPanel({
                     )}
                 </div>
                 {logs.length > 0 && (
-                    <div className="w-full max-w-md max-h-40 overflow-y-auto custom-scrollbar space-y-1">
-                        {logs.slice(-8).map((log, i) => (
-                            <div key={i} className="text-xs font-mono text-slate-400 px-2">{log}</div>
+                    <div className="w-full max-w-md max-h-48 overflow-y-auto custom-scrollbar space-y-1">
+                        {logs.slice(-12).map((log, i) => (
+                            <div key={`${turnCount}-${i}-${log.slice(0, 10)}`} className="text-xs font-mono text-slate-400 px-2">{log}</div>
                         ))}
                     </div>
                 )}
