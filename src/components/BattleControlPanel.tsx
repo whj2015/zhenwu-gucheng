@@ -355,6 +355,7 @@ export default function BattleControlPanel({
         console.log('victory:', result.victory, 'defeat:', result.defeat);
         console.log('heroes after:', result.newHeroes.map(h => ({ id: h.id, hp: h.hp, troops: h.troops })));
         console.log('enemies after:', result.newEnemies.map(e => ({ id: e.id, hp: e.hp, alive: e.isAlive })));
+        console.log('enemies after JSON:', JSON.stringify(result.newEnemies.map(e => ({ id: e.id, hp: e.hp, alive: e.isAlive }))));
 
         setLogs(prev => [...prev, `--- 第 ${turnCount} 回合 ---`, ...result.logs]);
         setHeroes(result.newHeroes);
@@ -567,6 +568,7 @@ export default function BattleControlPanel({
                         </div>
                         <div className="space-y-2">
                             {enemies.map((enemy, idx) => {
+                                console.log(`[render] enemy ${idx}:`, JSON.stringify({ id: enemy.id, name: enemy.name, hp: enemy.hp, maxHp: enemy.maxHp, isAlive: enemy.isAlive }));
                                 const isSelected = selectedTargetId === enemy.id;
                                 const hpPct = enemy.isAlive ? (enemy.hp / enemy.maxHp) * 100 : 0;
 
