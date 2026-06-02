@@ -5,9 +5,25 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.5';
+export const CURRENT_VERSION = '0.6.7';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.7',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复敌人被击杀后不显示"击破"状态：`aliveHeroes`每次渲染创建新数组导致`resolveAndApply`不稳定→effect无限重跑→React不触发重渲染。改用ref模式读取最新状态，`resolveAndApply`变为稳定函数'
+    ]
+  },
+  {
+    version: '0.6.6',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 彻底修复结算页我方攻击记录丢失：正则`(?:率兵卒)?`可选组引发回溯bug，`[\u4e00-\u9fa5]+`贪婪匹配时将"率兵卒"捕获为attacker。改为必选`(?: 率兵卒)`+空格前缀'
+    ]
+  },
   {
     version: '0.6.5',
     date: '2026-06-02',

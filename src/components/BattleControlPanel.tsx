@@ -223,6 +223,7 @@ export default function BattleControlPanel({
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const autoLoopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastClickRef = useRef<{ id: string; time: number } | null>(null);
+    console.log('[RENDER_TOP] mode:', mode, 'turn:', turnCount);
 
     useEffect(() => {
         if (mode === 'manual' && !isPaused) {
@@ -235,6 +236,17 @@ export default function BattleControlPanel({
         }
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }, [mode, isPaused]);
+
+    // 调试：监控 enemies 状态是否真正更新
+    useEffect(() => {
+        console.log('[ENEMIES_CHANGED] useEffect fired:', JSON.stringify(enemies.map(e => ({ id: e.id, hp: e.hp, alive: e.isAlive }))));
+    }, [enemies]);
+
+    // 调试：监控组件挂载/卸载
+    useEffect(() => {
+        console.log('[MOUNT] BattleControlPanel mounted');
+        return () => console.log('[UNMOUNT] BattleControlPanel unmounted');
+    }, []);
 
     useEffect(() => {
         if (timeLeft === 0 && mode === 'manual' && !isPaused) {
@@ -335,21 +347,41 @@ export default function BattleControlPanel({
         setPendingActionType(type);
     }, []);
 
+    // Refs for latest state to avoid stale closures and excessive effect re-runs
+    const heroesRef = useRef(heroes);
+    heroesRef.current = heroes;
+    const enemiesRef2 = useRef(enemies);
+    enemiesRef2.current = enemies;
+    const turnCountRef = useRef(turnCount);
+    turnCountRef.current = turnCount;
+    const logsRef = useRef(logs);
+    logsRef.current = logs;
+    const aliveHeroesRef = useRef(aliveHeroes);
+    aliveHeroesRef.current = aliveHeroes;
+    const onBattleEndRef = useRef(onBattleEnd);
+    onBattleEndRef.current = onBattleEnd;
+
     const resolveAndApply = useCallback((actions: Record<string, SkillActionType | null>) => {
+        const currentHeroes = heroesRef.current;
+        const currentEnemies = enemiesRef2.current;
+        const currentTurnCount = turnCountRef.current;
+        const currentLogs = logsRef.current;
+        const currentAliveHeroes = aliveHeroesRef.current;
+
         const actionCount = Object.keys(actions).filter(k => actions[k] !== null).length;
         console.log('=== EXECUTE TURN ===');
-        console.log('actionCount:', actionCount, 'of', aliveHeroes.length, 'heroes');
+        console.log('actionCount:', actionCount, 'of', currentAliveHeroes.length, 'heroes');
         console.log('actions:', JSON.stringify(actions));
-        console.log('heroes before:', heroes.map(h => ({ id: h.id, name: h.name, hp: h.hp, maxHp: h.maxHp, force: h.force })));
-        console.log('enemies before:', enemies.map(e => ({ id: e.id, name: e.name, hp: e.hp, maxHp: e.maxHp, force: e.force, alive: e.isAlive })));
+        console.log('heroes before:', currentHeroes.map(h => ({ id: h.id, name: h.name, hp: h.hp, maxHp: h.maxHp, force: h.force })));
+        console.log('enemies before:', currentEnemies.map(e => ({ id: e.id, name: e.name, hp: e.hp, maxHp: e.maxHp, force: e.force, alive: e.isAlive })));
 
         if (actionCount === 0) {
             console.warn('WARNING: 没有任何行动指令！跳过执行');
-            setLogs(prev => [...prev, `⚠️ 第 ${turnCount} 回合：未设置任何行动，跳过`]);
+            setLogs(prev => [...prev, `⚠️ 第 ${currentTurnCount} 回合：未设置任何行动，跳过`]);
             return;
         }
 
-        const result = resolveTurn(heroes, enemies, actions);
+        const result = resolveTurn(currentHeroes, currentEnemies, actions);
 
         console.log('result logs:', result.logs);
         console.log('victory:', result.victory, 'defeat:', result.defeat);
@@ -357,17 +389,23 @@ export default function BattleControlPanel({
         console.log('enemies after:', result.newEnemies.map(e => ({ id: e.id, hp: e.hp, alive: e.isAlive })));
         console.log('enemies after JSON:', JSON.stringify(result.newEnemies.map(e => ({ id: e.id, hp: e.hp, alive: e.isAlive }))));
 
-        setLogs(prev => [...prev, `--- 第 ${turnCount} 回合 ---`, ...result.logs]);
+        setLogs(prev => [...prev, `--- 第 ${currentTurnCount} 回合 ---`, ...result.logs]);
         setHeroes(result.newHeroes);
-        setEnemies(result.newEnemies);
+        setEnemies(prev => {
+            console.log('[SET_ENEMIES] prev:', JSON.stringify(prev.map(e => ({ hp: e.hp, alive: e.isAlive }))));
+            const next = result.newEnemies;
+            console.log('[SET_ENEMIES] next:', JSON.stringify(next.map(e => ({ hp: e.hp, alive: e.isAlive }))));
+            console.log('[SET_ENEMIES] same ref?', prev === next);
+            return next;
+        });
         setTurnCount(c => c + 1);
 
         if (result.victory || result.defeat) {
             if (timerRef.current) clearInterval(timerRef.current);
-            onBattleEnd?.({
+            onBattleEndRef.current?.({
                 victory: result.victory,
                 defeat: result.defeat,
-                logs: [...logs, `--- 第 ${turnCount} 回合 ---`, ...result.logs],
+                logs: [...currentLogs, `--- 第 ${currentTurnCount} 回合 ---`, ...result.logs],
                 finalHeroes: result.newHeroes.map(h => ({ id: h.id, hp: Math.max(0, h.hp), troops: h.troops }))
             });
             return;
@@ -378,12 +416,14 @@ export default function BattleControlPanel({
         setSelectedHeroId(null);
         setSelectedTargetId(null);
         setPendingActionType(null);
-    }, [heroes, enemies, turnCount, logs, onBattleEnd, aliveHeroes]);
+    }, []); // Stable: reads latest state from refs
 
     const handleAutoExecute = useCallback(() => {
+        const currentHeroes = heroesRef.current;
+        const currentEnemies = enemiesRef2.current;
         const autoActions: Record<string, SkillActionType> = {};
-        heroes.filter(h => h.hp > 0).forEach(h => {
-            const aliveEnemy = enemies.find(e => e.isAlive);
+        currentHeroes.filter(h => h.hp > 0).forEach(h => {
+            const aliveEnemy = currentEnemies.find(e => e.isAlive);
             if (aliveEnemy) {
                 autoActions[h.id] = { type: 'attack', targetId: aliveEnemy.id };
             } else {
@@ -391,7 +431,7 @@ export default function BattleControlPanel({
             }
         });
         resolveAndApply(autoActions);
-    }, [heroes, enemies, resolveAndApply]);
+    }, [resolveAndApply]); // Only depends on stable resolveAndApply
 
     const prevAllActedRef = useRef(false);
     useEffect(() => {
@@ -455,7 +495,7 @@ export default function BattleControlPanel({
     const timePercent = (timeLeft / BATTLE_CONFIG.MANUAL_MODE.TURN_TIME_LIMIT) * 100;
     const isTimeLow = timePercent < 30;
 
-    console.log('[RENDER] enemies state:', JSON.stringify(enemies.map(e => ({ id: e.id, hp: e.hp, alive: e.isAlive }))));
+    console.log('[RENDER] mode:', mode, 'enemies state:', JSON.stringify(enemies.map(e => ({ id: e.id, hp: e.hp, alive: e.isAlive }))));
 
     return (
         <div className="h-full flex flex-col bg-[#0d0f12] text-slate-200">
