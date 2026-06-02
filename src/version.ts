@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.4';
+export const CURRENT_VERSION = '0.6.5';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.5',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 彻底修复结算页我方攻击记录丢失：正则改用中文字符范围[\u4e00-\u9fa5]匹配名字，完全绕过emoji编码差异问题'
+    ]
+  },
   {
     version: '0.6.4',
     date: '2026-06-02',

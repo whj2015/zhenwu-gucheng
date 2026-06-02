@@ -54,10 +54,10 @@ interface BattleResultData {
 }
 
 const RE_ATTACK = /(.+)\[(.+?)\].*? 攻击 (.+)，造成 (\d+) 点伤害/;
-const RE_MANUAL_ATTACK = /(?:[⚔️⚔⚔]\s*)?(.+?)(?:率兵卒)?攻击 (.+?)，造成 (\d+) 点伤害(?:，击破！?)?/;
+const RE_MANUAL_ATTACK = /([\u4e00-\u9fa5]+)(?:率兵卒)?攻击 ([\u4e00-\u9fa5]+)，造成 (\d+) 点伤害(?:，击破！?)?/;
 const RE_ENEMY_ATTACK = /^(.+) → (.+)\[(.+)\]\s*\| \-(\d+)HP/;
-const RE_MANUAL_ENEMY_ATTACK = /(?:[👹💀]\s*)?(.+?) 攻击 (.+?)，(?:兵卒抵挡\d+\(-?\d+人\)[，]?)?(?:本体受创(\d+)|(无伤))/;
-const RE_SKILL_ATTACK = /(.+?) 追击 (.+)，造成 (\d+) 点伤害/;
+const RE_MANUAL_ENEMY_ATTACK = /([\u4e00-\u9fa5]+) 攻击 ([\u4e00-\u9fa5]+)，(?:兵卒抵挡\d+\(-?\d+人\)[，]?)?(?:本体受创(\d+)|(无伤))/;
+const RE_SKILL_ATTACK = /([\u4e00-\u9fa5]+) 追击 ([\u4e00-\u9fa5]+)，造成 (\d+) 点伤害/;
 const RE_SKILL_MANUAL = /[✨🌟]\s*(.+?) 施放【.+?】对 (.+?) 造成 (\d+) 点伤害/;
 const RE_CLEAVE_ATTACK = /\[偃月溅射\] 对 (.+) 造成额外 (\d+) 点伤害/;
 
