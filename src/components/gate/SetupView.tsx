@@ -108,9 +108,9 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
     const canDeploy = deployedCount >= 1 && deployedCount <= MAX_DEPLOY_COUNT;
 
     return (
-        <div className="max-w-2xl lg:max-w-4xl mx-auto h-full flex flex-col animate-in slide-in-from-right-4 duration-300 overflow-hidden">
+        <div className="max-w-2xl lg:max-w-4xl mx-auto flex flex-col animate-in slide-in-from-right-4 duration-300">
              {/* Header with back button integrated */}
-             <div className="flex items-center justify-between mb-2 lg:mb-3 pt-1 shrink-0">
+             <div className="flex items-center justify-between mb-2 lg:mb-3 pt-1">
                  <div className="flex items-center gap-2 lg:gap-3">
                      <button onClick={onCancel} className="text-slate-400 hover:text-white flex items-center space-x-1 text-xs lg:text-sm transition-colors shrink-0">
                          <ChevronLeft className="w-3.5 h-3.5 lg:w-4 lg:h-4" /> <span>返回</span>
@@ -131,7 +131,7 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
              </div>
 
              {/* Preset Bar */}
-             <div className="flex gap-1 lg:gap-1.5 mb-2 lg:mb-3 items-center flex-wrap shrink-0">
+             <div className="flex gap-1 lg:gap-1.5 mb-2 lg:mb-3 items-center flex-wrap">
                  {presets.map(preset => (
                      <div key={preset.id} className="group relative flex items-center">
                          <button
@@ -199,7 +199,7 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                  </div>
              </div>
 
-             <div className="flex-1 flex flex-col lg:flex-row gap-2 lg:gap-4 min-h-0 overflow-y-auto custom-scrollbar">
+             <div className="flex flex-col lg:flex-row gap-2 lg:gap-4">
                   {/* 3x3 Grid */}
                   <div className="flex-1 bg-black/40 border border-white/5 rounded-xl p-2 lg:p-4 relative overflow-hidden">
                        <div className="relative z-10 flex flex-col gap-1.5 lg:gap-2 h-full">
@@ -320,7 +320,7 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
              </div>
 
              {/* Deploy Button */}
-             <div className="mt-2 lg:mt-3 pt-2 lg:pt-3 border-t border-white/5 flex justify-between items-center shrink-0">
+             <div className="mt-2 lg:mt-3 pt-2 lg:pt-3 border-t border-white/5 flex justify-between items-center">
                  <div className="text-[9px] lg:text-[11px] text-slate-600 hidden sm:block">
                      点击空格放置 · 点击已部署取下 · 布好阵后可存为预设
                  </div>

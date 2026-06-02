@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.11';
+export const CURRENT_VERSION = '0.6.12';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.12',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 彻底修复布阵页面出发按钮被遮挡 — 去掉 h-full/overflow-hidden 约束，改为自然文档流布局，跟随 MainUI 滚动区域统一滚动，出发按钮始终可达'
+    ]
+  },
   {
     version: '0.6.11',
     date: '2026-06-02',
