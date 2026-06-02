@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.5.5';
+export const CURRENT_VERSION = '0.5.6';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.5.6',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复战斗中切换页面导致状态丢失/卡死的 bug — 战斗状态持久化到 store + 卸载时自动清理'
+    ]
+  },
   {
     version: '0.5.5',
     date: '2026-06-02',

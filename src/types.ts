@@ -153,6 +153,10 @@ export interface GameState {
   questState: QuestState;
   achievementState: AchievementState;
   manualBattle: ManualBattleState | null;
+  activeBattle: {
+    node: RuinsNode | null;
+    enemies: Array<{ id: string; name: string; hp: number; maxHp: number; isAlive: boolean }>;
+  } | null;
 }
 
 export function getWarehouseResourceCap(warehouseLevel: number): number {

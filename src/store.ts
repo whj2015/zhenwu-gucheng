@@ -119,7 +119,8 @@ const INITIAL_STATE: GameState = {
       notifiedIds: [],
       totalPoints: 0
   },
-  manualBattle: null as ManualBattleState | null
+  manualBattle: null as ManualBattleState | null,
+  activeBattle: null as GameState['activeBattle']
 };
 
 export const useGameStore = create<GameState & {
@@ -159,6 +160,8 @@ export const useGameStore = create<GameState & {
   executeManualTurn: () => SkillActionType[];
   togglePause: () => void;
   clearManualBattle: () => void;
+  setActiveBattle: (node: RuinsNode | null, enemies: Array<{ id: string; name: string; hp: number; maxHp: number; isAlive: boolean }>) => void;
+  clearActiveBattle: () => void;
 }>()(
   persist(
     (set) => ({
@@ -1261,7 +1264,13 @@ export const useGameStore = create<GameState & {
           };
       }),
 
-      clearManualBattle: () => set(() => ({ manualBattle: null }))
+      clearManualBattle: () => set(() => ({ manualBattle: null })),
+
+      setActiveBattle: (node, enemies) => set(() => ({
+          activeBattle: { node, enemies }
+      })),
+
+      clearActiveBattle: () => set(() => ({ activeBattle: null }))
     }),
     {
       name: 'ironecho-storage',

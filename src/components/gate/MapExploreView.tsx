@@ -228,11 +228,18 @@ function ReadyCell({ node, onClick, isHovered, onHover, onLeave }: {
 }
 
 export default function MapExploreView({ onBattleComplete }: { onBattleComplete: (data: ReturnType<typeof buildBattleResultData>, node: RuinsNode) => void }) {
-    const { ruinsRun, updateRun, heroes, addResources, healParty, initManualBattle, setBattleMode } = useGameStore();
+    const { ruinsRun, updateRun, heroes, addResources, healParty, initManualBattle, setBattleMode, activeBattle, setActiveBattle, clearActiveBattle } = useGameStore();
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-    const [battleNode, setBattleNode] = useState<RuinsNode | null>(null);
-    const [battleEnemies, setBattleEnemies] = useState<Array<{ id: string; name: string; hp: number; maxHp: number; isAlive: boolean }>>([]);
+    const battleNode = activeBattle?.node ?? null;
+    const battleEnemies = activeBattle?.enemies ?? [];
 
+    useEffect(() => {
+        return () => {
+            if (activeBattle?.node) {
+                clearActiveBattle();
+            }
+        };
+    }, []);
 
     useEffect(() => {
         if (!ruinsRun) return;
@@ -281,8 +288,7 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                 isAlive: true
             }));
 
-            setBattleNode(node);
-            setBattleEnemies(enemyInfo);
+            setActiveBattle(node, enemyInfo);
 
             initManualBattle(activeHeros.map(h => h.id));
             setBattleMode('manual');
@@ -396,14 +402,12 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                 nodeType: battleNode.type as 'battle' | 'boss',
                 floorNumber: ruinsRun.currentFloor,
             });
-            setBattleNode(null);
-            setBattleEnemies([]);
+            clearActiveBattle();
             onBattleComplete(battleResultData, battleNode);
         };
 
         const handleExit = () => {
-            setBattleNode(null);
-            setBattleEnemies([]);
+            clearActiveBattle();
         };
 
         return (
