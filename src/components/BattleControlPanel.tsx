@@ -46,6 +46,9 @@ function resolveTurn(
     actions: Record<string, SkillActionType | null>
 ): TurnResult {
     const logs: string[] = [];
+    logs.push(`[DEBUG] 收到 ${Object.keys(actions).length} 个行动指令`);
+    Object.entries(actions).forEach(([id, act]) => logs.push(`[DEBUG]   ${id}: ${JSON.stringify(act)}`));
+
     const updatedHeroes = heroes.map(h => ({ ...h }));
     const updatedEnemies = enemies.map(e => ({ ...e }));
     const heroMap = Object.fromEntries(updatedHeroes.map(h => [h.id, h]));
@@ -292,7 +295,25 @@ export default function BattleControlPanel({
     }, []);
 
     const executeTurn = useCallback(() => {
+        const actionCount = Object.keys(turnActions).filter(k => turnActions[k] !== null).length;
+        console.log('=== EXECUTE TURN ===');
+        console.log('actionCount:', actionCount, 'of', aliveHeroes.length, 'heroes');
+        console.log('turnActions:', JSON.stringify(turnActions));
+        console.log('heroes before:', heroes.map(h => ({ id: h.id, name: h.name, hp: h.hp, maxHp: h.maxHp, force: h.force })));
+        console.log('enemies before:', enemies.map(e => ({ id: e.id, name: e.name, hp: e.hp, maxHp: e.maxHp, force: e.force, alive: e.isAlive })));
+
+        if (actionCount === 0) {
+            console.warn('WARNING: 没有任何行动指令！跳过执行');
+            setLogs(prev => [...prev, `⚠️ 第 ${turnCount} 回合：未设置任何行动，跳过`]);
+            return;
+        }
+
         const result = resolveTurn(heroes, enemies, turnActions);
+
+        console.log('result logs:', result.logs);
+        console.log('victory:', result.victory, 'defeat:', result.defeat);
+        console.log('heroes after:', result.newHeroes.map(h => ({ id: h.id, hp: h.hp })));
+        console.log('enemies after:', result.newEnemies.map(e => ({ id: e.id, hp: e.hp, alive: e.isAlive })));
 
         setLogs(prev => [...prev, `--- 第 ${turnCount} 回合 ---`, ...result.logs]);
         setHeroes(result.newHeroes);
