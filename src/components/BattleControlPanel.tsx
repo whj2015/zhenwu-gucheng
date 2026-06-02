@@ -358,10 +358,6 @@ export default function BattleControlPanel({
         setPendingActionType(null);
     }, [heroes, enemies, turnCount, logs, onBattleEnd, aliveHeroes]);
 
-    const executeTurn = useCallback(() => {
-        resolveAndApply(turnActions);
-    }, [turnActions, resolveAndApply]);
-
     const handleAutoExecute = useCallback(() => {
         const autoActions: Record<string, SkillActionType> = {};
         heroes.filter(h => h.hp > 0).forEach(h => {
@@ -374,6 +370,17 @@ export default function BattleControlPanel({
         });
         resolveAndApply(autoActions);
     }, [heroes, enemies, resolveAndApply]);
+
+    const prevAllActedRef = useRef(false);
+    useEffect(() => {
+        if (mode !== 'manual' || isPaused) return;
+        if (allActed && !prevAllActedRef.current && aliveHeroes.length > 0) {
+            prevAllActedRef.current = true;
+            setTimeout(() => resolveAndApply(turnActions), 400);
+        } else {
+            prevAllActedRef.current = allActed;
+        }
+    }, [allActed, mode, isPaused, aliveHeroes, turnActions, resolveAndApply]);
 
     const toggleMode = useCallback(() => {
         setMode(m => m === 'manual' ? 'auto' : 'manual');
@@ -691,15 +698,17 @@ export default function BattleControlPanel({
                         ))}
                         {aliveHeroes.length > 4 && <span className="text-[10px] text-slate-600">+{aliveHeroes.length - 4}</span>}
                     </div>
-                    <button onClick={executeTurn}
-                        disabled={!allActed || aliveHeroes.length === 0}
-                        className={cn("px-6 py-2 rounded-lg text-sm font-bold tracking-wider transition-all",
-                            allActed && aliveHeroes.length > 0
-                                ? "bg-gradient-to-r from-cyan-500 to-violet-500 text-white hover:opacity-90 shadow-lg shadow-cyan-500/20 active:scale-95"
-                                : "bg-slate-500/10 border border-slate-500/20 text-slate-600 cursor-not-allowed"
-                        )}>
-                        执行回合 ({actedCount}/{aliveHeroes.length})
-                    </button>
+                    <div className={cn("px-5 py-2 rounded-lg text-sm font-bold tracking-wider transition-all flex items-center gap-2",
+                        allActed && aliveHeroes.length > 0
+                            ? "bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-lg shadow-cyan-500/20 animate-pulse"
+                            : "bg-slate-500/10 border border-slate-500/20 text-slate-500"
+                    )}>
+                        {allActed && aliveHeroes.length > 0 ? (
+                            <><Play className="w-3.5 h-3.5" /> 执行中...</>
+                        ) : (
+                            <>准备 ({actedCount}/{aliveHeroes.length})</>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

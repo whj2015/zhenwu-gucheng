@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.5.7';
+export const CURRENT_VERSION = '0.5.8';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.5.8',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '⚡ 战斗体验优化 — 所有英雄选择完行动后自动执行回合，无需手动点击'
+    ]
+  },
   {
     version: '0.5.7',
     date: '2026-06-02',
