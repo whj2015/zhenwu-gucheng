@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.8';
+export const CURRENT_VERSION = '0.6.9';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.9',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🎨 布阵页面移动端适配优化 — 缩小网格尺寸/间距、英雄列表改为横向滚动芯片、预设栏弹性换行、底部栏紧凑化'
+    ]
+  },
   {
     version: '0.6.8',
     date: '2026-06-02',
