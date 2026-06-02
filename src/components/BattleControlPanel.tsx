@@ -455,6 +455,8 @@ export default function BattleControlPanel({
     const timePercent = (timeLeft / BATTLE_CONFIG.MANUAL_MODE.TURN_TIME_LIMIT) * 100;
     const isTimeLow = timePercent < 30;
 
+    console.log('[RENDER] enemies state:', JSON.stringify(enemies.map(e => ({ id: e.id, hp: e.hp, alive: e.isAlive }))));
+
     return (
         <div className="h-full flex flex-col bg-[#0d0f12] text-slate-200">
             {/* Header */}
