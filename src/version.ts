@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.5.8';
+export const CURRENT_VERSION = '0.5.9';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.5.9',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '⚔️ 战斗操作优化 — 双击目标直接确认行动 + 已死敌人攻击拦截提示'
+    ]
+  },
   {
     version: '0.5.8',
     date: '2026-06-02',

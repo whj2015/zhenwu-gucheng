@@ -191,6 +191,7 @@ export default function BattleControlPanel({
     const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
     const [pendingActionType, setPendingActionType] = useState<'attack' | 'skill' | null>(null);
     const [showSkillDetail, setShowSkillDetail] = useState(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const autoLoopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -242,8 +243,13 @@ export default function BattleControlPanel({
     }, []);
 
     const handleSelectEnemy = useCallback((id: string) => {
-        if (!enemies.find(e => e.id === id)?.isAlive) return;
+        if (!enemies.find(e => e.id === id)?.isAlive) {
+            setErrorMsg('⚠️ 该目标已被击破，无法选择');
+            setTimeout(() => setErrorMsg(null), 2000);
+            return;
+        }
         setSelectedTargetId(id);
+        setErrorMsg(null);
     }, [enemies]);
 
     const assignAction = useCallback((action: SkillActionType) => {
@@ -300,18 +306,24 @@ export default function BattleControlPanel({
         assignAction({ type: 'skip' });
     }, [selectedHeroId, assignAction]);
 
+    const handleTargetDoubleClick = useCallback((id: string) => {
+        const enemy = enemies.find(e => e.id === id);
+        if (!enemy || !enemy.isAlive) {
+            setErrorMsg('⚠️ 该目标已被击破，无法攻击！');
+            setTimeout(() => setErrorMsg(null), 2000);
+            return;
+        }
+        setSelectedTargetId(id);
+        setErrorMsg(null);
+        if (pendingActionType === 'attack') {
+            handleAttack();
+        } else if (pendingActionType === 'skill') {
+            handleSkill();
+        }
+    }, [enemies, pendingActionType]);
+
     const handlePickAction = useCallback((type: 'attack' | 'skill') => {
         setPendingActionType(type);
-    }, []);
-
-    const handleConfirm = useCallback(() => {
-        if (pendingActionType === 'attack') handleAttack();
-        else if (pendingActionType === 'skill') handleSkill();
-    }, [pendingActionType, handleAttack, handleSkill]);
-
-    const handleCancel = useCallback(() => {
-        setPendingActionType(null);
-        setSelectedTargetId(null);
     }, []);
 
     const resolveAndApply = useCallback((actions: Record<string, SkillActionType | null>) => {
@@ -545,7 +557,9 @@ export default function BattleControlPanel({
                                 const hpPct = enemy.isAlive ? (enemy.hp / enemy.maxHp) * 100 : 0;
 
                                 return (
-                                    <button key={`enemy-${enemy.id}-${idx}`} onClick={() => handleSelectEnemy(enemy.id)}
+                                    <button key={`enemy-${enemy.id}-${idx}`}
+                                        onClick={() => pendingActionType ? handleSelectEnemy(enemy.id) : handleSelectEnemy(enemy.id)}
+                                        onDoubleClick={() => pendingActionType ? handleTargetDoubleClick(enemy.id) : undefined}
                                         disabled={!enemy.isAlive}
                                         className={cn(
                                             "w-full p-3 rounded-xl border transition-all text-left",
@@ -628,7 +642,9 @@ export default function BattleControlPanel({
                                         <div className="text-sm font-bold text-red-300"><Target className="w-4 h-4 inline mr-1" />选择攻击目标</div>
                                         <div className="grid grid-cols-2 gap-2">
                                             {enemies.filter(e => e.isAlive).map((e, idx) => (
-                                                <button key={`target-${e.id}-${idx}`} onClick={() => setSelectedTargetId(e.id)}
+                                                <button key={`target-${e.id}-${idx}`}
+                                                    onClick={() => setSelectedTargetId(e.id)}
+                                                    onDoubleClick={() => handleTargetDoubleClick(e.id)}
                                                     className={cn("p-2 rounded-lg border text-left transition-all",
                                                         selectedTargetId === e.id
                                                             ? "bg-red-500/20 border-red-500/50 text-red-200"
@@ -639,21 +655,17 @@ export default function BattleControlPanel({
                                                 </button>
                                             ))}
                                         </div>
+                                        <div className="text-[10px] text-slate-600 text-center pt-1">
+                                            💡 单击选择 · 双击确认行动
+                                        </div>
                                     </div>
                                 )}
 
-                                <div className="flex gap-3 pt-2 border-t border-white/10">
-                                    <button onClick={handleCancel}
-                                        className="flex-1 py-2 rounded-lg border border-slate-500/30 text-slate-400 hover:bg-slate-500/10 text-sm font-bold">取消</button>
-                                    <button onClick={handleConfirm}
-                                        disabled={!selectedTargetId && (pendingActionType === 'attack' ||
-                                        (pendingActionType === 'skill' && selectedSkill?.targetMode === 'single_enemy'))}
-                                        className={cn("flex-1 py-2 rounded-lg text-sm font-bold transition-all",
-                                            (selectedTargetId || (pendingActionType === 'skill' && selectedSkill?.targetMode !== 'single_enemy'))
-                                                ? "bg-gradient-to-r from-cyan-500 to-violet-500 text-white hover:opacity-90"
-                                                : "bg-slate-500/10 border border-slate-500/20 text-slate-600 cursor-not-allowed"
-                                        )}>确认{pendingActionType === 'attack' ? '攻击' : '释放'}</button>
-                                </div>
+                                {errorMsg && (
+                                    <div className="mt-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-mono text-center animate-in fade-in duration-200">
+                                        {errorMsg}
+                                    </div>
+                                )}
                             </div>
                         )}
 
