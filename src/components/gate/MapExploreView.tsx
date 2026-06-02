@@ -432,6 +432,9 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
             if (battleNode) {
                 const rr = useGameStore.getState().ruinsRun;
                 if (rr) {
+                    const pos = rr.grid?.findIndex(n => n?.id === battleNode.id) ?? -1;
+                    const currentFog = rr.fogStates as CellState[] | undefined;
+
                     const parts = battleNode.id.split('-');
                     if (parts.length >= 3 && result.victory) {
                         const row = parseInt(parts[1].replace('r',''));
@@ -441,7 +444,23 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                             if (n.id.includes(`r${nextRow}-`) || (row === 1 && n.type === 'boss')) return { ...n, revealed: true };
                             return n;
                         });
-                        useGameStore.getState().updateRun({ nodes: updatedNodes });
+
+                        // Also update fogStates to mark the cell as 'done'
+                        const updatedFog = currentFog ? [...currentFog] : undefined;
+                        if (updatedFog && pos >= 0) {
+                            updatedFog[pos] = 'done';
+                            // Reveal neighbors
+                            for (const n of getNeighbors(pos)) {
+                                if (updatedFog[n] === 'fog') {
+                                    updatedFog[n] = rr.grid?.[n] !== null ? 'ready' : 'empty';
+                                }
+                            }
+                        }
+
+                        useGameStore.getState().updateRun({
+                            nodes: updatedNodes,
+                            ...(updatedFog ? { fogStates: updatedFog } : {})
+                        });
                     }
                 }
             }

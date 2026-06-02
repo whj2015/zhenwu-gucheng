@@ -219,12 +219,10 @@ export default function BattleControlPanel({
     const [pendingActionType, setPendingActionType] = useState<'attack' | 'skill' | null>(null);
     const [showSkillDetail, setShowSkillDetail] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
-    const [renderTrigger, setRenderTrigger] = useState(0);
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const autoLoopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastClickRef = useRef<{ id: string; time: number } | null>(null);
-    console.log('[RENDER_TOP] mode:', mode, 'turn:', turnCount, 'trigger:', renderTrigger, 'enemies:', JSON.stringify(enemies.map(e => ({ hp: e.hp, alive: e.isAlive }))));
 
     useEffect(() => {
         if (mode === 'manual' && !isPaused) {
@@ -237,17 +235,6 @@ export default function BattleControlPanel({
         }
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }, [mode, isPaused]);
-
-    // 调试：监控 enemies 状态是否真正更新
-    useEffect(() => {
-        console.log('[ENEMIES_CHANGED] useEffect fired:', JSON.stringify(enemies.map(e => ({ id: e.id, hp: e.hp, alive: e.isAlive }))));
-    }, [enemies]);
-
-    // 调试：监控组件挂载/卸载
-    useEffect(() => {
-        console.log('[MOUNT] BattleControlPanel mounted');
-        return () => console.log('[UNMOUNT] BattleControlPanel unmounted');
-    }, []);
 
     useEffect(() => {
         if (timeLeft === 0 && mode === 'manual' && !isPaused) {
@@ -392,9 +379,7 @@ export default function BattleControlPanel({
 
         setLogs(prev => [...prev, `--- 第 ${currentTurnCount} 回合 ---`, ...result.logs]);
         setHeroes(result.newHeroes);
-        console.log('[SET_ENEMIES] setting:', JSON.stringify(result.newEnemies.map(e => ({ hp: e.hp, alive: e.isAlive }))));
         setEnemies(result.newEnemies);
-        setRenderTrigger(c => c + 1);
         setTurnCount(c => c + 1);
 
         if (result.victory || result.defeat) {
@@ -491,8 +476,6 @@ export default function BattleControlPanel({
 
     const timePercent = (timeLeft / BATTLE_CONFIG.MANUAL_MODE.TURN_TIME_LIMIT) * 100;
     const isTimeLow = timePercent < 30;
-
-    console.log('[RENDER] mode:', mode, 'enemies state:', JSON.stringify(enemies.map(e => ({ id: e.id, hp: e.hp, alive: e.isAlive }))));
 
     return (
         <div className="h-full flex flex-col bg-[#0d0f12] text-slate-200">
@@ -607,7 +590,6 @@ export default function BattleControlPanel({
                         </div>
                         <div className="space-y-2">
                             {enemies.map((enemy, idx) => {
-                                console.log(`[render] enemy ${idx}:`, JSON.stringify({ id: enemy.id, name: enemy.name, hp: enemy.hp, maxHp: enemy.maxHp, isAlive: enemy.isAlive }));
                                 const isSelected = selectedTargetId === enemy.id;
                                 const hpPct = enemy.isAlive ? (enemy.hp / enemy.maxHp) * 100 : 0;
 

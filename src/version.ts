@@ -5,23 +5,15 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.8';
+export const CURRENT_VERSION = '0.6.7';
 
 export const CHANGELOG: VersionInfo[] = [
-  {
-    version: '0.6.8',
-    date: '2026-06-02',
-    type: 'patch',
-    changes: [
-      '🐛 继续修复敌人不显示"击破"：新增`renderTrigger`状态计数器，每次`setEnemies`后强制触发重渲染，确保React处理状态变更'
-    ]
-  },
   {
     version: '0.6.7',
     date: '2026-06-02',
     type: 'patch',
     changes: [
-      '🐛 修复敌人被击杀后不显示"击破"状态：`aliveHeroes`每次渲染创建新数组导致`resolveAndApply`不稳定→effect无限重跑→React不触发重渲染。改用ref模式读取最新状态，`resolveAndApply`变为稳定函数'
+      '🐛 修复战斗胜利后敌方格不消失：`handleBattleEnd`只更新了`nodes`标记`completed:true`，但忘了更新`fogStates`将格位设为`done`，导致格位仍显示为可探索。现同步更新`fogStates`并揭示相邻格'
     ]
   },
   {
