@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.0';
+export const CURRENT_VERSION = '0.6.1';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.1',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复结算页战斗记录消失：更新正则表达式适配兵力系统新日志格式（兵卒抵挡/本体受创/率兵卒攻击）'
+    ]
+  },
   {
     version: '0.6.0',
     date: '2026-06-02',
