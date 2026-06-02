@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.19';
+export const CURRENT_VERSION = '0.6.20';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.20',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复战斗结算页移动端显示不全 — 右侧汇总面板新增 max-h-[45vh] 限制内部滚动，压缩移动端各区域 p/mmax-h、减小日志区高度，整体卡片 max-h-[92vh]'
+    ]
+  },
   {
     version: '0.6.19',
     date: '2026-06-02',
