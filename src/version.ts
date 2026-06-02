@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.2';
+export const CURRENT_VERSION = '0.6.3';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.3',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复结算页总输出为0的严重bug：(1)重写正则去除emoji依赖改用通用模式+英雄名字集合判断阵营 (2)修复enemyStates逻辑：hpAfter从damageMap反算实际剩余HP、isAlive根据实际HP判断而非!victory'
+    ]
+  },
   {
     version: '0.6.2',
     date: '2026-06-02',

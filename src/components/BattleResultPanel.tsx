@@ -54,16 +54,31 @@ interface BattleResultData {
 }
 
 const RE_ATTACK = /(.+)\[(.+?)\].*? 攻击 (.+)，造成 (\d+) 点伤害/;
-const RE_MANUAL_ATTACK = /[⚔️⚔]\s*(.+?)(?:率兵卒)?攻击 (.+?)，造成 (\d+) 点伤害/;
+const RE_MANUAL_ATTACK = /(.+?)(?:率兵卒)?攻击 (.+?)，造成 (\d+) 点伤害(?:，击破！?)?/;
 const RE_ENEMY_ATTACK = /^(.+) → (.+)\[(.+)\]\s*\| \-(\d+)HP/;
-const RE_MANUAL_ENEMY_ATTACK = /[👹💀]\s*(.+?) 攻击 (.+?)，(?:兵卒抵挡\d+\(-?\d+人\)[，]?)?(?:本体受创(\d+))/;
+const RE_MANUAL_ENEMY_ATTACK = /(.+?) 攻击 (.+?)，(?:兵卒抵挡\d+\(-?\d+人\)[，]?)?(?:本体受创(\d+)|(无伤))/;
 const RE_SKILL_ATTACK = /(.+?) 追击 (.+)，造成 (\d+) 点伤害/;
 const RE_SKILL_MANUAL = /[✨🌟]\s*(.+?) 施放【.+?】对 (.+?) 造成 (\d+) 点伤害/;
 const RE_CLEAVE_ATTACK = /\[偃月溅射\] 对 (.+) 造成额外 (\d+) 点伤害/;
 
+const HERO_NAME_SET_CACHE = new WeakMap<object, Set<string>>();
+
+function getHeroNameSet(heroes: any[]): Set<string> {
+    if (!HERO_NAME_SET_CACHE.has(heroes)) {
+        const names = new Set<string>();
+        heroes.forEach(h => {
+            const t = HERO_TEMPLATES[h.templateId];
+            if (t) names.add(t.name);
+        });
+        HERO_NAME_SET_CACHE.set(heroes, names);
+    }
+    return HERO_NAME_SET_CACHE.get(heroes)!;
+}
+
 function parseBattleLogs(rawLogs: string[], heroes: any[], _enemies: any[]): BattleLogEntry[] {
     const entries: BattleLogEntry[] = [];
     let currentRound = 0;
+    const heroNames = getHeroNameSet(heroes);
 
     rawLogs.forEach((log, idx) => {
         if (log.includes('回合') || log.match(/^\d+:/)) {
@@ -75,101 +90,55 @@ function parseBattleLogs(rawLogs: string[], heroes: any[], _enemies: any[]): Bat
         const attackMatch = log.match(RE_ATTACK);
         if (attackMatch) {
             const [, attacker, _pos, target, dmgStr] = attackMatch;
-            const isPlayer = heroes.some(h => HERO_TEMPLATES[h.templateId]?.name === attacker);
-            entries.push({
-                id: `log-${idx}`,
-                round: currentRound,
-                attacker,
-                target,
-                damage: parseInt(dmgStr),
-                isPlayer
-            });
+            entries.push({ id: `log-${idx}`, round: currentRound, attacker, target, damage: parseInt(dmgStr), isPlayer: heroNames.has(attacker) });
             return;
         }
 
         const manualAttackMatch = log.match(RE_MANUAL_ATTACK);
         if (manualAttackMatch) {
             const [, attacker, target, dmgStr] = manualAttackMatch;
-            const isPlayer = heroes.some(h => HERO_TEMPLATES[h.templateId]?.name === attacker);
-            entries.push({
-                id: `log-${idx}`,
-                round: currentRound,
-                attacker,
-                target,
-                damage: parseInt(dmgStr),
-                isPlayer
-            });
+            const isPlayer = heroNames.has(attacker);
+            if (isPlayer || attacker === target) {
+                entries.push({ id: `log-${idx}`, round: currentRound, attacker, target, damage: parseInt(dmgStr), isPlayer });
+            }
             return;
         }
 
         const skillAttackMatch = log.match(RE_SKILL_ATTACK);
         if (skillAttackMatch) {
             const [, attacker, target, dmgStr] = skillAttackMatch;
-            const isPlayer = heroes.some(h => HERO_TEMPLATES[h.templateId]?.name === attacker);
-            entries.push({
-                id: `log-${idx}`,
-                round: currentRound,
-                attacker,
-                target,
-                damage: parseInt(dmgStr),
-                isPlayer
-            });
+            entries.push({ id: `log-${idx}`, round: currentRound, attacker, target, damage: parseInt(dmgStr), isPlayer: heroNames.has(attacker) });
             return;
         }
 
         const skillManualMatch = log.match(RE_SKILL_MANUAL);
         if (skillManualMatch) {
             const [, attacker, target, dmgStr] = skillManualMatch;
-            entries.push({
-                id: `log-${idx}`,
-                round: currentRound,
-                attacker,
-                target,
-                damage: parseInt(dmgStr),
-                isPlayer: true
-            });
+            entries.push({ id: `log-${idx}`, round: currentRound, attacker, target, damage: parseInt(dmgStr), isPlayer: true });
             return;
         }
 
         const cleaveMatch = log.match(RE_CLEAVE_ATTACK);
         if (cleaveMatch) {
             const [, target, dmgStr] = cleaveMatch;
-            entries.push({
-                id: `log-${idx}`,
-                round: currentRound,
-                attacker: '[偃月溅射]',
-                target,
-                damage: parseInt(dmgStr),
-                isPlayer: true
-            });
+            entries.push({ id: `log-${idx}`, round: currentRound, attacker: '[偃月溅射]', target, damage: parseInt(dmgStr), isPlayer: true });
             return;
         }
 
         const enemyAttackMatch = log.match(RE_ENEMY_ATTACK);
         if (enemyAttackMatch) {
             const [, attacker, target, _pos, dmgStr] = enemyAttackMatch;
-            entries.push({
-                id: `log-${idx}`,
-                round: currentRound,
-                attacker,
-                target,
-                damage: parseInt(dmgStr),
-                isPlayer: false
-            });
+            entries.push({ id: `log-${idx}`, round: currentRound, attacker, target, damage: parseInt(dmgStr), isPlayer: false });
             return;
         }
 
         const manualEnemyAttackMatch = log.match(RE_MANUAL_ENEMY_ATTACK);
         if (manualEnemyAttackMatch) {
             const [, attacker, target, dmgStr] = manualEnemyAttackMatch;
-            entries.push({
-                id: `log-${idx}`,
-                round: currentRound,
-                attacker,
-                target,
-                damage: parseInt(dmgStr),
-                isPlayer: false
-            });
+            const isPlayer = heroNames.has(attacker);
+            if (!isPlayer) {
+                entries.push({ id: `log-${idx}`, round: currentRound, attacker, target, damage: parseInt(dmgStr || '0'), isPlayer: false });
+            }
             return;
         }
     });
@@ -569,15 +538,16 @@ export function buildBattleResultData({
 
     const enemyStates: EnemyBattleState[] = enemyData.map(e => {
         const dmg = damageMap.get(e.name) || { dealt: 0, taken: 0 };
-        
+        const actualHpAfter = Math.max(0, e.hp - dmg.taken);
+
         return {
             templateId: e.id || e.name,
             name: e.name,
             hpBefore: e.hp,
-            hpAfter: victory ? 0 : e.hp,
+            hpAfter: victory ? 0 : actualHpAfter,
             maxHp: e.hp,
             damageTaken: dmg.taken,
-            isAlive: !victory,
+            isAlive: victory ? false : actualHpAfter > 0,
         };
     });
 
