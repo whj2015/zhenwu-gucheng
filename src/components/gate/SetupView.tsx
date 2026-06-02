@@ -132,15 +132,14 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
         );
     };
 
-    /* ── Layout structure ─
-     *  h-full overflow-hidden → fills parent, clips overflow
-     *  ├─ Header      shrink-0   → fixed at top
-     *  ├─ Presets     shrink-0   → fixed below header  
-     *  ├─ Grid+List   flex-1 min-h-0 overflow-auto → fills remaining, scrolls internally
-     *  └─ DeployBar   shrink-0   → FIXED AT BOTTOM, always visible
+    /* ── Layout: 3-section flex column ─
+     *  ├─ Top:     Header + Presets  → shrink-0, fixed height
+     *  ├─ Middle:  Grid + Hero List  → flex-1, fills remaining viewport space
+     *  └─ Bottom:  Deploy Bar        → shrink-0, fixed height, always visible
+     *  NO h-full — sits naturally in MainUI's scroll area (which has pb-24 for nav)
      */
     return (
-        <div className="max-w-3xl lg:max-w-4xl mx-auto h-full flex flex-col animate-in slide-in-from-right-4 duration-300 overflow-hidden gap-1.5 sm:gap-2">
+        <div className="max-w-3xl lg:max-w-4xl mx-auto flex flex-col animate-in slide-in-from-right-4 duration-300 gap-1.5 sm:gap-2">
             {/* ── Header ── */}
             <div className="shrink-0 flex items-center justify-between px-1">
                 <div className="flex items-center gap-1.5 sm:gap-2">
@@ -203,8 +202,8 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                 </div>
             </div>
 
-            {/* ── Grid + Hero List — scrollable middle zone ── */}
-            <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-1.5 sm:gap-2 overflow-y-auto custom-scrollbar px-1">
+            {/* ── Grid + Hero List — flexible middle zone, stretches to fill viewport ── */}
+            <div className="flex-1 min-h-[calc(100vh-280px)] lg:min-h-[calc(100vh-220px)] flex flex-col lg:flex-row gap-1.5 sm:gap-2 px-1">
                 {/* Grid */}
                 <div className="flex-1 min-w-0 rounded-lg border border-white/[0.05] bg-gradient-to-b from-white/[0.02] to-transparent p-1.5 sm:p-2.5 lg:p-4 relative">
                     <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/[0.03] via-transparent to-orange-900/[0.02] pointer-events-none rounded-lg" />
