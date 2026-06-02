@@ -332,12 +332,27 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                   </div>
              </div>
 
-             {/* Deploy Button Area — Full-width action bar */}
-             <div className="rounded-xl border border-white/[0.06] bg-gradient-to-r from-black/50 to-black/30 p-3 lg:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                 <div className="flex items-center gap-2 text-slate-500 text-xs">
-                     <div className="w-1 h-1 rounded-full bg-orange-500/40 animate-pulse"></div>
-                     <span>点击空格放置英雄 · 再次点击取下 · 布好阵后点击出发</span>
+             {/* Deploy Bar — compact, single line */}
+             <div className="flex items-center gap-3 pt-3 border-t border-white/[0.06]">
+                 {/* Deployed heroes mini preview */}
+                 <div className="flex-1 flex items-center gap-1.5 min-w-0 overflow-x-auto">
+                     {deployedCount > 0 ? (
+                         Object.entries(party).filter(([, id]) => id).map(([pos, heroId]) => {
+                             const hero = heroes.find(h => h.id === heroId);
+                             const tpl = hero ? HERO_TEMPLATES[hero.templateId] : null;
+                             return (
+                                 <div key={pos} className="flex items-center gap-1 px-2 py-1 rounded-md bg-cyan-500/8 border border-cyan-500/15 shrink-0">
+                                     <HeroIcon icon={tpl?.icon || '?'} name={tpl?.name || ''} className="text-[11px] text-slate-300" />
+                                     <span className="text-[10px] font-serif text-slate-400 truncate max-w-[60px]">{tpl?.name}</span>
+                                     <span className="text-[8px] font-mono text-slate-600">{POSITION_CONFIG[pos]?.tag}</span>
+                                 </div>
+                             );
+                         })
+                     ) : (
+                         <span className="text-xs text-slate-600 italic">尚未部署英雄...</span>
+                     )}
                  </div>
+
                  <button 
                      onClick={() => {
                          if (!canDeploy) return;
@@ -346,20 +361,14 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                      }}
                      disabled={!canDeploy}
                      className={cn(
-                         "relative w-full sm:w-auto px-8 py-2.5 rounded-lg font-bold text-sm tracking-wider transition-all flex items-center justify-center gap-2 overflow-hidden",
+                         "shrink-0 px-5 py-2 rounded-lg font-bold text-sm tracking-wider transition-all flex items-center gap-1.5",
                          canDeploy 
-                             ? "bg-gradient-to-r from-orange-600 to-orange-500 text-white hover:from-orange-500 hover:to-orange-400 shadow-[0_4px_16px_rgba(234,88,12,0.25)] hover:shadow-[0_4px_24px_rgba(234,88,12,0.35)] active:scale-[0.98]"
-                             : "bg-white/[0.04] text-slate-600 cursor-not-allowed border border-white/[0.06]"
+                             ? "bg-orange-500/90 hover:bg-orange-500 text-white shadow-[0_2px_12px_rgba(234,88,12,0.25)] active:scale-[0.97]"
+                             : "bg-white/[0.04] text-slate-600 cursor-not-allowed"
                      )}
                  >
-                     {canDeploy && (
-                         <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/[0.08] pointer-events-none"></div>
-                     )}
-                     <Navigation className="w-4 h-4 relative z-10" />
-                     <span className="relative z-10">出征远途</span>
-                     {canDeploy && (
-                         <span className="relative z-10 text-[10px] font-normal opacity-70 ml-1">→</span>
-                     )}
+                     <Navigation className="w-3.5 h-3.5" />
+                     出发
                  </button>
              </div>
         </div>

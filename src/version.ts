@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.14';
+export const CURRENT_VERSION = '0.6.15';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.15',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🎨 底部出发栏重新设计 — 去掉大卡片容器改为紧凑单行：左侧已部署英雄微型预览(头像+名字+位置标签)填充空间，右侧出发按钮紧凑化，消除底部空白'
+    ]
+  },
   {
     version: '0.6.14',
     date: '2026-06-02',
