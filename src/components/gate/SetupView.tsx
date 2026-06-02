@@ -36,7 +36,7 @@ function savePresets(presets: SavedPreset[]) {
     localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(presets));
 }
 
-export default function SetupView({ missionId, onCancel }: { missionId: string, onCancel: () => void }) {
+export default function SetupView({ missionId, onCancel, onDeploy }: { missionId: string; onCancel: () => void; onDeploy?: () => void }) {
     const { heroes, beginRun } = useGameStore();
     const mission = MISSIONS[missionId];
 
@@ -295,6 +295,7 @@ export default function SetupView({ missionId, onCancel }: { missionId: string, 
                      onClick={() => {
                          if (!canDeploy) return;
                          beginRun(missionId, party, generateFloor(1, missionId));
+                         onDeploy?.();
                      }}
                      disabled={!canDeploy}
                      className={cn(

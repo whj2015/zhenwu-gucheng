@@ -5,9 +5,178 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.4.0';
+export const CURRENT_VERSION = '0.6.8';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.8',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复战斗胜利后敌方格位不消失：cleanup useEffect 中 Zustand useSyncExternalStore 同步重渲染存在竞态条件 — clearActiveBattle() 后 activeBattleRef 未及时更新为 null，导致组件卸载时 cleanup 仍看到旧 ref 值并错误地将 fogStates[pos] 重置为 ready。新增 battleEndedNormallyRef 标志，handleBattleEnd/handleExit 设其为 true 后 cleanup 跳过 reset 逻辑'
+    ]
+  },
+  {
+    version: '0.6.7',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复战斗胜利后敌方格不消失：`handleBattleEnd`只更新了`nodes`标记`completed:true`，但忘了更新`fogStates`将格位设为`done`，导致格位仍显示为可探索。现同步更新`fogStates`并揭示相邻格'
+    ]
+  },
+  {
+    version: '0.6.6',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 彻底修复结算页我方攻击记录丢失：正则`(?:率兵卒)?`可选组引发回溯bug，`[\u4e00-\u9fa5]+`贪婪匹配时将"率兵卒"捕获为attacker。改为必选`(?: 率兵卒)`+空格前缀'
+    ]
+  },
+  {
+    version: '0.6.5',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 彻底修复结算页我方攻击记录丢失：正则改用中文字符范围[\u4e00-\u9fa5]匹配名字，完全绕过emoji编码差异问题'
+    ]
+  },
+  {
+    version: '0.6.4',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复结算页总输出仍为0：正则中emoji前缀被捕获进attacker名字导致heroNames匹配失败。改用非捕获组(?:emoji)消耗前缀，确保attacker捕获纯净名字'
+    ]
+  },
+  {
+    version: '0.6.3',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复结算页总输出为0的严重bug：(1)重写正则去除emoji依赖改用通用模式+英雄名字集合判断阵营 (2)修复enemyStates逻辑：hpAfter从damageMap反算实际剩余HP、isAlive根据实际HP判断而非!victory'
+    ]
+  },
+  {
+    version: '0.6.2',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复战斗中断敌人消失导致无法退出：战斗节点不再立即标记done(延后到战斗结束时)、修复cleanup闭包陷阱(改用ref)、增加异常状态安全网自动清理'
+    ]
+  },
+  {
+    version: '0.6.1',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复结算页战斗记录消失：更新正则表达式适配兵力系统新日志格式（兵卒抵挡/本体受创/率兵卒攻击）'
+    ]
+  },
+  {
+    version: '0.6.0',
+    date: '2026-06-02',
+    type: 'minor',
+    changes: [
+      '⚔️ 战斗系统接入兵力机制：兵卒减伤(1.5%/人,上限70%)、伤害消耗兵卒(~3人/HP)、UI显示兵卒数、战斗结果回传兵力变化'
+    ]
+  },
+  {
+    version: '0.5.10',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复双击确认行动无法使用的问题，改用手动时间戳检测替代浏览器原生 double-click 事件'
+    ]
+  },
+  {
+    version: '0.5.9',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '⚔️ 战斗操作优化 — 双击目标直接确认行动 + 已死敌人攻击拦截提示'
+    ]
+  },
+  {
+    version: '0.5.8',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '⚡ 战斗体验优化 — 所有英雄选择完行动后自动执行回合，无需手动点击'
+    ]
+  },
+  {
+    version: '0.5.7',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '⚡ 修复能量系统 — 防御(+20⚡)/跳过(+30⚡)现在正确积攒能量，每回合基础恢复+20⚡'
+    ]
+  },
+  {
+    version: '0.5.6',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复战斗中切换页面导致状态丢失/卡死的 bug — 战斗状态持久化到 store + 卸载时自动清理'
+    ]
+  },
+  {
+    version: '0.5.5',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复自动战斗模式 setState 异步竞态导致第2回合起行动指令丢失的 bug'
+    ]
+  },
+  {
+    version: '0.5.4',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '✨ 自动战斗模式自动连续执行回合 + 🐛 修复结算页面日志解析不兼容新战斗引擎的问题'
+    ]
+  },
+  {
+    version: '0.5.3',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复 clamp 函数导致所有 HP 归零的致命 bug（Math.min 多余参数 0）'
+    ]
+  },
+  {
+    version: '0.5.2',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复战斗系统重复 React key（liukou）导致的状态异常和战斗直接结算问题'
+    ]
+  },
+  {
+    version: '0.5.1',
+    date: '2026-06-01',
+    type: 'patch',
+    changes: [
+      '🐛 修复手动战斗系统3个核心Bug：1) 攻击/技能按钮目标选择逻辑颠倒 2) 执行回合直接调用自动结算改为手动结算函数 3) 添加完整战场可视化布局'
+    ]
+  },
+  {
+    version: '0.5.0',
+    date: '2026-06-01',
+    type: 'minor',
+    changes: [
+      '⚔️ 新增手动战斗模式UI：能量条、技能按钮(攻击/技能/防御/跳过)、自动/手动切换',
+      '🏆 新增成就系统：24个成就覆盖战斗/收集/挑战/成长/经济/隐藏6大类，自动检测+奖励发放',
+      '📋 新增任务看板：每日/每周任务面板，支持接取、进度追踪、奖励领取、刷新倒计时',
+      '🛡️ 新增装备套装系统：4套套装(铁卫/炎锋/影行者/屠龙者)，战斗属性加成整合',
+      '✨ 为13位英雄定义独立主动技能数据(技能消耗/冷却/目标模式)',
+      '📊 BATTLE_CONFIG 扩展：能量系统参数(每回合+20/大招100/技能50)、手动模式15秒限时',
+      '🎨 HeroDetail 新增套装效果展示区域（激活件数/属性加成/稀有度光效）',
+      '🎯 MainUI 新增成就入口(🏆)和任务入口(📋)按钮',
+      '🔧 Store 新增 manualBattle 状态管理和8个手动战斗 action',
+      '📝 新增 battleSkills / achievements / equipmentSets 数据文件'
+    ]
+  },
   {
     version: '0.4.0',
     date: '2026-06-01',

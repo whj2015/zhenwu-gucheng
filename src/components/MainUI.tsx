@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useGameStore } from '../store';
-import { Building, Hammer, Map, Users, Tent, HeartPulse, Store, Settings, Package, ScrollText } from 'lucide-react';
+import { Building, Hammer, Map, Users, Tent, HeartPulse, Store, Settings, Package, ScrollText, Trophy, ClipboardList } from 'lucide-react';
 import UpdateLog from './UpdateLog';
+import AchievementPanel from './AchievementPanel';
+import QuestBoard from './QuestBoard';
 import { ResourceItem } from './ResourceItem';
 import { TabButton } from './TabButton';
 import { getVersionDisplay } from '../version';
@@ -38,6 +40,8 @@ export default function MainUI() {
     const [offlineModal, setOfflineModal] = useState<{ amount: number } | null>(null);
     const [resetModal, setResetModal] = useState(false);
     const [updateLogModal, setUpdateLogModal] = useState(false);
+const [achievementModal, setAchievementModal] = useState(false);
+    const [questBoardOpen, setQuestBoardOpen] = useState(false);
 
     const tickRef = useRef(tick);
     tickRef.current = tick;
@@ -99,6 +103,21 @@ export default function MainUI() {
         setUpdateLogModal(false);
     }, []);
 
+const handleAchievementModal = useCallback(() => {
+        setAchievementModal(true);
+    }, []);
+
+    const handleCloseAchievement = useCallback(() => {
+        setAchievementModal(false);
+    }, []);
+
+    const handleQuestBoardOpen = useCallback(() => {
+        setQuestBoardOpen(true);
+    }, []);
+
+    const handleCloseQuestBoard = useCallback(() => {
+        setQuestBoardOpen(false);
+    });
     return (
         <div className="flex w-full h-screen bg-[#0d0f12] text-slate-200 font-sans overflow-hidden relative select-none">
              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,#1e293b_0%,transparent_70%)] opacity-40 pointer-events-none"></div>
@@ -128,6 +147,12 @@ export default function MainUI() {
                 <div className="p-4 border-t border-white/5 text-[10px] text-slate-600 font-mono tracking-widest uppercase flex justify-between items-center">
                     <span>Project Zhenwu</span>
                     <div className="flex items-center gap-2">
+<button onClick={handleQuestBoardOpen} className="hover:text-emerald-500 transition-colors p-1" title="查看任务">
+                            <ClipboardList className="w-4 h-4" />
+                        </button>
+                        <button onClick={handleAchievementModal} className="hover:text-amber-500 transition-colors p-1" title="查看功勋簿">
+                            <Trophy className="w-4 h-4" />
+                        </button>
                         <button onClick={handleUpdateLogModal} className="hover:text-orange-500 transition-colors p-1" title="查看更新公告">
                             <ScrollText className="w-4 h-4" />
                         </button>
@@ -152,6 +177,12 @@ export default function MainUI() {
                       </div>
                       <TopResourceBar />
                       <div className="flex items-center gap-1.5">
+<button onClick={handleQuestBoardOpen} className="text-slate-500 hover:text-emerald-500 transition-colors p-1.5 shrink-0" title="查看任务">
+                              <ClipboardList className="w-4 h-4" />
+                          </button>
+                          <button onClick={handleAchievementModal} className="text-slate-500 hover:text-amber-500 transition-colors p-1.5 shrink-0" title="查看功勋簿">
+                              <Trophy className="w-4 h-4" />
+                          </button>
                           <button onClick={handleUpdateLogModal} className="text-slate-500 hover:text-orange-500 transition-colors p-1.5 shrink-0" title="查看更新公告">
                               <ScrollText className="w-4 h-4" />
                           </button>
@@ -241,6 +272,14 @@ export default function MainUI() {
              {updateLogModal && (
                 <UpdateLog onClose={handleCloseUpdateLog} />
              )}
+{/* Achievement Panel */}
+             <AchievementPanel
+                isOpen={achievementModal}
+                onClose={handleCloseAchievement}
+             />
+
+             {/* Quest Board Modal */}
+             <QuestBoard isOpen={questBoardOpen} onClose={handleCloseQuestBoard} />
         </div>
     );
 }

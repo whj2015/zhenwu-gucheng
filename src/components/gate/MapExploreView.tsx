@@ -1,12 +1,12 @@
 /* Extracted from GatePanel.tsx - MapExploreView - Fog of War Edition */
-import { useState, useCallback, useEffect, Fragment, type ReactNode } from 'react';
+import { useState, useCallback, useEffect, useRef, Fragment, type ReactNode } from 'react';
 import { useGameStore } from '../../store';
-import { simulateBattle } from '../../engine/ruins';
 import { HERO_TEMPLATES, ENEMY_TEMPLATES, POSITION_CONFIG } from '../../data';
 import { RuinsNode, PositionKey } from '../../types';
 import { cn } from '../../utils';
 import { buildBattleResultData } from '../BattleResultPanel';
 import HeroAvatarCompact from './HeroAvatarCompact';
+import BattleControlPanel from '../BattleControlPanel';
 
 type HeroTrait = 'assault' | 'flank' | 'tank' | 'support' | 'ranged';
 
@@ -228,8 +228,37 @@ function ReadyCell({ node, onClick, isHovered, onHover, onLeave }: {
 }
 
 export default function MapExploreView({ onBattleComplete }: { onBattleComplete: (data: ReturnType<typeof buildBattleResultData>, node: RuinsNode) => void }) {
-    const { ruinsRun, updateRun, heroes, addResources, healParty } = useGameStore();
+const { ruinsRun, updateRun, heroes, addResources, healParty, initManualBattle, setBattleMode, activeBattle, setActiveBattle, clearActiveBattle } = useGameStore();
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+    const battleNode = activeBattle?.node ?? null;
+    const battleEnemies = activeBattle?.enemies ?? [];
+    const activeBattleRef = useRef(activeBattle);
+    activeBattleRef.current = activeBattle;
+    const battleEndedNormallyRef = useRef(false);
+
+    useEffect(() => {
+        return () => {
+            if (activeBattleRef.current?.node) {
+                // Only reset fogStates if battle was NOT ended via handleBattleEnd/handleExit.
+                // If the battle ended normally, those handlers already manage fogStates.
+                if (!battleEndedNormallyRef.current) {
+                    const rr = useGameStore.getState().ruinsRun;
+                    if (rr) {
+                        const pos = rr.grid?.findIndex(n => n?.id === activeBattleRef.current!.node!.id) ?? -1;
+                        if (pos >= 0) {
+                            const currentFog = rr.fogStates as CellState[] | undefined;
+                            if (currentFog) {
+                                const next = [...currentFog];
+                                next[pos] = 'ready';
+                                useGameStore.getState().updateRun({ fogStates: next });
+                            }
+                        }
+                    }
+                }
+                clearActiveBattle();
+            }
+        };
+    }, []);
 
     useEffect(() => {
         if (!ruinsRun) return;
@@ -270,14 +299,29 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
                 .filter(Boolean);
             const enemyIds = (node as any).enemies as string[];
             const enemyData = enemyIds.map((eId: string) => ({ ...ENEMY_TEMPLATES[eId], id: eId }));
-            const res = simulateBattle(activeHeros, enemyData, HERO_TEMPLATES, rr.party);
-            useGameStore.getState().applyCombatResults(res.remainingState, res.victory);
-            const battleResultData = buildBattleResultData({
-                victory: res.victory, logs: res.logs, remainingState: res.remainingState,
-                heroes: activeHeros, enemies: enemyData, nodeType: node.type as 'battle' | 'boss',
-                floorNumber: rr.currentFloor,
-            });
-            onBattleComplete(battleResultData, node);
+            const enemyInfo = enemyData.map((e, idx) => ({
+                id: `${e.id}_${idx}`,
+                name: e.name,
+                hp: e.hp,
+                maxHp: e.hp,
+                isAlive: true
+            }));
+
+            setActiveBattle(node, enemyInfo);
+
+            initManualBattle(activeHeros.map(h => h.id));
+            setBattleMode('manual');
+
+            const currentFog = useGameStore.getState().ruinsRun?.fogStates as CellState[] | undefined;
+            const eg = useGameStore.getState().ruinsRun?.grid;
+            if (!currentFog || !eg) return;
+            const next = [...currentFog];
+            next[pos] = 'done';
+            for (const n of getNeighbors(pos)) {
+                if (next[n] === 'fog') next[n] = eg[n] !== null ? 'ready' : 'empty';
+            }
+            updateRun({ fogStates: next });
+            return;
         }
 
         const parts = node.id.split('-');
@@ -356,6 +400,114 @@ export default function MapExploreView({ onBattleComplete }: { onBattleComplete:
     const completedCount = ruinsRun.nodes.filter(n => n.completed).length;
     const totalCount = ruinsRun.nodes.length;
 
+if (battleNode && battleEnemies.length > 0) {
+        const activeHeros = Object.values(ruinsRun.party)
+            .filter((hId): hId is string => hId !== null)
+            .map(hId => heroes.find(x => x.id === hId)!)
+            .filter(Boolean);
+
+        const uniqueHeroes = Array.from(
+            new Map(activeHeros.map(h => [h.id, h])).values()
+        );
+
+        const initialHeroes = uniqueHeroes.map(h => {
+            const t = HERO_TEMPLATES[h.templateId];
+            return { id: h.id, templateId: h.templateId, hp: h.hp, maxHp: (t?.attributes.physique || 10) * 10, troops: h.troops || 0 };
+        });
+
+        const handleBattleEnd = (result: { victory: boolean; defeat: boolean; logs: string[]; finalHeroes: Array<{ id: string; hp: number; troops: number }> }) => {
+            battleEndedNormallyRef.current = true;
+            const combatResults = result.finalHeroes.map(h => ({
+                id: h.id,
+                hp: Math.max(0, h.hp),
+                troops: Math.max(0, h.troops),
+                wounded: 0
+            }));
+            useGameStore.getState().applyCombatResults(combatResults, result.victory);
+            const battleResultData = buildBattleResultData({
+                victory: result.victory,
+                logs: result.logs,
+                remainingState: combatResults,
+                heroes: activeHeros,
+                enemies: battleEnemies.map(e => ({ id: e.id, name: e.name, hp: e.hp, maxHp: e.maxHp })),
+                nodeType: battleNode.type as 'battle' | 'boss',
+                floorNumber: ruinsRun.currentFloor,
+            });
+            clearActiveBattle();
+
+            if (battleNode) {
+                const rr = useGameStore.getState().ruinsRun;
+                if (rr) {
+                    const pos = rr.grid?.findIndex(n => n?.id === battleNode.id) ?? -1;
+                    const currentFog = rr.fogStates as CellState[] | undefined;
+
+                    const parts = battleNode.id.split('-');
+                    if (parts.length >= 3 && result.victory) {
+                        const row = parseInt(parts[1].replace('r',''));
+                        const nextRow = row + 1;
+                        const updatedNodes = rr.nodes.map(n => {
+                            if (n.id === battleNode.id) return { ...n, completed: true };
+                            if (n.id.includes(`r${nextRow}-`) || (row === 1 && n.type === 'boss')) return { ...n, revealed: true };
+                            return n;
+                        });
+
+                        // Also update fogStates to mark the cell as 'done'
+                        const updatedFog = currentFog ? [...currentFog] : undefined;
+                        if (updatedFog && pos >= 0) {
+                            updatedFog[pos] = 'done';
+                            // Reveal neighbors
+                            for (const n of getNeighbors(pos)) {
+                                if (updatedFog[n] === 'fog') {
+                                    updatedFog[n] = rr.grid?.[n] !== null ? 'ready' : 'empty';
+                                }
+                            }
+                        }
+
+                        useGameStore.getState().updateRun({
+                            nodes: updatedNodes,
+                            ...(updatedFog ? { fogStates: updatedFog } : {})
+                        });
+                    }
+                }
+            }
+
+            onBattleComplete(battleResultData, battleNode);
+        };
+
+        const handleExit = () => {
+            battleEndedNormallyRef.current = true;
+            if (battleNode) {
+                const rr = useGameStore.getState().ruinsRun;
+                if (rr) {
+                    const pos = rr.grid?.findIndex(n => n?.id === battleNode.id) ?? -1;
+                    if (pos >= 0) {
+                        const currentFog = rr.fogStates as CellState[] | undefined;
+                        if (currentFog) {
+                            const next = [...currentFog];
+                            next[pos] = 'ready';
+                            useGameStore.getState().updateRun({ fogStates: next });
+                        }
+                    }
+                }
+            }
+            clearActiveBattle();
+        };
+
+        return (
+            <div className="h-full flex flex-col animate-in fade-in duration-300">
+                <BattleControlPanel
+                    initialHeroes={initialHeroes}
+                    initialEnemies={battleEnemies}
+                    onBattleEnd={handleBattleEnd}
+                    onExit={handleExit}
+                />
+            </div>
+        );
+    }
+
+    if (battleNode && battleEnemies.length === 0) {
+        clearActiveBattle();
+    }
     return (
         <div className="max-w-4xl mx-auto h-full flex flex-col animate-in fade-in duration-500 relative">
 

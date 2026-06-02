@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { GameState, HeroState, Equipment, PositionKey, WOUNDED_NATURAL_RECOVER_RATE, getWarehouseResourceCap, QuestState, CraftingState, RuinsNode } from './types';
+import { GameState, HeroState, Equipment, PositionKey, WOUNDED_NATURAL_RECOVER_RATE, getWarehouseResourceCap, QuestState, CraftingState, RuinsNode, ManualBattleState, SkillActionType } from './types';
 import { HERO_TEMPLATES, FORGE_UPGRADE_COSTS, CRAFTING_TEMPLATES, QUEST_TEMPLATES } from './data';
-import { RESOURCE_CONFIG } from './gameConfig';
+import { RESOURCE_CONFIG, BATTLE_CONFIG } from './gameConfig';
 import { generateId } from './utils';
 import {
     trackAction,
@@ -10,6 +10,7 @@ import {
     generateDailyQuests,
     generateWeeklyQuests
 } from './utils/questEngine';
+import { checkAchievements } from './utils/achievementEngine';
 
 const pendingWrites = new Map<string, ReturnType<typeof setTimeout>>();
 
@@ -111,7 +112,15 @@ const INITIAL_STATE: GameState = {
       acceptedIds: [],
       activeDailyIds: [],
       activeWeeklyIds: []
-  } as QuestState
+  } as QuestState,
+  achievementState: {
+      unlockedIds: [],
+      unlockTimes: {},
+      notifiedIds: [],
+      totalPoints: 0
+  },
+  manualBattle: null as ManualBattleState | null,
+  activeBattle: null as GameState['activeBattle']
 };
 
 export const useGameStore = create<GameState & {
@@ -142,6 +151,17 @@ export const useGameStore = create<GameState & {
   turnInQuest: (questId: string) => boolean;
   acceptQuest: (questId: string) => boolean;
   trackQuestProgress: (progressType: string, amount: number) => void;
+  checkAndUnlockAchievements: (eventType: string, value: number) => void;
+  initManualBattle: (heroIds: string[]) => void;
+  setBattleMode: (mode: 'auto' | 'manual') => void;
+  spendEnergy: (heroId: string, amount: number) => boolean;
+  gainTurnEnergy: (isFirstTurn?: boolean) => void;
+  setHeroAction: (heroId: string, action: SkillActionType | null) => void;
+  executeManualTurn: () => SkillActionType[];
+  togglePause: () => void;
+  clearManualBattle: () => void;
+  setActiveBattle: (node: RuinsNode | null, enemies: Array<{ id: string; name: string; hp: number; maxHp: number; isAlive: boolean }>) => void;
+  clearActiveBattle: () => void;
 }>()(
   persist(
     (set) => ({
@@ -204,16 +224,54 @@ export const useGameStore = create<GameState & {
         const cost = FORGE_UPGRADE_COSTS[nextLvl as unknown as keyof typeof FORGE_UPGRADE_COSTS];
         if (!cost) return state;
         if (state.resources.bingxiang >= cost.bingxiang && state.resources.meteorite >= cost.meteorite) {
-          return {
+          const newBuildings = {
+            ...state.buildings,
+            forgeLevel: nextLvl
+          };
+
+          const { newlyUnlocked, newState, totalReward } = checkAchievements(
+              'building_upgrade',
+              nextLvl,
+              state.achievementState,
+              {
+                  heroes: state.heroes,
+                  resources: {
+                      ...state.resources,
+                      bingxiang: state.resources.bingxiang - cost.bingxiang,
+                      meteorite: state.resources.meteorite - cost.meteorite
+                  },
+                  buildings: newBuildings,
+                  crafting: state.crafting,
+                  recruitStats: state.recruitStats,
+                  ruinsRun: state.ruinsRun
+              }
+          );
+
+          const cap = getWarehouseResourceCap(newBuildings.warehouseLevel);
+          const clamp = (val: number) => Math.max(0, Math.min(cap, val));
+
+          const baseResult = {
             resources: {
               ...state.resources,
               bingxiang: state.resources.bingxiang - cost.bingxiang,
               meteorite: state.resources.meteorite - cost.meteorite
             },
-            buildings: {
-              ...state.buildings,
-              forgeLevel: nextLvl
-            }
+            buildings: newBuildings
+          };
+
+          if (newlyUnlocked.length === 0) return baseResult;
+
+          return {
+              ...baseResult,
+              achievementState: newState,
+              resources: {
+                  ...baseResult.resources,
+                  bingxiang: clamp(baseResult.resources.bingxiang + (totalReward.bingxiang || 0)),
+                  iron: clamp(baseResult.resources.iron + (totalReward.iron || 0)),
+                  meteorite: clamp(baseResult.resources.meteorite + (totalReward.meteorite || 0)),
+                  food: clamp(baseResult.resources.food + (totalReward.food || 0)),
+                  wood: clamp(baseResult.resources.wood + (totalReward.wood || 0))
+              }
           };
         }
         return state;
@@ -323,18 +381,48 @@ export const useGameStore = create<GameState & {
         
         const newProgress = trackAction('craft', 1, state.questState, QUEST_TEMPLATES);
 
+        const newCraftingState = {
+            task: null,
+            consecutiveNormal: newConsecutiveNormal,
+            consecutiveFine: newConsecutiveFine,
+            totalCrafted: state.crafting.totalCrafted + 1
+        };
+
+        const { newlyUnlocked, newState, totalReward } = checkAchievements(
+            'craft',
+            newCraftingState.totalCrafted,
+            state.achievementState,
+            {
+                heroes: state.heroes,
+                resources: state.resources,
+                buildings: state.buildings,
+                crafting: newCraftingState as CraftingState,
+                recruitStats: state.recruitStats,
+                ruinsRun: state.ruinsRun
+            }
+        );
+
+        const cap = getWarehouseResourceCap(state.buildings.warehouseLevel);
+        const clamp = (val: number) => Math.max(0, Math.min(cap, val));
+
         return {
-            crafting: {
-                task: null,
-                consecutiveNormal: newConsecutiveNormal,
-                consecutiveFine: newConsecutiveFine,
-                totalCrafted: state.crafting.totalCrafted + 1
-            },
+            crafting: newCraftingState,
             inventory: [...state.inventory, generatedEquip],
             questState: {
                 ...state.questState,
                 progress: newProgress
-            }
+            },
+            ...(newlyUnlocked.length > 0 ? {
+                achievementState: newState,
+                resources: {
+                    ...state.resources,
+                    bingxiang: clamp(state.resources.bingxiang + (totalReward.bingxiang || 0)),
+                    iron: clamp(state.resources.iron + (totalReward.iron || 0)),
+                    meteorite: clamp(state.resources.meteorite + (totalReward.meteorite || 0)),
+                    food: clamp(state.resources.food + (totalReward.food || 0)),
+                    wood: clamp(state.resources.wood + (totalReward.wood || 0))
+                }
+            } : {})
         };
       }),
 
@@ -524,19 +612,51 @@ export const useGameStore = create<GameState & {
           
           const newSinceLastR = (selectedHero.rarity === 'N') ? sinceLastR + 1 : 0;
           const newSinceLastSR = (selectedHero.rarity === 'N' || selectedHero.rarity === 'R') ? sinceLastSR + 1 : 0;
+
+          const newHeroesList = [...state.heroes, newHero];
           
+          const { newlyUnlocked, newState, totalReward } = checkAchievements(
+              'hero_recruit',
+              1,
+              state.achievementState,
+              {
+                  heroes: newHeroesList,
+                  resources: {
+                      ...state.resources,
+                      bingxiang: state.resources.bingxiang - baseCost
+                  },
+                  buildings: state.buildings,
+                  crafting: state.crafting,
+                  recruitStats: {
+                      ...state.recruitStats,
+                      totalRecruits: state.recruitStats.totalRecruits + 1,
+                      sinceLastR: newSinceLastR,
+                      sinceLastSR: newSinceLastSR
+                  },
+                  ruinsRun: state.ruinsRun
+              }
+          );
+
+          const cap = getWarehouseResourceCap(state.buildings.warehouseLevel);
+          const clamp = (val: number) => Math.max(0, Math.min(cap, val));
+
           return {
               resources: {
                   ...state.resources,
-                  bingxiang: state.resources.bingxiang - baseCost
+                  bingxiang: clamp((state.resources.bingxiang - baseCost) + (totalReward.bingxiang || 0)),
+                  iron: clamp(state.resources.iron + (totalReward.iron || 0)),
+                  meteorite: clamp(state.resources.meteorite + (totalReward.meteorite || 0)),
+                  food: clamp(state.resources.food + (totalReward.food || 0)),
+                  wood: clamp(state.resources.wood + (totalReward.wood || 0))
               },
-              heroes: [...state.heroes, newHero],
+              heroes: newHeroesList,
               recruitStats: {
                   ...state.recruitStats,
                   totalRecruits: state.recruitStats.totalRecruits + 1,
                   sinceLastR: newSinceLastR,
                   sinceLastSR: newSinceLastSR
-              }
+              },
+              ...(newlyUnlocked.length > 0 ? { achievementState: newState } : {})
           };
       }),
 
@@ -637,6 +757,7 @@ export const useGameStore = create<GameState & {
 
       applyCombatResults: (results, won) => set((state) => {
           let newHeroes = [...state.heroes];
+          let maxLevel = 0;
           results.forEach(res => {
               const hIdx = newHeroes.findIndex(h => h.id === res.id);
               if (hIdx !== -1) {
@@ -647,6 +768,7 @@ export const useGameStore = create<GameState & {
                       nextExp -= nextLvl * 100;
                       nextLvl++;
                   }
+                  if (nextLvl > maxLevel) maxLevel = nextLvl;
                   newHeroes[hIdx] = {
                       ...h,
                       hp: Math.max(0, res.hp),
@@ -657,16 +779,50 @@ export const useGameStore = create<GameState & {
                   };
               }
           });
-          
+
           const newProgress = won 
               ? trackAction('explore', 1, state.questState, QUEST_TEMPLATES)
               : state.questState.progress;
-          
-          return { 
+
+          const baseResult = { 
               heroes: newHeroes,
               questState: {
                   ...state.questState,
                   progress: newProgress
+              }
+          };
+
+          if (!won) return baseResult;
+
+          const { newlyUnlocked, newState, totalReward } = checkAchievements(
+              'battle_win',
+              1,
+              state.achievementState,
+              {
+                  heroes: newHeroes,
+                  resources: state.resources,
+                  buildings: state.buildings,
+                  crafting: state.crafting,
+                  recruitStats: state.recruitStats,
+                  ruinsRun: state.ruinsRun
+              }
+          );
+
+          if (newlyUnlocked.length === 0) return baseResult;
+
+          const cap = getWarehouseResourceCap(state.buildings.warehouseLevel);
+          const clamp = (val: number) => Math.max(0, Math.min(cap, val));
+
+          return {
+              ...baseResult,
+              achievementState: newState,
+              resources: {
+                  ...state.resources,
+                  bingxiang: clamp(state.resources.bingxiang + (totalReward.bingxiang || 0)),
+                  iron: clamp(state.resources.iron + (totalReward.iron || 0)),
+                  meteorite: clamp(state.resources.meteorite + (totalReward.meteorite || 0)),
+                  food: clamp(state.resources.food + (totalReward.food || 0)),
+                  wood: clamp(state.resources.wood + (totalReward.wood || 0))
               }
           };
       }),
@@ -906,7 +1062,215 @@ export const useGameStore = create<GameState & {
           return {
               questState: { ...state.questState, progress: newProgress }
           };
-      })
+      }),
+
+      checkAndUnlockAchievements: (eventType, value) => set((state) => {
+          const { newlyUnlocked, newState, totalReward } = checkAchievements(
+              eventType,
+              value,
+              state.achievementState,
+              {
+                  heroes: state.heroes,
+                  resources: state.resources,
+                  buildings: state.buildings,
+                  crafting: state.crafting,
+                  recruitStats: state.recruitStats,
+                  ruinsRun: state.ruinsRun
+              }
+          );
+
+          if (newlyUnlocked.length === 0) return state;
+
+          const cap = getWarehouseResourceCap(state.buildings.warehouseLevel);
+          const clamp = (val: number) => Math.max(0, Math.min(cap, val));
+
+          return {
+              achievementState: newState,
+              resources: {
+                  ...state.resources,
+                  bingxiang: clamp(state.resources.bingxiang + (totalReward.bingxiang || 0)),
+                  iron: clamp(state.resources.iron + (totalReward.iron || 0)),
+                  meteorite: clamp(state.resources.meteorite + (totalReward.meteorite || 0)),
+                  food: clamp(state.resources.food + (totalReward.food || 0)),
+                  wood: clamp(state.resources.wood + (totalReward.wood || 0))
+              }
+          };
+      }),
+
+      initManualBattle: (heroIds) => set(() => {
+          const heroEnergy: Record<string, { current: number; max: number; perTurnGain: number }> = {};
+          const pendingActions: Record<string, SkillActionType | null> = {};
+
+          heroIds.forEach(id => {
+              heroEnergy[id] = {
+                  current: BATTLE_CONFIG.ENERGY.INITIAL + BATTLE_CONFIG.ENERGY.FIRST_TURN_BONUS,
+                  max: BATTLE_CONFIG.ENERGY.MAX,
+                  perTurnGain: BATTLE_CONFIG.ENERGY.PER_TURN_GAIN
+              };
+              pendingActions[id] = null;
+          });
+
+          return {
+              manualBattle: {
+                  mode: 'auto',
+                  heroEnergy,
+                  pendingActions,
+                  turnTimeLimit: BATTLE_CONFIG.MANUAL_MODE.TURN_TIME_LIMIT,
+                  turnTimeRemaining: BATTLE_CONFIG.MANUAL_MODE.TURN_TIME_LIMIT,
+                  isPaused: false
+              }
+          };
+      }),
+
+      setBattleMode: (mode) => set((state) => {
+          if (!state.manualBattle) return state;
+          return {
+              manualBattle: {
+                  ...state.manualBattle,
+                  mode,
+                  turnTimeRemaining: mode === 'manual' ? BATTLE_CONFIG.MANUAL_MODE.TURN_TIME_LIMIT : state.manualBattle.turnTimeRemaining
+              }
+          };
+      }),
+
+      spendEnergy: (heroId, amount) => {
+          let success = false;
+          set((state) => {
+              if (!state.manualBattle) return state;
+              const energy = state.manualBattle.heroEnergy[heroId];
+              if (!energy || energy.current < amount) return state;
+
+              success = true;
+              return {
+                  manualBattle: {
+                      ...state.manualBattle,
+                      heroEnergy: {
+                          ...state.manualBattle.heroEnergy,
+                          [heroId]: { ...energy, current: energy.current - amount }
+                      }
+                  }
+              };
+          });
+          return success;
+      },
+
+      gainTurnEnergy: (isFirstTurn = false) => set((state) => {
+          if (!state.manualBattle) return state;
+
+          const gain = isFirstTurn 
+              ? BATTLE_CONFIG.ENERGY.FIRST_TURN_BONUS 
+              : BATTLE_CONFIG.ENERGY.PER_TURN_GAIN;
+
+          const newHeroEnergy = { ...state.manualBattle.heroEnergy };
+          Object.keys(newHeroEnergy).forEach(heroId => {
+              const energy = newHeroEnergy[heroId];
+              newHeroEnergy[heroId] = {
+                  ...energy,
+                  current: Math.min(energy.max, energy.current + gain)
+              };
+          });
+
+          const newPendingActions: Record<string, SkillActionType | null> = {};
+          Object.keys(state.manualBattle.pendingActions).forEach(heroId => {
+              newPendingActions[heroId] = null;
+          });
+
+          return {
+              manualBattle: {
+                  ...state.manualBattle,
+                  heroEnergy: newHeroEnergy,
+                  pendingActions: newPendingActions,
+                  turnTimeRemaining: BATTLE_CONFIG.MANUAL_MODE.TURN_TIME_LIMIT
+              }
+          };
+      }),
+
+      setHeroAction: (heroId, action) => set((state) => {
+          if (!state.manualBattle) return state;
+          
+          const pendingAction = action ?? null;
+          let newEnergy = state.manualBattle.heroEnergy;
+
+          if (action && action.type === 'defend') {
+              const energy = state.manualBattle.heroEnergy[heroId];
+              if (energy) {
+                  newEnergy = {
+                      ...newEnergy,
+                      [heroId]: {
+                          ...energy,
+                          current: Math.min(energy.max, energy.current + BATTLE_CONFIG.ENERGY.DEFEND_ENERGY_GAIN)
+                      }
+                  };
+              }
+          }
+
+          if (action && action.type === 'skip') {
+              const energy = state.manualBattle.heroEnergy[heroId];
+              if (energy) {
+                  newEnergy = {
+                      ...newEnergy,
+                      [heroId]: {
+                          ...energy,
+                          current: Math.min(energy.max, energy.current + BATTLE_CONFIG.ENERGY.SKIP_ENERGY_GAIN)
+                      }
+                  };
+              }
+          }
+
+          return {
+              manualBattle: {
+                  ...state.manualBattle,
+                  heroEnergy: newEnergy,
+                  pendingActions: {
+                      ...state.manualBattle.pendingActions,
+                      [heroId]: pendingAction
+                  }
+              }
+          };
+      }),
+
+      executeManualTurn: () => {
+          let actions: SkillActionType[] = [];
+          set((state) => {
+              if (!state.manualBattle) return state;
+
+              actions = Object.values(state.manualBattle.pendingActions).filter(
+                  (a): a is SkillActionType => a !== null
+              );
+
+              const newPendingActions: Record<string, SkillActionType | null> = {};
+              Object.keys(state.manualBattle.pendingActions).forEach(heroId => {
+                  newPendingActions[heroId] = null;
+              });
+
+              return {
+                  manualBattle: {
+                      ...state.manualBattle,
+                      pendingActions: newPendingActions,
+                      turnTimeRemaining: BATTLE_CONFIG.MANUAL_MODE.TURN_TIME_LIMIT
+                  }
+              };
+          });
+          return actions;
+      },
+
+      togglePause: () => set((state) => {
+          if (!state.manualBattle) return state;
+          return {
+              manualBattle: {
+                  ...state.manualBattle,
+                  isPaused: !state.manualBattle.isPaused
+              }
+          };
+      }),
+
+      clearManualBattle: () => set(() => ({ manualBattle: null })),
+
+      setActiveBattle: (node, enemies) => set(() => ({
+          activeBattle: { node, enemies }
+      })),
+
+      clearActiveBattle: () => set(() => ({ activeBattle: null }))
     }),
     {
       name: 'ironecho-storage',
