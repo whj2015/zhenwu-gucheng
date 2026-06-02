@@ -195,6 +195,7 @@ export default function BattleControlPanel({
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const autoLoopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastClickRef = useRef<{ id: string; time: number } | null>(null);
 
     useEffect(() => {
         if (mode === 'manual' && !isPaused) {
@@ -243,14 +244,47 @@ export default function BattleControlPanel({
     }, []);
 
     const handleSelectEnemy = useCallback((id: string) => {
-        if (!enemies.find(e => e.id === id)?.isAlive) {
+        const enemy = enemies.find(e => e.id === id);
+        if (!enemy || !enemy.isAlive) {
             setErrorMsg('⚠️ 该目标已被击破，无法选择');
             setTimeout(() => setErrorMsg(null), 2000);
             return;
         }
-        setSelectedTargetId(id);
-        setErrorMsg(null);
-    }, [enemies]);
+
+        const now = Date.now();
+        const last = lastClickRef.current;
+        const isDoubleClick = last && last.id === id && (now - last.time) < 350;
+
+        lastClickRef.current = { id, time: now };
+
+        if (isDoubleClick && pendingActionType && selectedHeroId) {
+            setErrorMsg(null);
+            setSelectedTargetId(id);
+            if (pendingActionType === 'attack') {
+                setTurnActions(prev => ({ ...prev, [selectedHeroId]: { type: 'attack', targetId: id } }));
+                setSelectedHeroId(null);
+                setSelectedTargetId(null);
+                setPendingActionType(null);
+            } else if (pendingActionType === 'skill') {
+                const skill = HERO_BATTLE_SKILLS[heroes.find(h => h.id === selectedHeroId)?.templateId ?? ''];
+                if (!skill) return;
+                let targetIds: string[] = [];
+                switch (skill.targetMode) {
+                    case 'single_enemy': targetIds = [id]; break;
+                    case 'all_enemies': targetIds = enemies.filter(e => e.isAlive).map(e => e.id); break;
+                    case 'all_allies': targetIds = heroes.filter(h => h.hp > 0).map(h => h.id); break;
+                    default: targetIds = [selectedHeroId];
+                }
+                setTurnActions(prev => ({ ...prev, [selectedHeroId]: { type: 'skill', skillName: skill.name, targetIds, cost: skill.cost } }));
+                setSelectedHeroId(null);
+                setSelectedTargetId(null);
+                setPendingActionType(null);
+            }
+        } else {
+            setSelectedTargetId(id);
+            setErrorMsg(null);
+        }
+    }, [enemies, heroes, pendingActionType, selectedHeroId]);
 
     const assignAction = useCallback((action: SkillActionType) => {
         if (!selectedHeroId) return;
@@ -259,42 +293,6 @@ export default function BattleControlPanel({
         setSelectedTargetId(null);
         setPendingActionType(null);
     }, [selectedHeroId]);
-
-    const handleAttack = useCallback(() => {
-        if (!selectedHeroId || !selectedTargetId) return;
-        assignAction({ type: 'attack', targetId: selectedTargetId });
-    }, [selectedHeroId, selectedTargetId, assignAction]);
-
-    const handleSkill = useCallback(() => {
-        if (!selectedHero || !selectedSkill) return;
-        if (selectedHero.energy < (selectedSkill.cost ?? 999)) return;
-
-        let targetIds: string[] = [];
-        switch (selectedSkill.targetMode) {
-            case 'single_enemy':
-                if (!selectedTargetId) return;
-                targetIds = [selectedTargetId];
-                break;
-            case 'all_enemies':
-                targetIds = enemies.filter(e => e.isAlive).map(e => e.id);
-                break;
-            case 'all_allies':
-                targetIds = heroes.filter(h => h.hp > 0).map(h => h.id);
-                break;
-            case 'self':
-                targetIds = [selectedHero.id];
-                break;
-            default:
-                targetIds = [selectedHero.id];
-        }
-
-        assignAction({
-            type: 'skill',
-            skillName: selectedSkill.name,
-            targetIds,
-            cost: selectedSkill.cost
-        });
-    }, [selectedHero, selectedSkill, selectedTargetId, enemies, heroes, assignAction]);
 
     const handleDefend = useCallback(() => {
         if (!selectedHeroId) return;
@@ -305,22 +303,6 @@ export default function BattleControlPanel({
         if (!selectedHeroId) return;
         assignAction({ type: 'skip' });
     }, [selectedHeroId, assignAction]);
-
-    const handleTargetDoubleClick = useCallback((id: string) => {
-        const enemy = enemies.find(e => e.id === id);
-        if (!enemy || !enemy.isAlive) {
-            setErrorMsg('⚠️ 该目标已被击破，无法攻击！');
-            setTimeout(() => setErrorMsg(null), 2000);
-            return;
-        }
-        setSelectedTargetId(id);
-        setErrorMsg(null);
-        if (pendingActionType === 'attack') {
-            handleAttack();
-        } else if (pendingActionType === 'skill') {
-            handleSkill();
-        }
-    }, [enemies, pendingActionType]);
 
     const handlePickAction = useCallback((type: 'attack' | 'skill') => {
         setPendingActionType(type);
@@ -558,8 +540,7 @@ export default function BattleControlPanel({
 
                                 return (
                                     <button key={`enemy-${enemy.id}-${idx}`}
-                                        onClick={() => pendingActionType ? handleSelectEnemy(enemy.id) : handleSelectEnemy(enemy.id)}
-                                        onDoubleClick={() => pendingActionType ? handleTargetDoubleClick(enemy.id) : undefined}
+                                        onClick={() => handleSelectEnemy(enemy.id)}
                                         disabled={!enemy.isAlive}
                                         className={cn(
                                             "w-full p-3 rounded-xl border transition-all text-left",
@@ -643,8 +624,7 @@ export default function BattleControlPanel({
                                         <div className="grid grid-cols-2 gap-2">
                                             {enemies.filter(e => e.isAlive).map((e, idx) => (
                                                 <button key={`target-${e.id}-${idx}`}
-                                                    onClick={() => setSelectedTargetId(e.id)}
-                                                    onDoubleClick={() => handleTargetDoubleClick(e.id)}
+                                                    onClick={() => handleSelectEnemy(e.id)}
                                                     className={cn("p-2 rounded-lg border text-left transition-all",
                                                         selectedTargetId === e.id
                                                             ? "bg-red-500/20 border-red-500/50 text-red-200"

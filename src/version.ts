@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.5.9';
+export const CURRENT_VERSION = '0.5.10';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.5.10',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复双击确认行动无法使用的问题，改用手动时间戳检测替代浏览器原生 double-click 事件'
+    ]
+  },
   {
     version: '0.5.9',
     date: '2026-06-02',
