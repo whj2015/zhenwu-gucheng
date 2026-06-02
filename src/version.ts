@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.3';
+export const CURRENT_VERSION = '0.6.4';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.4',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复结算页总输出仍为0：正则中emoji前缀被捕获进attacker名字导致heroNames匹配失败。改用非捕获组(?:emoji)消耗前缀，确保attacker捕获纯净名字'
+    ]
+  },
   {
     version: '0.6.3',
     date: '2026-06-02',
