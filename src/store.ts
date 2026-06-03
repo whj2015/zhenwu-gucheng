@@ -93,6 +93,7 @@ const INITIAL_STATE: GameState = {
   heroes: INITIAL_HEROES,
   inventory: [],
   ruinsRun: null,
+  acceptedMissions: [] as string[],
   lastTickTime: Date.now(),
   tavernPool: [] as string[],
   tavernRefreshCount: 0,
@@ -134,6 +135,8 @@ export const useGameStore = create<GameState & {
   beginRun: (missionId: string, party: Record<PositionKey, string | null>, nodes: any) => void;
   updateRun: (updates: Partial<GameState['ruinsRun']>) => void;
   endRun: () => void;
+  acceptMission: (missionId: string) => void;
+  abandonMission: (missionId: string) => void;
   addResources: (res: Partial<GameState['resources']>) => void;
   healParty: (pct: number) => void;
   recruitTroops: (heroId: string, amount: number, costFood: number, costBingxiang: number) => void;
@@ -494,6 +497,15 @@ export const useGameStore = create<GameState & {
       })),
 
       endRun: () => set(() => ({ ruinsRun: null })),
+
+      acceptMission: (missionId) => set((state) => {
+          if (state.acceptedMissions.includes(missionId)) return state;
+          return { acceptedMissions: [...state.acceptedMissions, missionId] };
+      }),
+
+      abandonMission: (missionId) => set((state) => ({
+          acceptedMissions: state.acceptedMissions.filter(id => id !== missionId)
+      })),
 
       addResources: (res) => set((state) => {
           const cap = getWarehouseResourceCap(state.buildings.warehouseLevel);

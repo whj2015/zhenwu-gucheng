@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.26';
+export const CURRENT_VERSION = '0.6.27';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.27',
+    date: '2026-06-03',
+    type: 'patch',
+    changes: [
+      '⚔️ 任务接取系统 — 任务需要先接取才能布阵出发，MissionSelectionView重写显示三种状态(可接取/已接取/征战中)，新增acceptMission/abandonMission store action，GameState增加acceptedMissions字段'
+    ]
+  },
   {
     version: '0.6.26',
     date: '2026-06-03',

@@ -140,6 +140,7 @@ export interface GameState {
   heroes: HeroState[];
   inventory: Equipment[];
   ruinsRun: RuinsRun | null;
+  acceptedMissions: string[];
   lastTickTime: number;
   tavernPool: string[];
   tavernRefreshCount: number;
