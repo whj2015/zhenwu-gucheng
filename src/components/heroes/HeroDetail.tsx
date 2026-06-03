@@ -34,7 +34,7 @@ export default function HeroDetail({ heroId }: { heroId: string }) {
 const setBonuses = detectSetBonuses(hero);
     const setStatBonus = calculateSetStatBonus(hero);
     return (
-        <div className="flex flex-col h-full relative z-10">
+        <div className="flex flex-col relative z-10">
              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 lg:gap-8 items-start border-b border-white/10 pb-4 sm:pb-6 lg:pb-8 mb-4 sm:mb-6 lg:mb-8">
                   <div className="relative group">
                       <HeroIcon 

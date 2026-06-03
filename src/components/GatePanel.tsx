@@ -112,7 +112,7 @@ return <SetupView missionId={viewState.missionId} onCancel={() => setViewState({
 
         case 'board':
             return (
-                <div className="max-w-5xl mx-auto h-full flex flex-col pt-3 sm:pt-4 animate-in fade-in duration-500">
+                <div className="max-w-5xl mx-auto flex flex-col pt-3 sm:pt-4 animate-in fade-in duration-500">
                     <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 lg:mb-6 pb-2.5 sm:pb-3 lg:pb-4 border-b border-white/10">
                         <button onClick={() => setViewState({ phase: 'main' })} className="p-1.5 rounded hover:bg-white/5 text-slate-400 hover:text-slate-200 transition-all mobile-touch-target">
                             <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -127,7 +127,7 @@ return <SetupView missionId={viewState.missionId} onCancel={() => setViewState({
 
         case 'expedition':
             return (
-                <div className="max-w-5xl mx-auto h-full flex flex-col pt-3 sm:pt-4 animate-in fade-in duration-500">
+                <div className="max-w-5xl mx-auto flex flex-col pt-3 sm:pt-4 animate-in fade-in duration-500">
                     <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 lg:mb-6 pb-2.5 sm:pb-3 lg:pb-4 border-b border-white/10">
                         <button onClick={() => setViewState({ phase: 'main' })} className="p-1.5 rounded hover:bg-white/5 text-slate-400 hover:text-slate-200 transition-all mobile-touch-target">
                             <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -151,7 +151,7 @@ return <MapExploreView onBattleComplete={handleBattleComplete} />;
             }
 
             return (
-                <div className="max-w-4xl mx-auto h-full flex flex-col items-center justify-center gap-4 sm:gap-5 lg:gap-5 animate-in fade-in duration-500 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-4xl mx-auto flex flex-col items-center justify-center gap-4 sm:gap-5 lg:gap-5 animate-in fade-in duration-500 px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 w-full">
                         <button
                             onClick={() => setViewState({ phase: 'board' })}

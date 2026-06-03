@@ -21,7 +21,7 @@ export default function ResidenceView() {
 
     if (heroes.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500 space-y-4">
+            <div className="flex flex-col items-center justify-center text-slate-500 space-y-4">
                 <Users className="w-12 h-12 sm:w-16 sm:h-16 opacity-20" />
                 <p className="tracking-widest font-serif text-sm sm:text-lg">暂无门客，请前往酒馆寻访</p>
             </div>
@@ -29,7 +29,7 @@ export default function ResidenceView() {
     }
 
     return (
-        <div className="h-full flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-8">
+        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-8">
             {/* Hero List side */}
             <div className="w-full lg:w-80 flex flex-col gap-2 sm:gap-3 lg:gap-4 overflow-y-auto pr-1 sm:pr-2 custom-scrollbar max-h-[30vh] sm:max-h-[35vh] lg:max-h-none">
                 {heroes.map(h => {

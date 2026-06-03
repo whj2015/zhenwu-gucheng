@@ -7,7 +7,7 @@ export default function HeroesPanel() {
     const [subTab, setSubTab] = useState<'residence' | 'tavern'>('residence');
 
     return (
-        <div className="max-w-5xl mx-auto h-full flex flex-col pt-3 sm:pt-4 animate-in fade-in duration-500">
+        <div className="max-w-5xl mx-auto flex flex-col pt-3 sm:pt-4 animate-in fade-in duration-500">
             <div className="flex justify-center border-b border-white/10 mb-4 sm:mb-6 lg:mb-8 shrink-0">
                  <button
                      onClick={() => setSubTab('residence')}
@@ -23,7 +23,7 @@ export default function HeroesPanel() {
                  </button>
             </div>
 
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1">
                 {subTab === 'residence' && <ResidenceView />}
                 {subTab === 'tavern' && <TavernView />}
             </div>

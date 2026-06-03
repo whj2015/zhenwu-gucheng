@@ -7,7 +7,7 @@ export default function ResultView({ onReturn }: { onReturn: () => void }) {
     const isWin = ruinsRun?.status === 'completed';
 
     return (
-         <div className="flex flex-col items-center justify-center h-full space-y-6 sm:space-y-8 animate-in zoom-in-95 duration-500 relative">
+         <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6 sm:space-y-8 animate-in zoom-in-95 duration-500 relative py-8">
              <div className={cn("absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[20rem] h-[20rem] sm:w-[30rem] sm:h-[30rem] blur-[100px] sm:blur-[120px] rounded-full pointer-events-none opacity-15 sm:opacity-20", isWin ? "bg-cyan-500/50" : "bg-red-500/50")}></div>
              
              <div className={cn("w-20 h-20 lg:w-24 lg:h-24 rounded-full border-2 flex items-center justify-center shadow-2xl shrink-0 relative z-10 bg-black/40", isWin ? "border-cyan-500/50 text-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.2)]" : "border-red-500/50 text-red-500 shadow-[0_0_30px_rgba(239,68,68,0.2)]")}>

@@ -21,7 +21,7 @@ export default function TavernView() {
     const availableHeroes = Object.keys(HERO_TEMPLATES).filter(id => !hiredIds.has(id));
 
     return (
-        <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex flex-col">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 sm:mb-4 lg:mb-6 pb-3 sm:pb-4 border-b border-white/10 gap-2 shrink-0">
                 <div>
                     <h3 className="text-sm sm:text-base lg:text-lg font-serif text-slate-200">过客留名</h3>

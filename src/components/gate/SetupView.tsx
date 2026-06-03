@@ -203,7 +203,7 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
             </div>
 
             {/* ── Grid + Hero List — flexible middle zone, stretches to fill viewport ── */}
-            <div className="flex-1 min-h-[calc(100vh-280px)] lg:min-h-[calc(100vh-220px)] flex flex-col lg:flex-row gap-1.5 sm:gap-2 px-1">
+            <div className="flex-1 min-h-[280px] sm:min-h-[360px] lg:min-h-[480px] flex flex-col lg:flex-row gap-1.5 sm:gap-2 px-1">
                 {/* Grid */}
                 <div className="flex-1 min-w-0 rounded-lg border border-white/[0.05] bg-gradient-to-b from-white/[0.02] to-transparent p-1.5 sm:p-2.5 lg:p-4 relative">
                     <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/[0.03] via-transparent to-orange-900/[0.02] pointer-events-none rounded-lg" />

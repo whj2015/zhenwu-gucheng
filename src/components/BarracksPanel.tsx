@@ -32,7 +32,7 @@ export default function BarracksPanel() {
     };
 
     return (
-        <div className="flex flex-col lg:flex-row h-full gap-3 sm:gap-4 lg:gap-8 animate-in fade-in duration-500">
+        <div className="flex flex-col lg:flex-row w-full gap-3 sm:gap-4 lg:gap-8 animate-in fade-in duration-500">
              {/* Left List - optimized for mobile */}
              <div className="w-full lg:w-1/3 shrink-0 lg:shrink-0 max-h-[30vh] sm:max-h-[40vh] lg:max-h-none bg-black/40 border border-white/5 rounded-xl flex flex-col p-3 sm:p-4 shadow-xl">
                   <div className="border-b border-white/5 pb-3 mb-3 flex items-center justify-between">
@@ -80,12 +80,12 @@ export default function BarracksPanel() {
              </div>
 
              {/* Right Content - optimized for mobile */}
-             <div className="flex-1 bg-black/40 border border-white/5 rounded-xl p-3 sm:p-4 lg:p-8 relative shadow-inner overflow-hidden flex flex-col min-h-0">
+             <div className="flex-1 bg-black/40 border border-white/5 rounded-xl p-3 sm:p-4 lg:p-8 relative shadow-inner flex flex-col min-h-0">
                   {/* Decorative background */}
                   <div className="absolute top-0 right-0 w-48 sm:w-64 h-48 sm:h-64 bg-emerald-900/10 blur-[60px] sm:blur-[80px] pointer-events-none rounded-full"></div>
 
                   {activeHero && activeTemplate ? (
-                      <div className="relative z-10 flex flex-col h-full animate-in slide-in-from-bottom-4 duration-300 overflow-y-auto custom-scrollbar">
+                      <div className="relative z-10 flex flex-col animate-in slide-in-from-bottom-4 duration-300 overflow-y-auto custom-scrollbar">
                            <div className="flex items-center space-x-4 sm:space-x-6 mb-4 sm:mb-6">
                                <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-24 lg:h-24 rounded-lg bg-black border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
                                    <HeroIcon icon={activeTemplate.icon} name={activeTemplate.name} className="w-full h-full flex items-center justify-center text-3xl sm:text-4xl lg:text-5xl font-serif font-bold bg-gradient-to-b from-slate-200 to-slate-500 bg-clip-text text-transparent" />
@@ -176,7 +176,7 @@ export default function BarracksPanel() {
                            )}
                       </div>
                   ) : (
-                      <div className="h-full flex items-center justify-center text-slate-600 italic text-sm sm:text-base px-4">
+                      <div className="flex items-center justify-center text-slate-600 italic text-sm sm:text-base px-4">
                           选择左侧豪杰进行驻军安排
                       </div>
                   )}

@@ -5,9 +5,49 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.20';
+export const CURRENT_VERSION = '0.6.25';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.25',
+    date: '2026-06-03',
+    type: 'patch',
+    changes: [
+      '📱 全局移动端适配框架修复 — 统一移除所有页面组件根容器的h-full/overflow-hidden(10个文件22处)，SetupView改用固定min-h替代calc(100vh)，ResultView加min-h-[60vh]+py-8，MapExploreView底部栏加pb-20防遮挡，BattleResultPanel压缩移动端间距和max-h'
+    ]
+  },
+  {
+    version: '0.6.24',
+    date: '2026-06-03',
+    type: 'patch',
+    changes: [
+      '🎨 修复 GatePanel 和 MapExploreView 移动端适配：移除根容器 h-full 避免高度溢出，底部状态栏添加 pb-20 防止被导航栏遮挡'
+    ]
+  },
+  {
+    version: '0.6.23',
+    date: '2026-06-03',
+    type: 'patch',
+    changes: [
+      '🎨 修复 BarracksPanel 移动端适配问题，移除 h-full 避免超出视口'
+    ]
+  },
+  {
+    version: '0.6.22',
+    date: '2026-06-03',
+    type: 'patch',
+    changes: [
+      '🐛 修复 HeroesPanel 移动端适配问题：去掉根容器 h-full 和子视图容器 overflow-hidden'
+    ]
+  },
+  {
+    version: '0.6.21',
+    date: '2026-06-03',
+    type: 'patch',
+    changes: [
+      '🎨 修复移动端适配问题，移除英雄相关组件的 h-full 属性以改善移动端显示'
+    ]
+  },
   {
     version: '0.6.20',
     date: '2026-06-02',
