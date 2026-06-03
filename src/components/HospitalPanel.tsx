@@ -24,7 +24,7 @@ export default function HospitalPanel() {
     const canUpgrade = resources.wood >= upgradeCost.wood && resources.iron >= upgradeCost.iron;
 
     return (
-        <div className="max-w-4xl mx-auto flex flex-col animate-in fade-in duration-500">
+        <div className="max-w-4xl mx-auto flex flex-col animate-in fade-in duration-500 pb-20 lg:pb-0">
             <div className="text-center mb-2 sm:mb-3 lg:mb-4">
                 <h2 className="text-xl sm:text-2xl lg:text-3xl font-serif text-slate-200 tracking-widest mb-1.5 sm:mb-2 flex items-center justify-center">
                     <HeartPulse className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 mr-1.5 sm:mr-2 lg:mr-3 text-red-500" /> 城中医馆

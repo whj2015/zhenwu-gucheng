@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.25';
+export const CURRENT_VERSION = '0.6.26';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.6.26',
+    date: '2026-06-03',
+    type: 'patch',
+    changes: [
+      '🎨 为12个页面组件根容器添加 pb-20 lg:pb-0，防止移动端内容被底部导航栏遮挡'
+    ]
+  },
   {
     version: '0.6.25',
     date: '2026-06-03',

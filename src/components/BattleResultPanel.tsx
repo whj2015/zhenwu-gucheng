@@ -190,7 +190,7 @@ export default function BattleResultPanel({
     const totalWounded = battleData.heroStates.reduce((sum, h) => sum + (h.wounded || 0), 0);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300 p-3 lg:p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300 p-3 lg:p-6 pb-20 lg:pb-0">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(30,41,59,0.4)_0%,transparent_70%)] pointer-events-none"></div>
 
             <div className={cn(

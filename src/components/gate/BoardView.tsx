@@ -198,7 +198,7 @@ export default function BoardView() {
     };
 
     return (
-        <div className="pb-8 animate-in fade-in duration-500">
+        <div className="pb-8 animate-in fade-in duration-500 pb-20 lg:pb-0">
             <div className="text-center mb-4 sm:mb-6">
                 <h2 className="text-lg sm:text-xl lg:text-2xl font-serif text-slate-200 tracking-widest mb-2 flex items-center justify-center">
                     <ScrollText className="w-6 h-6 sm:w-7 sm:h-7 mr-2 text-indigo-400" /> 城中告示

@@ -28,7 +28,7 @@ export default function ForgePanel() {
     const nextPityFine = 10 - pityFine;
 
     return (
-        <div className="max-w-4xl w-full mx-auto space-y-4 sm:space-y-5 animate-in fade-in duration-500">
+        <div className="max-w-4xl w-full mx-auto space-y-4 sm:space-y-5 animate-in fade-in duration-500 pb-20 lg:pb-0">
              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 border-b border-white/10 pb-3 sm:pb-4">
                  <div>
                     <h2 className="text-lg sm:text-xl lg:text-2xl font-serif tracking-wide text-orange-100">兵甲坊 <span className="text-orange-500/80 text-xs sm:text-sm font-sans ml-2">LV.{lvl}</span></h2>

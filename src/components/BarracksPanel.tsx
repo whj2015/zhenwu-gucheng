@@ -32,7 +32,7 @@ export default function BarracksPanel() {
     };
 
     return (
-        <div className="flex flex-col lg:flex-row w-full gap-3 sm:gap-4 lg:gap-8 animate-in fade-in duration-500">
+        <div className="flex flex-col lg:flex-row w-full gap-3 sm:gap-4 lg:gap-8 animate-in fade-in duration-500 pb-20 lg:pb-0">
              {/* Left List - optimized for mobile */}
              <div className="w-full lg:w-1/3 shrink-0 lg:shrink-0 max-h-[30vh] sm:max-h-[40vh] lg:max-h-none bg-black/40 border border-white/5 rounded-xl flex flex-col p-3 sm:p-4 shadow-xl">
                   <div className="border-b border-white/5 pb-3 mb-3 flex items-center justify-between">

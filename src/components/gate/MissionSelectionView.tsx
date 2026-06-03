@@ -5,7 +5,7 @@ import { cn } from '../../utils';
 
 export default function MissionSelectionView({ onSelect }: { onSelect: (id: string) => void }) {
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 pb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 pb-8 pb-20 lg:pb-0">
             {Object.entries(MISSIONS).map(([id, m]) => (
                 <div 
                     key={id}
