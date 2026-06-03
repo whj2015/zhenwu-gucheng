@@ -32,7 +32,7 @@ export default function CityPanel() {
     };
 
     return (
-        <div className="max-w-4xl w-full mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-500">
+        <div className="max-w-4xl w-full mx-auto space-y-4 sm:space-y-6 lg:space-y-8 animate-in fade-in duration-500 pb-20 lg:pb-0">
              <div className="text-center space-y-3 sm:space-y-4 py-3 sm:py-4 lg:py-8 border-b border-white/10 px-2">
                   <h2 className="text-xl sm:text-2xl lg:text-3xl font-serif text-slate-200 tracking-wide">主城署</h2>
                   <p className="text-slate-400 text-xs sm:text-sm leading-relaxed max-w-md mx-auto">
