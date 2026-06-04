@@ -201,6 +201,7 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
                 style={{
                     position: 'absolute',
                     ...tooltipPlacement.coords,
+                    height: tooltipPlacement.maxHeight,
                     maxHeight: tooltipPlacement.maxHeight,
                     ...(isAnimating ? { opacity: 0, transform: 'translateY(8px)' } : { opacity: 1, transform: 'translateY(0)' }),
                 }}
@@ -362,36 +363,40 @@ function calculateTooltipPosition(
     const PADDING = 16;
     const GAP = 20;
     const CARD_W = 380;
+    const CARD_H = 500; // 卡片实际内容的近似高度
 
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    // ---- 策略：右侧优先，顶部对齐目标，保证不超出屏幕 ----
-    // 右侧空间够 → 放右边，卡片顶对齐目标顶
+    // ---- 右侧优先 ----
     const spaceRight = vw - targetRect.right;
 
     if (spaceRight >= CARD_W + GAP + PADDING) {
-        // 右侧放得下：紧贴目标右侧，顶部与目标顶部对齐
-        let top = targetRect.top;
         let left = targetRect.right + GAP;
+        let top = targetRect.top; // 先尝试顶部对齐
 
-        // 确保不超出底部（如果卡片高度会超到底部，就往上挪）
-        const maxH = vh - top - PADDING;
-        if (maxH < 200) {
-            // 空间不够，让卡片底部贴视口底部
-            top = Math.max(PADDING, vh - PADDING - 500);
+        // 关键：确保整个卡片在视口内（底部不超）
+        // 如果 top + CARD_H 会超出视口底部 → 往上挪
+        const bottomEdge = top + CARD_H;
+        if (bottomEdge > vh - PADDING) {
+            top = vh - PADDING - CARD_H; // 让卡片底部贴视口底边距
         }
+        // 再保证顶部不超出
+        top = Math.max(PADDING, top);
+
+        // maxHeight = 从最终top到底部边缘的实际空间
+        const maxH = vh - top - PADDING;
 
         return {
             position: 'right',
-            coords: { top: Math.max(PADDING, top), left },
-            maxHeight: Math.max(200, vh - Math.max(PADDING, top) - PADDING),
+            coords: { top, left },
+            maxHeight: Math.max(200, maxH),
         };
     }
 
     // ---- 右侧放不下：尝试下方 ----
     const spaceBelow = vh - targetRect.bottom;
-    if (spaceBelow >= 300) {
+    if (spaceBelow >= 350) {
         return {
             position: 'bottom',
             coords: {
@@ -403,14 +408,15 @@ function calculateTooltipPosition(
         };
     }
 
-    // ---- 下方也不够：强制放右侧，限制高度 ----
-    const top = Math.max(PADDING, targetRect.top);
+    // ---- 都不够：强制右侧，紧贴目标，限制高度 ----
+    let top = Math.max(PADDING, targetRect.top);
+    // 确保不超底部
+    if (top + CARD_H > vh - PADDING) {
+        top = Math.max(PADDING, vh - PADDING - CARD_H);
+    }
     return {
         position: 'right',
-        coords: {
-            top,
-            left: Math.max(PADDING, targetRect.right + GAP),
-        },
+        coords: { top, left: Math.max(PADDING, targetRect.right + GAP) },
         maxHeight: Math.max(200, vh - top - PADDING),
     };
 }
