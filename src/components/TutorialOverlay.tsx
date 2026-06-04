@@ -52,9 +52,9 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
     // 目标元素位置
     const targetRect = useTargetRect(currentStep?.highlightTarget);
 
-    // 提示框最佳位置
+    // 提示框最佳位置（避免遮挡目标）
     const tooltipPlacement = useMemo(() => {
-        if (!targetRect) return { position: 'bottom' as const, coords: { top: 0, left: 0 } };
+        if (!targetRect) return { position: 'bottom' as const, coords: { top: 80, left: 16 }, maxHeight: window.innerHeight - 128 };
         return calculateTooltipPosition(targetRect);
     }, [targetRect]);
 
@@ -201,6 +201,8 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
                 style={{
                     position: 'absolute',
                     ...tooltipPlacement.coords,
+                    height: tooltipPlacement.maxHeight,
+                    maxHeight: tooltipPlacement.maxHeight,
                     ...(isAnimating ? { opacity: 0, transform: 'translateY(8px)' } : { opacity: 1, transform: 'translateY(0)' }),
                 }}
             >
@@ -209,18 +211,18 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
                     <ArrowIndicator placement={tooltipPlacement.position} targetRect={targetRect} />
                 )}
 
-                <div className="bg-[#131820]/98 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden relative w-[380px] max-w-[calc(100vw-32px)]">
+                <div className="bg-[#131820]/98 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden relative w-[380px] max-w-[calc(100vw-32px)] flex flex-col max-h-full">
                     {/* 顶部装饰线 */}
-                    <div className={`h-1 ${
+                    <div className={`shrink-0 h-1 ${
                         currentStep?.phase === 'basics' ? 'bg-indigo-500' :
                         currentStep?.phase === 'economy' ? 'bg-emerald-500' :
                         currentStep?.phase === 'combat' ? 'bg-orange-500' :
                         'bg-purple-500'
                     }`} />
 
-                    <div className="p-5 space-y-3.5">
+                    <div className="p-5 space-y-3.5 flex flex-col min-h-0">
                         {/* 头部 */}
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="shrink-0 flex items-start justify-between gap-3">
                             <div className="flex items-center gap-2 flex-wrap">
                                 <span className={`text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full ${
                                     currentStep?.phase === 'basics' ? 'bg-indigo-500/20 text-indigo-300' :
@@ -242,20 +244,20 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
                         </div>
 
                         {/* 标题 */}
-                        <h3 className="text-base font-serif font-bold text-slate-100 leading-tight">
+                        <h3 className="shrink-0 text-base font-serif font-bold text-slate-100 leading-tight">
                             {currentStep?.title}
                         </h3>
 
                         {/* 进度条 */}
-                        <div className="space-y-1">
+                        <div className="shrink-0 space-y-1">
                             <div className="h-1 bg-white/5 rounded-full overflow-hidden">
                                 <div className="h-full bg-gradient-to-r from-indigo-500 to-orange-500 rounded-full transition-all duration-500"
                                     style={{ width: `${progressPercent}%` }} />
                             </div>
                         </div>
 
-                        {/* 内容文本 */}
-                        <div className="max-h-[28vh] overflow-y-auto custom-scrollbar pr-1 space-y-2">
+                        {/* 内容文本（弹性区域，自动填充剩余空间并滚动） */}
+                        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 space-y-2">
                             {currentStep?.content.map((text, idx) =>
                                 text === '' ? (
                                     <div key={idx} className="h-2" />
@@ -269,7 +271,7 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
 
                         {/* 奖励 */}
                         {currentStep?.rewards && Object.keys(currentStep.rewards).length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 pt-1">
+                            <div className="shrink-0 flex flex-wrap gap-1.5 pt-1">
                                 {Object.entries(currentStep.rewards).map(([key, val]) => (
                                     <span key={key} className="px-2 py-0.5 bg-amber-500/10 text-amber-300 text-xs rounded border border-amber-500/20">
                                         +{val as number} {resourceLabel(key)}
@@ -279,7 +281,7 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
                         )}
 
                         {/* 操作按钮 */}
-                        <div className="flex items-center gap-2.5 pt-1">
+                        <div className="shrink-0 flex items-center gap-2.5 pt-1">
                             {currentStep?.skippable ? (
                                 <>
                                     <button
@@ -351,76 +353,71 @@ function useTargetRect(
 // ============================================================
 // 计算提示框最佳位置（避开目标元素）
 // ============================================================
-function calculateTooltipPosition(targetRect: DOMRect): {
+function calculateTooltipPosition(
+    targetRect: DOMRect
+): {
     position: 'top' | 'bottom' | 'left' | 'right';
     coords: { top: number; left: number };
+    maxHeight: number;
 } {
-    const padding = 16;
-    const tooltipWidth = 380;
-    const tooltipHeight = 420; // 近似高度
-    const gap = 16; // 与目标的间距
+    const PADDING = 16;
+    const GAP = 20;
+    const CARD_W = 380;
+    const CARD_H = 500; // 卡片实际内容的近似高度
 
-    const viewportW = window.innerWidth;
-    const viewportH = window.innerHeight;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
 
-    // 计算四个方向的可行性
-    const spaceAbove = targetRect.top;
-    const spaceBelow = viewportH - targetRect.bottom;
-    const spaceLeft = targetRect.left;
-    const spaceRight = viewportW - targetRect.right;
+    // ---- 右侧优先 ----
+    const spaceRight = vw - targetRect.right;
 
-    // 优先级：下方 > 上方 > 右方 > 左方
-    if (spaceBelow > tooltipHeight + gap) {
+    if (spaceRight >= CARD_W + GAP + PADDING) {
+        let left = targetRect.right + GAP;
+        let top = targetRect.top; // 先尝试顶部对齐
+
+        // 关键：确保整个卡片在视口内（底部不超）
+        // 如果 top + CARD_H 会超出视口底部 → 往上挪
+        const bottomEdge = top + CARD_H;
+        if (bottomEdge > vh - PADDING) {
+            top = vh - PADDING - CARD_H; // 让卡片底部贴视口底边距
+        }
+        // 再保证顶部不超出
+        top = Math.max(PADDING, top);
+
+        // maxHeight = 从最终top到底部边缘的实际空间
+        const maxH = vh - top - PADDING;
+
+        return {
+            position: 'right',
+            coords: { top, left },
+            maxHeight: Math.max(200, maxH),
+        };
+    }
+
+    // ---- 右侧放不下：尝试下方 ----
+    const spaceBelow = vh - targetRect.bottom;
+    if (spaceBelow >= 350) {
         return {
             position: 'bottom',
             coords: {
-                top: targetRect.bottom + gap,
-                left: Math.max(padding, Math.min(viewportW - tooltipWidth - padding,
-                    targetRect.left + targetRect.width / 2 - tooltipWidth / 2)),
+                top: targetRect.bottom + GAP,
+                left: Math.max(PADDING, Math.min(vw - PADDING - CARD_W,
+                    targetRect.left + targetRect.width / 2 - CARD_W / 2)),
             },
+            maxHeight: Math.max(200, spaceBelow - GAP - PADDING),
         };
     }
 
-    if (spaceAbove > tooltipHeight + gap) {
-        return {
-            position: 'top',
-            coords: {
-                top: targetRect.top - tooltipHeight - gap,
-                left: Math.max(padding, Math.min(viewportW - tooltipWidth - padding,
-                    targetRect.left + targetRect.width / 2 - tooltipWidth / 2)),
-            },
-        };
+    // ---- 都不够：强制右侧，紧贴目标，限制高度 ----
+    let top = Math.max(PADDING, targetRect.top);
+    // 确保不超底部
+    if (top + CARD_H > vh - PADDING) {
+        top = Math.max(PADDING, vh - PADDING - CARD_H);
     }
-
-    if (spaceRight > tooltipWidth + gap) {
-        return {
-            position: 'right',
-            coords: {
-                top: Math.max(padding, Math.min(viewportH - tooltipHeight - padding,
-                    targetRect.top + targetRect.height / 2 - tooltipHeight / 2)),
-                left: targetRect.right + gap,
-            },
-        };
-    }
-
-    if (spaceLeft > tooltipWidth + gap) {
-        return {
-            position: 'left',
-            coords: {
-                top: Math.max(padding, Math.min(viewportH - tooltipHeight - padding,
-                    targetRect.top + targetRect.height / 2 - tooltipHeight / 2)),
-                left: targetRect.left - tooltipWidth - gap,
-            },
-        };
-    }
-
-    // 兜底：放下方（可能需要滚动）
     return {
-        position: 'bottom',
-        coords: {
-            top: targetRect.bottom + gap,
-            left: Math.max(padding, viewportW - tooltipWidth - padding),
-        },
+        position: 'right',
+        coords: { top, left: Math.max(PADDING, targetRect.right + GAP) },
+        maxHeight: Math.max(200, vh - top - PADDING),
     };
 }
 
