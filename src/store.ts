@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { GameState, HeroState, Equipment, PositionKey, WOUNDED_NATURAL_RECOVER_RATE, getWarehouseResourceCap, QuestState, CraftingState, RuinsNode, ManualBattleState, SkillActionType, StoryState, TutorialState } from './types';
-import { HERO_TEMPLATES, FORGE_UPGRADE_COSTS, CRAFTING_TEMPLATES, QUEST_TEMPLATES, STORY_CHAPTERS, getChapter, getNextChapter, createInitialStoryState, createInitialTutorialState } from './data';
+import { HERO_TEMPLATES, FORGE_UPGRADE_COSTS, CRAFTING_TEMPLATES, QUEST_TEMPLATES, STORY_CHAPTERS, getChapter, getNextChapter, createInitialStoryState, createInitialTutorialState, TUTORIAL_STEPS, getNextTutorialStep } from './data';
 import { RESOURCE_CONFIG, BATTLE_CONFIG } from './gameConfig';
 import { generateId } from './utils';
 import {
@@ -1553,7 +1553,7 @@ export const useGameStore = create<GameState & {
           const ts = state.tutorialState;
           if (ts.completedSteps.includes(stepId)) return state;
 
-          const step = Object.values(require('../data/tutorial').TUTORIAL_STEPS).find(
+          const step = Object.values(TUTORIAL_STEPS).find(
               (s: any) => s.id === stepId
           ) as any;
 
@@ -1572,7 +1572,6 @@ export const useGameStore = create<GameState & {
           }
 
           // 找下一步
-          const { getNextTutorialStep } = require('../data/tutorial');
           const nextState: TutorialState = {
               ...ts,
               completedSteps: newCompleted,
