@@ -494,7 +494,7 @@ if (battleNode && battleEnemies.length > 0) {
         };
 
         return (
-            <div className="h-full flex flex-col animate-in fade-in duration-300">
+            <div className="flex flex-col animate-in fade-in duration-300">
                 <BattleControlPanel
                     initialHeroes={initialHeroes}
                     initialEnemies={battleEnemies}
@@ -509,7 +509,7 @@ if (battleNode && battleEnemies.length > 0) {
         clearActiveBattle();
     }
     return (
-        <div className="max-w-4xl mx-auto h-full flex flex-col animate-in fade-in duration-500 relative">
+        <div className="max-w-4xl mx-auto flex flex-col animate-in fade-in duration-500 relative">
 
             <div className="flex items-center justify-between mb-3 sm:mb-4 lg:mb-6">
                 <div className="flex items-center gap-2 sm:gap-3">
@@ -558,7 +558,7 @@ if (battleNode && battleEnemies.length > 0) {
                 </div>
             </div>
 
-            <div className="mt-auto pt-3 sm:pt-4 border-t border-white/5 bg-black/30 rounded-xl p-2.5 sm:p-3 lg:p-4 backdrop-blur-sm">
+            <div className="mt-auto pt-3 sm:pt-4 pb-20 border-t border-white/5 bg-black/30 rounded-xl p-2.5 sm:p-3 lg:p-4 backdrop-blur-sm">
                 <div className="grid grid-cols-3 sm:flex justify-center items-start gap-x-4 sm:gap-2 lg:gap-2 gap-y-1 sm:gap-y-0">
                     {(['front-left','front-center','front-right','middle-left','middle-center','middle-right','back-left','back-center','back-right'] as PositionKey[]).map(pos => {
                         const hId = ruinsRun.party[pos];

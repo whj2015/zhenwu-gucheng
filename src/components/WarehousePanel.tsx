@@ -26,7 +26,7 @@ export default function WarehousePanel() {
     const canUpgrade = resources.wood >= woodCost && resources.iron >= ironCost && resources.bingxiang >= bingxiangCost;
 
     return (
-        <div className="max-w-5xl mx-auto pb-6 sm:pb-8">
+        <div className="max-w-5xl mx-auto pb-6 sm:pb-8 pb-20 lg:pb-0">
             <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-6 lg:mb-8">
                 <div className="w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-center">
                     <Package className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-emerald-400" />

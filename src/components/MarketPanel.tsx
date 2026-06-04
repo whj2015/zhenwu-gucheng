@@ -51,7 +51,7 @@ export default function MarketPanel() {
     const allTrades = [...BASE_TRADE_OPTIONS, ...UNLOCKED_TRADES.filter(t => !t.requireLevel || t.requireLevel <= mktLvl)];
 
     return (
-        <div className="max-w-4xl mx-auto h-full flex flex-col pt-2 sm:pt-3 lg:pt-4 animate-in fade-in duration-500">
+        <div className="max-w-4xl mx-auto flex flex-col pt-2 sm:pt-3 lg:pt-4 animate-in fade-in duration-500 pb-20 lg:pb-0">
             <div className="text-center mb-4 sm:mb-6">
                 <h2 className="text-xl sm:text-2xl lg:text-3xl font-serif text-slate-200 tracking-widest mb-1.5 sm:mb-2 flex items-center justify-center">
                     <Store className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 mr-2 sm:mr-3 text-amber-500" /> 城中集市

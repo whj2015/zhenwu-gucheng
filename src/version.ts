@@ -5,9 +5,209 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.8';
+export const CURRENT_VERSION = '0.7.5';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.7.5',
+    date: '2026-06-04',
+    type: 'patch',
+    changes: [
+      '🔧 告示板所有任务统一需手动接取：未接取不显示进度、不可提交'
+    ]
+  },
+  {
+    version: '0.7.4',
+    date: '2026-06-04',
+    type: 'patch',
+    changes: [
+      '🐛 修复告示板不显示任务：BoardView现在同时读取可用池+活跃列表'
+    ]
+  },
+  {
+    version: '0.7.3',
+    date: '2026-06-04',
+    type: 'patch',
+    changes: [
+      '🐛 修复任务不显示：增加UI层兜底生成逻辑，确保任务始终可见'
+    ]
+  },
+  {
+    version: '0.7.2',
+    date: '2026-06-04',
+    type: 'patch',
+    changes: [
+      '🐛 修复任务不显示：增加onRehydrateStorage迁移+安全网；恢复出征页面到原始版本'
+    ]
+  },
+  {
+    version: '0.7.1',
+    date: '2026-06-04',
+    type: 'patch',
+    changes: [
+      '🐛 修复旧存档兼容性问题：旧版存档的任务现在能正确显示在可接取列表'
+    ]
+  },
+  {
+    version: '0.7.0',
+    date: '2026-06-04',
+    type: 'minor',
+    changes: [
+      '✨ 任务看板新增手动接取机制：任务需手动接取后才开始追踪进度'
+    ]
+  },
+  {
+    version: '0.6.27',
+    date: '2026-06-03',
+    type: 'patch',
+    changes: [
+      '⚔️ 任务接取系统 — 任务需要先接取才能布阵出发，MissionSelectionView重写显示三种状态(可接取/已接取/征战中)，新增acceptMission/abandonMission store action，GameState增加acceptedMissions字段'
+    ]
+  },
+  {
+    version: '0.6.26',
+    date: '2026-06-03',
+    type: 'patch',
+    changes: [
+      '🎨 为12个页面组件根容器添加 pb-20 lg:pb-0，防止移动端内容被底部导航栏遮挡'
+    ]
+  },
+  {
+    version: '0.6.25',
+    date: '2026-06-03',
+    type: 'patch',
+    changes: [
+      '📱 全局移动端适配框架修复 — 统一移除所有页面组件根容器的h-full/overflow-hidden(10个文件22处)，SetupView改用固定min-h替代calc(100vh)，ResultView加min-h-[60vh]+py-8，MapExploreView底部栏加pb-20防遮挡，BattleResultPanel压缩移动端间距和max-h'
+    ]
+  },
+  {
+    version: '0.6.24',
+    date: '2026-06-03',
+    type: 'patch',
+    changes: [
+      '🎨 修复 GatePanel 和 MapExploreView 移动端适配：移除根容器 h-full 避免高度溢出，底部状态栏添加 pb-20 防止被导航栏遮挡'
+    ]
+  },
+  {
+    version: '0.6.23',
+    date: '2026-06-03',
+    type: 'patch',
+    changes: [
+      '🎨 修复 BarracksPanel 移动端适配问题，移除 h-full 避免超出视口'
+    ]
+  },
+  {
+    version: '0.6.22',
+    date: '2026-06-03',
+    type: 'patch',
+    changes: [
+      '🐛 修复 HeroesPanel 移动端适配问题：去掉根容器 h-full 和子视图容器 overflow-hidden'
+    ]
+  },
+  {
+    version: '0.6.21',
+    date: '2026-06-03',
+    type: 'patch',
+    changes: [
+      '🎨 修复移动端适配问题，移除英雄相关组件的 h-full 属性以改善移动端显示'
+    ]
+  },
+  {
+    version: '0.6.20',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复战斗结算页移动端显示不全 — 右侧汇总面板新增 max-h-[45vh] 限制内部滚动，压缩移动端各区域 p/mmax-h、减小日志区高度，整体卡片 max-h-[92vh]'
+    ]
+  },
+  {
+    version: '0.6.19',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 彻底修复出发按钮被遮挡 — 去掉h-full/overflow-hidden/flex-1/min-h-0等所有高度约束，布阵页面作为普通文档流内容跟随MainUI滚动区域，利用父级pb-24自动为底部导航栏留空间'
+    ]
+  },
+  {
+    version: '0.6.18',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🎨 布阵页面全面自适应重构 — h-full+overflow-hidden约束整体高度，flex-1/min-h-0让网格自动填充剩余空间，格子用py-2自然适配移动端+lg:aspect-square桌面正方形，HeroList限制max-h-[30vh]，出发栏compact'
+    ]
+  },
+  {
+    version: '0.6.17',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复移动端正方形格子霸屏 — 移动端用固定最小高度(52px/60px)，仅桌面端(lg:)启用aspect-square正方形'
+    ]
+  },
+  {
+    version: '0.6.16',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🎨 布阵3x3格子改为正方形 — 用CSS Grid布局(grid-cols-4)+aspect-square替代flex拉伸，每个格子严格1:1比例'
+    ]
+  },
+  {
+    version: '0.6.15',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🎨 底部出发栏重新设计 — 去掉大卡片容器改为紧凑单行：左侧已部署英雄微型预览(头像+名字+位置标签)填充空间，右侧出发按钮紧凑化，消除底部空白'
+    ]
+  },
+  {
+    version: '0.6.14',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🎨 布阵页面全面视觉美化 — 网格区渐变背景+光晕、出发按钮改为全宽渐变操作栏(出征远途)、门客列表重新设计、整体间距和圆角统一优化'
+    ]
+  },
+  {
+    version: '0.6.13',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🎨 优化布阵页面布局样式 — 去除网格行 flex-1/h-full 拉伸，消除多余空白，恢复紧凑排列'
+    ]
+  },
+  {
+    version: '0.6.12',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 彻底修复布阵页面出发按钮被遮挡 — 去掉 h-full/overflow-hidden 约束，改为自然文档流布局，跟随 MainUI 滚动区域统一滚动，出发按钮始终可达'
+    ]
+  },
+  {
+    version: '0.6.11',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复布阵页面出发按钮在特定分辨率下被底部导航遮挡 — 改用 flex sticky footer 布局：外层 overflow-hidden + header/preset/footer shrink-0 + 中间区域独立滚动，出发按钮始终钉在可见区底部'
+    ]
+  },
+  {
+    version: '0.6.10',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🐛 修复布阵页面出发按钮在特定分辨率下被遮挡的问题 — 网格/英雄列表区域增加 overflow-y-auto 独立滚动'
+    ]
+  },
+  {
+    version: '0.6.9',
+    date: '2026-06-02',
+    type: 'patch',
+    changes: [
+      '🎨 布阵页面移动端适配优化 — 缩小网格尺寸/间距、英雄列表改为横向滚动芯片、预设栏弹性换行、底部栏紧凑化'
+    ]
+  },
   {
     version: '0.6.8',
     date: '2026-06-02',
