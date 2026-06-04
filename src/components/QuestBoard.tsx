@@ -54,7 +54,7 @@ function getResetCountdown(category: TabType): { hours: number; minutes: number;
 export default function QuestBoard({ isOpen, onClose }: QuestBoardProps) {
     const [activeTab, setActiveTab] = useState<TabType>('daily');
     const [countdown, setCountdown] = useState({ hours: 0, minutes: 0, seconds: 0, targetTime: '' });
-    
+
     const questState = useGameStore((state) => state.questState);
     const resources = useGameStore((state) => state.resources);
     const checkAndRefreshQuests = useGameStore((state) => state.checkAndRefreshQuests);
@@ -63,12 +63,25 @@ export default function QuestBoard({ isOpen, onClose }: QuestBoardProps) {
 
     useEffect(() => {
         if (!isOpen) return;
+        console.log('[QuestBoard] 打开，调用 checkAndRefreshQuests');
+        console.log('[QuestBoard] 当前状态:', JSON.stringify({
+            availableDailyIds: questState.availableDailyIds,
+            activeDailyIds: questState.activeDailyIds,
+            availableWeeklyIds: questState.availableWeeklyIds,
+            activeWeeklyIds: questState.activeWeeklyIds,
+        }));
         checkAndRefreshQuests();
-    }, [isOpen, checkAndRefreshQuests]);
+    }, [isOpen]); // eslint-disable-line
 
     useEffect(() => {
         if (!isOpen) return;
-        
+        console.log('[QuestBoard] questState 更新:', JSON.stringify({
+            availableDailyIds: questState.availableDailyIds?.length,
+            activeDailyIds: questState.activeDailyIds?.length,
+            availableWeeklyIds: questState.availableWeeklyIds?.length,
+            activeWeeklyIds: questState.activeWeeklyIds?.length,
+        }));
+
         const timer = setInterval(() => {
             setCountdown(getResetCountdown(activeTab));
         }, 1000);
@@ -80,7 +93,7 @@ export default function QuestBoard({ isOpen, onClose }: QuestBoardProps) {
 
     const questData = useMemo(() => {
         // 可用任务池（未接取）
-        const availableIds = activeTab === 'daily'
+        let availableIds = activeTab === 'daily'
             ? (questState.availableDailyIds || [])
             : (questState.availableWeeklyIds || []);
 
@@ -88,6 +101,15 @@ export default function QuestBoard({ isOpen, onClose }: QuestBoardProps) {
         const activeIds = activeTab === 'daily'
             ? (questState.activeDailyIds || [])
             : (questState.activeWeeklyIds || []);
+
+        // === 兜底：如果可用池为空，直接从模板生成 ===
+        if (availableIds.length === 0 && activeIds.length === 0) {
+            console.warn('[QuestBoard] 可用池为空，使用内联兜底生成');
+            const allTemplates = Object.entries(QUEST_TEMPLATES).filter(([, t]) => t.category === activeTab);
+            const shuffled = allTemplates.sort(() => Math.random() - 0.5);
+            const count = activeTab === 'daily' ? 6 : 3;
+            availableIds = shuffled.slice(0, Math.min(count, shuffled.length)).map(([id]) => id);
+        }
 
         const completedIds = activeTab === 'daily'
             ? questState.completedDailyIds
@@ -108,6 +130,16 @@ export default function QuestBoard({ isOpen, onClose }: QuestBoardProps) {
                 template: QUEST_TEMPLATES[id]
             }))
             .filter(q => q.template);
+
+        console.log('[QuestBoard] questData 计算:', {
+            tab: activeTab,
+            availableIdsCount: availableIds.length,
+            activeIdsCount: activeIds.length,
+            availableQuestsCount: availableQuests.length,
+            activeQuestsCount: activeQuests.length,
+            sampleAvailableId: availableIds[0],
+            templateExists: availableIds[0] ? !!QUEST_TEMPLATES[availableIds[0]] : 'N/A',
+        });
 
         return { availableQuests, activeQuests, completedIds };
     }, [activeTab, questState]);

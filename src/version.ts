@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.7.2';
+export const CURRENT_VERSION = '0.7.3';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.7.3',
+    date: '2026-06-04',
+    type: 'patch',
+    changes: [
+      '🐛 修复任务不显示：增加UI层兜底生成逻辑，确保任务始终可见'
+    ]
+  },
   {
     version: '0.7.2',
     date: '2026-06-04',

@@ -914,6 +914,13 @@ export const useGameStore = create<GameState & {
           const dayMs = 24 * 60 * 60 * 1000;
           const weekMs = 7 * dayMs;
 
+          console.log('[checkAndRefreshQuests] 开始, 输入状态:', {
+              availDaily: qs.availableDailyIds?.length,
+              activeDaily: qs.activeDailyIds?.length,
+              availWeekly: qs.availableWeeklyIds?.length,
+              activeWeekly: qs.activeWeeklyIds?.length,
+          });
+
           let newDailyIds = qs.completedDailyIds;
           let newWeeklyIds = qs.completedWeeklyIds;
           let newLastDailyReset = qs.lastDailyReset;
@@ -985,6 +992,13 @@ export const useGameStore = create<GameState & {
               newAvailableWeeklyIds = Array.from(generateWeeklyQuests(QUEST_TEMPLATES, 3).keys());
               if (!newLastWeeklyReset) newLastWeeklyReset = now;
           }
+
+          console.log('[checkAndRefreshQuests] 返回状态:', {
+              availDaily: newAvailableDailyIds.length,
+              activeDaily: newActiveDailyIds.length,
+              availWeekly: newAvailableWeeklyIds.length,
+              activeWeekly: newActiveWeeklyIds.length,
+          });
 
           return {
               questState: {
