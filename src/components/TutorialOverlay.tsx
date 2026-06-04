@@ -360,89 +360,59 @@ function calculateTooltipPosition(
     maxHeight: number;
 } {
     const PADDING = 16;
-    const GAP = 16;
+    const GAP = 20;
     const CARD_W = 380;
 
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    type Dir = 'right' | 'bottom' | 'left' | 'top';
+    // ---- 策略：右侧优先，顶部对齐目标，保证不超出屏幕 ----
+    // 右侧空间够 → 放右边，卡片顶对齐目标顶
+    const spaceRight = vw - targetRect.right;
 
-    /** 检测矩形是否重叠（含 GAP 间距缓冲） */
-    function rectsOverlap(
-        t: { top: number; left: number; w: number; h: number },
-        r: DOMRect
-    ): boolean {
-        const separated =
-            t.left + t.w + GAP <= r.left ||
-            t.left - GAP >= r.right ||
-            t.top + t.h + GAP <= r.top ||
-            t.top - GAP >= r.bottom;
-        return !separated;
-    }
+    if (spaceRight >= CARD_W + GAP + PADDING) {
+        // 右侧放得下：紧贴目标右侧，顶部与目标顶部对齐
+        let top = targetRect.top;
+        let left = targetRect.right + GAP;
 
-    /** 计算某个方向的位置和可用高度 */
-    function calcDir(dir: Dir): {
-        top: number; left: number; maxH: number;
-    } {
-        let left: number;
-        // 先确定水平位置（左右方向固定，上下方向居中）
-        switch (dir) {
-            case 'right':  left = targetRect.right + GAP; break;
-            case 'left':   left = targetRect.left - CARD_W - GAP; break;
-            case 'bottom': left = targetRect.left + targetRect.width / 2 - CARD_W / 2; break;
-            case 'top':    left = targetRect.left + targetRect.width / 2 - CARD_W / 2; break;
-        }
-        left = Math.max(PADDING, Math.min(vw - PADDING - CARD_W, left));
-
-        // 垂直位置：先按方向算理想值，再确保卡片完全在视口内
-        let idealTop: number;
-        const EST_H = 450; // 卡片预估高度，用于垂直居中计算
-
-        switch (dir) {
-            case 'right':
-            case 'left':
-                // 左右放置：尝试让卡片垂直中心与目标中心对齐
-                idealTop = targetRect.top + targetRect.height / 2 - EST_H / 2;
-                break;
-            case 'bottom':
-                idealTop = targetRect.bottom + GAP;
-                break;
-            case 'top':
-                idealTop = targetRect.top - EST_H - GAP;
-                break;
+        // 确保不超出底部（如果卡片高度会超到底部，就往上挪）
+        const maxH = vh - top - PADDING;
+        if (maxH < 200) {
+            // 空间不够，让卡片底部贴视口底部
+            top = Math.max(PADDING, vh - PADDING - 500);
         }
 
-        // 钳制：确保顶部不超出视口顶部
-        let top = Math.max(PADDING, idealTop);
-        // 确保底部不超出视口底部（用预估高度反推最大允许的 top）
-        const maxTopForBottomFit = vh - PADDING - EST_H;
-        if (top > maxTopForBottomFit) top = maxTopForBottomFit;
-        // 再次保证最小值
-        top = Math.max(PADDING, top);
-
-        // 实际可用高度 = 从最终位置到底部视口边缘的距离
-        const maxH = Math.max(150, vh - top - PADDING);
-
-        return { top, left, maxH };
+        return {
+            position: 'right',
+            coords: { top: Math.max(PADDING, top), left },
+            maxHeight: Math.max(200, vh - Math.max(PADDING, top) - PADDING),
+        };
     }
 
-    // 按优先级尝试：右 > 下 > 左 > 上
-    const dirOrder: Dir[] = ['right', 'bottom', 'left', 'top'];
-
-    for (const dir of dirOrder) {
-        const pos = calcDir(dir);
-        const cardRect = { top: pos.top, left: pos.left, w: CARD_W, h: pos.maxH };
-        if (!rectsOverlap(cardRect, targetRect)) {
-            return { position: dir, coords: { top: pos.top, left: pos.left }, maxHeight: pos.maxH };
-        }
+    // ---- 右侧放不下：尝试下方 ----
+    const spaceBelow = vh - targetRect.bottom;
+    if (spaceBelow >= 300) {
+        return {
+            position: 'bottom',
+            coords: {
+                top: targetRect.bottom + GAP,
+                left: Math.max(PADDING, Math.min(vw - PADDING - CARD_W,
+                    targetRect.left + targetRect.width / 2 - CARD_W / 2)),
+            },
+            maxHeight: Math.max(200, spaceBelow - GAP - PADDING),
+        };
     }
 
-    // 兜底：强制放右侧，紧贴目标但不超出屏幕
-    const fbLeft = Math.max(PADDING, targetRect.right + GAP);
-    const fbMaxH = Math.max(150, vh - PADDING * 2);
-    const fbTop = Math.max(PADDING, vh - PADDING - fbMaxH);
-    return { position: 'right', coords: { top: fbTop, left: fbLeft }, maxHeight: fbMaxH };
+    // ---- 下方也不够：强制放右侧，限制高度 ----
+    const top = Math.max(PADDING, targetRect.top);
+    return {
+        position: 'right',
+        coords: {
+            top,
+            left: Math.max(PADDING, targetRect.right + GAP),
+        },
+        maxHeight: Math.max(200, vh - top - PADDING),
+    };
 }
 
 // ============================================================
