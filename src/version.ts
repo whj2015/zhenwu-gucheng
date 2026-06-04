@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.7.5';
+export const CURRENT_VERSION = '1.0.0';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '1.0.0',
+    date: '2026-06-04',
+    type: 'major',
+    changes: [
+      '🔧 重构兵力加成系统为统一 BonusPipeline 架构：新增 BonusCalculator 统一计算器（固定值区+百分比加法堆叠+最终扁平区），移除站位属性加成（站位仅影响战术），移除核心光环，兵卒攻击转化纳入管线倍率，清理废弃的 positionBonus 字段和类型'
+    ]
+  },
   {
     version: '0.7.5',
     date: '2026-06-04',

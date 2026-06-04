@@ -25,11 +25,6 @@ export type SkillEffect =
 
 export type Rarity = 'N' | 'R' | 'SR' | 'SSR';
 
-export interface PositionBonus {
-    pos: string;
-    bonus: Record<string, number>;
-}
-
 export type HeroTrait = 'assault' | 'flank' | 'tank' | 'support' | 'healer' | 'ranged';
 
 export interface HeroTemplate {
@@ -43,7 +38,6 @@ export interface HeroTemplate {
     skillEffect?: SkillEffect;
     trait: HeroTrait;
     traitDesc: string;
-    positionBonus?: PositionBonus[];
     flavorText?: string;
     lore?: string;
 }
@@ -112,8 +106,6 @@ export interface PositionDef {
     tag: string;
     tagColor: string;
     desc: string;
-    mainStat: string;
-    modValue: number;
     hitRate: number;
     isRear: boolean;
 }

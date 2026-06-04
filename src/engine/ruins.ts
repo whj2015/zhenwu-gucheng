@@ -1,7 +1,7 @@
 import { RuinsNode, HeroState, PositionKey, TROOP_ABSORB_PER_TROOP, TROOP_MAX_ABSORB, TROOP_HP_COST, BattleState, BattleUnit, BattleRow, HeroTrait } from '../types';
 import { POSITION_CONFIG, ENEMY_TEMPLATES, HERO_TEMPLATES, MISSIONS } from '../data';
 import { generateId } from '../utils';
-import { calculateSetStatBonus } from '../utils/equipmentSetEngine';
+import { calculateHeroBonuses, type HeroBonusResult } from '../utils/bonusCalculator';
 
 export function generateFloor(floorNumber: number, missionId: string): RuinsNode[] {
     const nodes: RuinsNode[] = [];
@@ -58,9 +58,8 @@ interface PlayerState {
     troops: number;
     wounded: number;
     command: number;
-    atkMod: number;
-    defMod: number;
-    agiMod: number;
+    /** 统一加成管线计算结果 */
+    bonusResult: HeroBonusResult;
     isRear: boolean;
     hitRate: number;
     posName: string;
@@ -71,10 +70,7 @@ interface PlayerState {
     rallyBuffRoundsLeft: number;
     totalAtkBuff: number;
     totalDefBuff: number;
-    dodgeChance: number;
     ironWillCap: number | null;
-    equipment: { weapon?: { attack: number }; armor?: { defense: number } } | null;
-setBonus: Record<string, number>;
 }
 
 interface EnemyState {
@@ -106,40 +102,27 @@ export function simulateBattle(heroes: HeroState[], enemyDataList: any[], templa
         const rawPos = heroPosMap.get(h.id) || 'front-center';
         const cfg = POSITION_CONFIG[rawPos] || POSITION_CONFIG['front-center'];
         const t = templateMap.get(h.id)!;
-        let atkMod = 1, defMod = 1, agiMod = 1;
 
-        switch (cfg.mainStat) {
-            case 'attack': atkMod += cfg.modValue; break;
-            case 'defense': defMod += cfg.modValue; break;
-            case 'agility': agiMod += cfg.modValue; break;
-        }
+        // 使用统一加成管线计算所有属性
+        const bonusResult = calculateHeroBonuses(h, t);
 
         const skillEffect = t.skillEffect || null;
 
-        let maxHpBonus = 1;
-        let ironWillCap = null;
-        let dodgeChance = 0;
-
+        let ironWillCap: number | null = null;
         if (skillEffect?.type === 'iron_will') {
-            maxHpBonus = 1 + skillEffect.maxHpBonus;
             ironWillCap = skillEffect.damageCap;
         }
-
-        if (skillEffect?.type === 'dodge' && (skillEffect.targetPositions.includes(rawPos) || skillEffect.trigger === 'always')) {
-            dodgeChance = skillEffect.dodgeChance;
-        }
-
-const setBonus = calculateSetStatBonus(h);
 
         return {
             id: h.id,
             templateId: h.templateId,
             hp: h.hp,
-maxHp: t.attributes.physique * 10 * maxHpBonus + (setBonus.hp || 0),
+            maxHp: bonusResult.hp.finalValue,
             troops: h.troops || 0,
             wounded: (h as any).wounded || 0,
             command: t.attributes.command || 10,
-            atkMod, defMod, agiMod,
+            bonusResult,
+            // 站位仅影响战术属性（受击权重、前后排），不再提供属性加成
             isRear: cfg.isRear,
             hitRate: cfg.hitRate,
             posName: cfg.name,
@@ -150,10 +133,7 @@ maxHp: t.attributes.physique * 10 * maxHpBonus + (setBonus.hp || 0),
             rallyBuffRoundsLeft: 0,
             totalAtkBuff: 0,
             totalDefBuff: 0,
-dodgeChance: dodgeChance + (setBonus.dodge || 0),
             ironWillCap,
-            equipment: (h as any).equipment || null,
-            setBonus
         };
     });
 
@@ -210,15 +190,10 @@ dodgeChance: dodgeChance + (setBonus.dodge || 0),
     };
 
     const getEffectivePlayerAttack = (ps: PlayerState): number => {
-        const h = heroes.find(hh => hh.id === ps.id);
-        const t = templateMap.get(ps.id)!;
-let baseAtk = t.attributes.force + (h?.equipment?.weapon?.attack || 0) + Math.floor(ps.troops / 10) + (ps.setBonus.attack || 0);
+        // 基础攻击力来自统一加成管线
+        let baseAtk = ps.bonusResult.attack.finalValue;
 
-        const hasCore = Array.from(heroPosMap.values()).some(p => p === 'middle-center');
-        if (hasCore && ps.posName !== '核心') baseAtk *= 1.05;
-
-        baseAtk *= ps.atkMod;
-
+        // 战斗中动态施加的增益（号令/蛮冲等）
         if (ps.totalAtkBuff > 0) {
             baseAtk *= (1 + ps.totalAtkBuff);
         }
@@ -295,7 +270,7 @@ let baseAtk = t.attributes.force + (h?.equipment?.weapon?.attack || 0) + Math.fl
        const sortedPlayerIndices = playerStates
            .map((_, i) => i)
            .filter(i => playerStates[i].hp > 0)
-           .sort((a, b) => playerStates[b].agiMod - playerStates[a].agiMod);
+           .sort((a, b) => playerStates[b].bonusResult.agility.finalValue - playerStates[a].bonusResult.agility.finalValue);
 
        playerStates.forEach(ps => ps.hasFirstStruckThisRound = false);
 
@@ -444,10 +419,11 @@ let baseAtk = t.attributes.force + (h?.equipment?.weapon?.attack || 0) + Math.fl
                if (furyActive) logs.push(ab.pierceLog.replace('{name}', enemy.name).replace('{pct}', String(Math.round(ab.armorPierce*100))));
            }
 
-const aDef = ((ps.equipment?.armor?.defense || 0) + (ps.setBonus.defense || 0)) * state.defMod * (1 + state.totalDefBuff) * pierceMult;
+           const aDef = ps.bonusResult.defense.finalValue * (1 + state.totalDefBuff) * pierceMult;
            let rawDmg = Math.max(1, Math.floor(effectiveAtk - aDef));
 
-           if (state.dodgeChance > 0 && Math.random() < state.dodgeChance) {
+           const dodgeRate = Math.min(1, state.bonusResult.dodge.percentBonus);
+           if (dodgeRate > 0 && Math.random() < dodgeRate) {
                logs.push(`✨ ${pt.name}[${state.posName}] 闪避了 ${enemy.name} 的攻击！`);
                continue;
            }
