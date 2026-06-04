@@ -52,30 +52,11 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
     // 目标元素位置
     const targetRect = useTargetRect(currentStep?.highlightTarget);
 
-    // 提示框实际尺寸（动态测量）
-    const tooltipRef = useRef<HTMLDivElement>(null);
-    const [tooltipSize, setTooltipSize] = useState({ width: 380, height: 420 });
-
-    useEffect(() => {
-        const el = tooltipRef.current;
-        if (!el) return;
-        const observer = new ResizeObserver((entries) => {
-            for (const entry of entries) {
-                const { width, height } = entry.contentRect;
-                if (width > 0 && height > 0) {
-                    setTooltipSize({ width: Math.ceil(width), height: Math.ceil(height) });
-                }
-            }
-        });
-        observer.observe(el);
-        return () => observer.disconnect();
-    }, []);
-
-    // 提示框最佳位置（考虑实际尺寸，避免遮挡目标）
+    // 提示框最佳位置（避免遮挡目标）
     const tooltipPlacement = useMemo(() => {
         if (!targetRect) return { position: 'bottom' as const, coords: { top: 0, left: 0 }, maxHeight: window.innerHeight - 32 };
-        return calculateTooltipPosition(targetRect, tooltipSize);
-    }, [targetRect, tooltipSize]);
+        return calculateTooltipPosition(targetRect);
+    }, [targetRect]);
 
     const handleNext = useCallback(() => {
         if (!currentStep) return;
@@ -216,7 +197,6 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
 
             {/* ====== 提示框卡片（智能定位） ====== */}
             <div
-                ref={tooltipRef}
                 className="pointer-events-auto z-[92] transition-all duration-400 ease-out"
                 style={{
                     position: 'absolute',
@@ -373,8 +353,7 @@ function useTargetRect(
 // 计算提示框最佳位置（避开目标元素）
 // ============================================================
 function calculateTooltipPosition(
-    targetRect: DOMRect,
-    tooltipSize: { width: number; height: number }
+    targetRect: DOMRect
 ): {
     position: 'top' | 'bottom' | 'left' | 'right';
     coords: { top: number; left: number };
@@ -382,126 +361,104 @@ function calculateTooltipPosition(
 } {
     const padding = 16;
     const gap = 16;
+    const cardW = 380;
+    const maxCardH = 500; // 卡片最大自然高度
+    const minCardH = 200; // 卡片最小可用高度
 
     const viewportW = window.innerWidth;
     const viewportH = window.innerHeight;
 
-    // 将坐标钳制在视口范围内
-    function clampPos(top: number, left: number) {
-        return {
-            top: Math.max(padding, Math.min(viewportH - padding - tooltipSize.height, top)),
-            left: Math.max(padding, Math.min(viewportW - tooltipSize.width - padding, left)),
-        };
-    }
+    type Dir = 'bottom' | 'top' | 'right' | 'left';
 
-    // 根据位置计算可用最大高度
-    function calcMaxHeight(posTop: number, dir: Dir): number {
-        if (dir === 'bottom') {
-            return Math.max(200, viewportH - posTop - padding);
-        }
-        if (dir === 'top') {
-            return Math.max(200, posTop - padding);
-        }
-        // left / right：垂直居中，取上下较小值的两倍
-        return Math.max(200, Math.min(posTop - padding, viewportH - posTop - tooltipSize.height - padding) * 2 + tooltipSize.height);
-    }
-
-    // 检查两个矩形是否重叠（含 gap 缓冲）
-    function overlaps(
-        t: { top: number; left: number; w: number; h: number },
-        r: DOMRect,
-        g: number
-    ): boolean {
+    function overlaps(top: number, left: number, h: number, w: number): boolean {
         return !(
-            t.left + t.w + g < r.left ||
-            t.left - g > r.right ||
-            t.top + t.h + g < r.top ||
-            t.top - g > r.bottom
+            left + w + gap < targetRect.left ||
+            left - gap > targetRect.right ||
+            top + h + gap < targetRect.top ||
+            top - gap > targetRect.bottom
         );
     }
 
-    // 候选方向列表（按优先级排序）
-    type Dir = 'bottom' | 'top' | 'right' | 'left';
-    const candidates: { dir: Dir; coords: () => { top: number; left: number } }[] = [
-        {
-            dir: 'bottom',
-            coords: () => ({
-                top: targetRect.bottom + gap,
-                left: Math.max(padding, Math.min(viewportW - tooltipSize.width - padding,
-                    targetRect.left + targetRect.width / 2 - tooltipSize.width / 2)),
-            }),
-        },
-        {
-            dir: 'top',
-            coords: () => ({
-                top: targetRect.top - tooltipSize.height - gap,
-                left: Math.max(padding, Math.min(viewportW - tooltipSize.width - padding,
-                    targetRect.left + targetRect.width / 2 - tooltipSize.width / 2)),
-            }),
-        },
-        {
-            dir: 'right',
-            coords: () => ({
-                top: Math.max(padding, Math.min(viewportH - tooltipSize.height - padding,
-                    targetRect.top + targetRect.height / 2 - tooltipSize.height / 2)),
-                left: targetRect.right + gap,
-            }),
-        },
-        {
-            dir: 'left',
-            coords: () => ({
-                top: Math.max(padding, Math.min(viewportH - tooltipSize.height - padding,
-                    targetRect.top + targetRect.height / 2 - tooltipSize.height / 2)),
-                left: targetRect.left - tooltipSize.width - gap,
-            }),
-        },
-    ];
+    /** 尝试一个方向：返回位置、可用高度、是否重叠 */
+    function tryDir(dir: Dir): {
+        top: number; left: number; availableH: number; overlaps: boolean;
+    } {
+        let top: number, left: number, availableH: number;
 
-    // 筛选完全在视口内且不遮挡目标的方向
-    for (const c of candidates) {
-        const raw = c.coords();
-        const pos = clampPos(raw.top, raw.left);
-        const tipRect = { top: pos.top, left: pos.left, w: tooltipSize.width, h: tooltipSize.height };
-        const inViewport =
-            tipRect.left >= padding - 8 &&
-            tipRect.left + tipRect.w <= viewportW - padding + 8 &&
-            tipRect.top >= padding - 8 &&
-            tipRect.top + tipRect.h <= viewportH - padding + 8;
-        if (inViewport && !overlaps(tipRect, targetRect, gap)) {
-            return { position: c.dir, coords: pos, maxHeight: calcMaxHeight(pos.top, c.dir) };
+        switch (dir) {
+            case 'bottom': {
+                top = targetRect.bottom + gap;
+                left = Math.max(padding, Math.min(viewportW - cardW - padding,
+                    targetRect.left + targetRect.width / 2 - cardW / 2));
+                availableH = viewportH - top - padding;
+                break;
+            }
+            case 'top': {
+                availableH = targetRect.top - gap - padding;
+                top = targetRect.top - Math.min(maxCardH, availableH) - gap;
+                left = Math.max(padding, Math.min(viewportW - cardW - padding,
+                    targetRect.left + targetRect.width / 2 - cardW / 2));
+                break;
+            }
+            case 'right': {
+                left = targetRect.right + gap;
+                availableH = viewportH - padding * 2;
+                top = Math.max(padding, Math.min(viewportH - maxCardH - padding,
+                    targetRect.top + targetRect.height / 2 - maxCardH / 2));
+                break;
+            }
+            case 'left': {
+                availableH = viewportH - padding * 2;
+                left = targetRect.left - cardW - gap;
+                top = Math.max(padding, Math.min(viewportH - maxCardH - padding,
+                    targetRect.top + targetRect.height / 2 - maxCardH / 2));
+                break;
+            }
+        }
+
+        // 卡片实际高度 = 可用空间和最大高度取较小值
+        const cardH = Math.min(maxCardH, Math.max(minCardH, availableH));
+
+        // 钳制到视口内
+        const clampedTop = Math.max(padding, Math.min(viewportH - padding - cardH, top));
+        const clampedLeft = Math.max(padding, Math.min(viewportW - padding - cardW, left));
+
+        return {
+            top: clampedTop,
+            left: clampedLeft,
+            availableH,
+            overlaps: overlaps(clampedTop, clampedLeft, cardH, cardW),
+        };
+    }
+
+    const dirs: Dir[] = ['bottom', 'top', 'right', 'left'];
+
+    // 第一轮：找不重叠且空间足够的
+    for (const dir of dirs) {
+        const r = tryDir(dir);
+        if (!r.overlaps && r.availableH >= minCardH) {
+            const cardH = Math.min(maxCardH, Math.max(minCardH, r.availableH));
+            return { position: dir, coords: { top: r.top, left: r.left }, maxHeight: cardH };
         }
     }
 
-    // 二次筛选：只要不遮挡目标即可
-    for (const c of candidates) {
-        const raw = c.coords();
-        const pos = clampPos(raw.top, raw.left);
-        const tipRect = { top: pos.top, left: pos.left, w: tooltipSize.width, h: tooltipSize.height };
-        if (!overlaps(tipRect, targetRect, gap)) {
-            return { position: c.dir, coords: pos, maxHeight: calcMaxHeight(pos.top, c.dir) };
+    // 第二轮：放宽空间要求，只要不重叠
+    for (const dir of dirs) {
+        const r = tryDir(dir);
+        if (!r.overlaps) {
+            const cardH = Math.min(maxCardH, Math.max(minCardH, r.availableH));
+            return { position: dir, coords: { top: r.top, left: r.left }, maxHeight: cardH };
         }
     }
 
-    // 最终兜底：放目标下方，钳制到视口内
-    let fallbackTop = targetRect.bottom + gap;
-    let fallbackLeft = targetRect.left + targetRect.width / 2 - tooltipSize.width / 2;
-    // 如果下方空间不够，改为上方
-    if (fallbackTop + tooltipSize.height > viewportH - padding) {
-        const topPos = targetRect.top - tooltipSize.height - gap;
-        if (topPos > padding) {
-            fallbackTop = topPos;
-        } else {
-            // 极端情况：上下空间都不够，紧贴目标下方但限制高度
-            fallbackTop = targetRect.bottom + gap;
-        }
+    // 兜底：选空间最大的方向，即使有重叠
+    let best = tryDir('bottom');
+    for (const dir of dirs) {
+        const r = tryDir(dir);
+        if (r.availableH > best.availableH) best = r;
     }
-    const clamped = clampPos(fallbackTop, fallbackLeft);
-    const isAbove = clamped.top < targetRect.top;
-    return {
-        position: isAbove ? 'top' : 'bottom',
-        coords: clamped,
-        maxHeight: calcMaxHeight(clamped.top, isAbove ? 'top' : 'bottom'),
-    };
+    const cardH = Math.min(maxCardH, Math.max(minCardH, best.availableH));
+    return { position: 'bottom', coords: { top: best.top, left: best.left }, maxHeight: cardH };
 }
 
 // ============================================================
