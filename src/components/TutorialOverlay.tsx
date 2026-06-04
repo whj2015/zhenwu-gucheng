@@ -52,11 +52,30 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
     // 目标元素位置
     const targetRect = useTargetRect(currentStep?.highlightTarget);
 
-    // 提示框最佳位置
+    // 提示框实际尺寸（动态测量）
+    const tooltipRef = useRef<HTMLDivElement>(null);
+    const [tooltipSize, setTooltipSize] = useState({ width: 380, height: 420 });
+
+    useEffect(() => {
+        const el = tooltipRef.current;
+        if (!el) return;
+        const observer = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const { width, height } = entry.contentRect;
+                if (width > 0 && height > 0) {
+                    setTooltipSize({ width: Math.ceil(width), height: Math.ceil(height) });
+                }
+            }
+        });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+
+    // 提示框最佳位置（考虑实际尺寸，避免遮挡目标）
     const tooltipPlacement = useMemo(() => {
         if (!targetRect) return { position: 'bottom' as const, coords: { top: 0, left: 0 } };
-        return calculateTooltipPosition(targetRect);
-    }, [targetRect]);
+        return calculateTooltipPosition(targetRect, tooltipSize);
+    }, [targetRect, tooltipSize]);
 
     const handleNext = useCallback(() => {
         if (!currentStep) return;
@@ -197,6 +216,7 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
 
             {/* ====== 提示框卡片（智能定位） ====== */}
             <div
+                ref={tooltipRef}
                 className="pointer-events-auto z-[92] transition-all duration-400 ease-out"
                 style={{
                     position: 'absolute',
@@ -351,77 +371,109 @@ function useTargetRect(
 // ============================================================
 // 计算提示框最佳位置（避开目标元素）
 // ============================================================
-function calculateTooltipPosition(targetRect: DOMRect): {
+function calculateTooltipPosition(
+    targetRect: DOMRect,
+    tooltipSize: { width: number; height: number }
+): {
     position: 'top' | 'bottom' | 'left' | 'right';
     coords: { top: number; left: number };
 } {
     const padding = 16;
-    const tooltipWidth = 380;
-    const tooltipHeight = 420; // 近似高度
     const gap = 16; // 与目标的间距
 
     const viewportW = window.innerWidth;
     const viewportH = window.innerHeight;
 
-    // 计算四个方向的可行性
-    const spaceAbove = targetRect.top;
-    const spaceBelow = viewportH - targetRect.bottom;
-    const spaceLeft = targetRect.left;
-    const spaceRight = viewportW - targetRect.right;
+    // 检查两个矩形是否重叠（含 gap 缓冲）
+    function overlaps(
+        t: { top: number; left: number; w: number; h: number },
+        r: DOMRect,
+        g: number
+    ): boolean {
+        return !(
+            t.left + t.w + g < r.left ||
+            t.left - g > r.right ||
+            t.top + t.h + g < r.top ||
+            t.top - g > r.bottom
+        );
+    }
 
-    // 优先级：下方 > 上方 > 右方 > 左方
-    if (spaceBelow > tooltipHeight + gap) {
-        return {
-            position: 'bottom',
-            coords: {
+    // 候选方向列表（按优先级排序）
+    type Dir = 'bottom' | 'top' | 'right' | 'left';
+    const candidates: { dir: Dir; coords: () => { top: number; left: number } }[] = [
+        {
+            dir: 'bottom',
+            coords: () => ({
                 top: targetRect.bottom + gap,
-                left: Math.max(padding, Math.min(viewportW - tooltipWidth - padding,
-                    targetRect.left + targetRect.width / 2 - tooltipWidth / 2)),
-            },
-        };
-    }
-
-    if (spaceAbove > tooltipHeight + gap) {
-        return {
-            position: 'top',
-            coords: {
-                top: targetRect.top - tooltipHeight - gap,
-                left: Math.max(padding, Math.min(viewportW - tooltipWidth - padding,
-                    targetRect.left + targetRect.width / 2 - tooltipWidth / 2)),
-            },
-        };
-    }
-
-    if (spaceRight > tooltipWidth + gap) {
-        return {
-            position: 'right',
-            coords: {
-                top: Math.max(padding, Math.min(viewportH - tooltipHeight - padding,
-                    targetRect.top + targetRect.height / 2 - tooltipHeight / 2)),
-                left: targetRect.right + gap,
-            },
-        };
-    }
-
-    if (spaceLeft > tooltipWidth + gap) {
-        return {
-            position: 'left',
-            coords: {
-                top: Math.max(padding, Math.min(viewportH - tooltipHeight - padding,
-                    targetRect.top + targetRect.height / 2 - tooltipHeight / 2)),
-                left: targetRect.left - tooltipWidth - gap,
-            },
-        };
-    }
-
-    // 兜底：放下方（可能需要滚动）
-    return {
-        position: 'bottom',
-        coords: {
-            top: targetRect.bottom + gap,
-            left: Math.max(padding, viewportW - tooltipWidth - padding),
+                left: Math.max(padding, Math.min(viewportW - tooltipSize.width - padding,
+                    targetRect.left + targetRect.width / 2 - tooltipSize.width / 2)),
+            }),
         },
-    };
+        {
+            dir: 'top',
+            coords: () => ({
+                top: targetRect.top - tooltipSize.height - gap,
+                left: Math.max(padding, Math.min(viewportW - tooltipSize.width - padding,
+                    targetRect.left + targetRect.width / 2 - tooltipSize.width / 2)),
+            }),
+        },
+        {
+            dir: 'right',
+            coords: () => ({
+                top: Math.max(padding, Math.min(viewportH - tooltipSize.height - padding,
+                    targetRect.top + targetRect.height / 2 - tooltipSize.height / 2)),
+                left: targetRect.right + gap,
+            }),
+        },
+        {
+            dir: 'left',
+            coords: () => ({
+                top: Math.max(padding, Math.min(viewportH - tooltipSize.height - padding,
+                    targetRect.top + targetRect.height / 2 - tooltipSize.height / 2)),
+                left: targetRect.left - tooltipSize.width - gap,
+            }),
+        },
+    ];
+
+    // 筛选完全在视口内且不遮挡目标的方向
+    for (const c of candidates) {
+        const pos = c.coords();
+        const tipRect = { top: pos.top, left: pos.left, w: tooltipSize.width, h: tooltipSize.height };
+        // 必须在视口内（允许贴边）且不与目标元素重叠
+        const inViewport =
+            tipRect.left >= padding - 8 &&
+            tipRect.left + tipRect.w <= viewportW - padding + 8 &&
+            tipRect.top >= padding - 8 &&
+            tipRect.top + tipRect.h <= viewportH - padding + 8;
+        if (inViewport && !overlaps(tipRect, targetRect, gap)) {
+            return { position: c.dir, coords: pos };
+        }
+    }
+
+    // 二次筛选：只要不遮挡目标即可（允许部分超出视口，后续由 CSS max-w 处理）
+    for (const c of candidates) {
+        const pos = c.coords();
+        const tipRect = { top: pos.top, left: pos.left, w: tooltipSize.width, h: tooltipSize.height };
+        if (!overlaps(tipRect, targetRect, gap)) {
+            return { position: c.dir, coords: pos };
+        }
+    }
+
+    // 最终兜底：强制推到目标下方，并确保至少不覆盖目标核心区域
+    const fallbackTop = targetRect.bottom + gap;
+    let fallbackLeft = targetRect.left + targetRect.width / 2 - tooltipSize.width / 2;
+    fallbackLeft = Math.max(padding, Math.min(viewportW - tooltipSize.width - padding, fallbackLeft));
+    // 如果下方空间不够，改为上方
+    if (fallbackTop + tooltipSize.height > viewportH - padding) {
+        const topPos = targetRect.top - tooltipSize.height - gap;
+        if (topPos > padding) {
+            return {
+                position: 'top',
+                coords: { top: topPos, left: fallbackLeft },
+            };
+        }
+    }
+    return { position: 'bottom', coords: { top: fallbackTop, left: fallbackLeft } };
 }
 
 // ============================================================
