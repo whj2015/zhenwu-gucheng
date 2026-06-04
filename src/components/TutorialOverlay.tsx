@@ -73,7 +73,7 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
 
     // 提示框最佳位置（考虑实际尺寸，避免遮挡目标）
     const tooltipPlacement = useMemo(() => {
-        if (!targetRect) return { position: 'bottom' as const, coords: { top: 0, left: 0 } };
+        if (!targetRect) return { position: 'bottom' as const, coords: { top: 0, left: 0 }, maxHeight: window.innerHeight - 32 };
         return calculateTooltipPosition(targetRect, tooltipSize);
     }, [targetRect, tooltipSize]);
 
@@ -221,6 +221,7 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
                 style={{
                     position: 'absolute',
                     ...tooltipPlacement.coords,
+                    maxHeight: tooltipPlacement.maxHeight,
                     ...(isAnimating ? { opacity: 0, transform: 'translateY(8px)' } : { opacity: 1, transform: 'translateY(0)' }),
                 }}
             >
@@ -229,18 +230,18 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
                     <ArrowIndicator placement={tooltipPlacement.position} targetRect={targetRect} />
                 )}
 
-                <div className="bg-[#131820]/98 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden relative w-[380px] max-w-[calc(100vw-32px)]">
+                <div className="bg-[#131820]/98 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden relative w-[380px] max-w-[calc(100vw-32px)] flex flex-col max-h-full">
                     {/* 顶部装饰线 */}
-                    <div className={`h-1 ${
+                    <div className={`shrink-0 h-1 ${
                         currentStep?.phase === 'basics' ? 'bg-indigo-500' :
                         currentStep?.phase === 'economy' ? 'bg-emerald-500' :
                         currentStep?.phase === 'combat' ? 'bg-orange-500' :
                         'bg-purple-500'
                     }`} />
 
-                    <div className="p-5 space-y-3.5">
+                    <div className="p-5 space-y-3.5 flex flex-col min-h-0">
                         {/* 头部 */}
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="shrink-0 flex items-start justify-between gap-3">
                             <div className="flex items-center gap-2 flex-wrap">
                                 <span className={`text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full ${
                                     currentStep?.phase === 'basics' ? 'bg-indigo-500/20 text-indigo-300' :
@@ -262,20 +263,20 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
                         </div>
 
                         {/* 标题 */}
-                        <h3 className="text-base font-serif font-bold text-slate-100 leading-tight">
+                        <h3 className="shrink-0 text-base font-serif font-bold text-slate-100 leading-tight">
                             {currentStep?.title}
                         </h3>
 
                         {/* 进度条 */}
-                        <div className="space-y-1">
+                        <div className="shrink-0 space-y-1">
                             <div className="h-1 bg-white/5 rounded-full overflow-hidden">
                                 <div className="h-full bg-gradient-to-r from-indigo-500 to-orange-500 rounded-full transition-all duration-500"
                                     style={{ width: `${progressPercent}%` }} />
                             </div>
                         </div>
 
-                        {/* 内容文本 */}
-                        <div className="max-h-[28vh] overflow-y-auto custom-scrollbar pr-1 space-y-2">
+                        {/* 内容文本（弹性区域，自动填充剩余空间并滚动） */}
+                        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 space-y-2">
                             {currentStep?.content.map((text, idx) =>
                                 text === '' ? (
                                     <div key={idx} className="h-2" />
@@ -289,7 +290,7 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
 
                         {/* 奖励 */}
                         {currentStep?.rewards && Object.keys(currentStep.rewards).length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 pt-1">
+                            <div className="shrink-0 flex flex-wrap gap-1.5 pt-1">
                                 {Object.entries(currentStep.rewards).map(([key, val]) => (
                                     <span key={key} className="px-2 py-0.5 bg-amber-500/10 text-amber-300 text-xs rounded border border-amber-500/20">
                                         +{val as number} {resourceLabel(key)}
@@ -299,7 +300,7 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
                         )}
 
                         {/* 操作按钮 */}
-                        <div className="flex items-center gap-2.5 pt-1">
+                        <div className="shrink-0 flex items-center gap-2.5 pt-1">
                             {currentStep?.skippable ? (
                                 <>
                                     <button
@@ -377,12 +378,33 @@ function calculateTooltipPosition(
 ): {
     position: 'top' | 'bottom' | 'left' | 'right';
     coords: { top: number; left: number };
+    maxHeight: number;
 } {
     const padding = 16;
-    const gap = 16; // 与目标的间距
+    const gap = 16;
 
     const viewportW = window.innerWidth;
     const viewportH = window.innerHeight;
+
+    // 将坐标钳制在视口范围内
+    function clampPos(top: number, left: number) {
+        return {
+            top: Math.max(padding, Math.min(viewportH - padding - tooltipSize.height, top)),
+            left: Math.max(padding, Math.min(viewportW - tooltipSize.width - padding, left)),
+        };
+    }
+
+    // 根据位置计算可用最大高度
+    function calcMaxHeight(posTop: number, dir: Dir): number {
+        if (dir === 'bottom') {
+            return Math.max(200, viewportH - posTop - padding);
+        }
+        if (dir === 'top') {
+            return Math.max(200, posTop - padding);
+        }
+        // left / right：垂直居中，取上下较小值的两倍
+        return Math.max(200, Math.min(posTop - padding, viewportH - posTop - tooltipSize.height - padding) * 2 + tooltipSize.height);
+    }
 
     // 检查两个矩形是否重叠（含 gap 缓冲）
     function overlaps(
@@ -437,43 +459,49 @@ function calculateTooltipPosition(
 
     // 筛选完全在视口内且不遮挡目标的方向
     for (const c of candidates) {
-        const pos = c.coords();
+        const raw = c.coords();
+        const pos = clampPos(raw.top, raw.left);
         const tipRect = { top: pos.top, left: pos.left, w: tooltipSize.width, h: tooltipSize.height };
-        // 必须在视口内（允许贴边）且不与目标元素重叠
         const inViewport =
             tipRect.left >= padding - 8 &&
             tipRect.left + tipRect.w <= viewportW - padding + 8 &&
             tipRect.top >= padding - 8 &&
             tipRect.top + tipRect.h <= viewportH - padding + 8;
         if (inViewport && !overlaps(tipRect, targetRect, gap)) {
-            return { position: c.dir, coords: pos };
+            return { position: c.dir, coords: pos, maxHeight: calcMaxHeight(pos.top, c.dir) };
         }
     }
 
-    // 二次筛选：只要不遮挡目标即可（允许部分超出视口，后续由 CSS max-w 处理）
+    // 二次筛选：只要不遮挡目标即可
     for (const c of candidates) {
-        const pos = c.coords();
+        const raw = c.coords();
+        const pos = clampPos(raw.top, raw.left);
         const tipRect = { top: pos.top, left: pos.left, w: tooltipSize.width, h: tooltipSize.height };
         if (!overlaps(tipRect, targetRect, gap)) {
-            return { position: c.dir, coords: pos };
+            return { position: c.dir, coords: pos, maxHeight: calcMaxHeight(pos.top, c.dir) };
         }
     }
 
-    // 最终兜底：强制推到目标下方，并确保至少不覆盖目标核心区域
-    const fallbackTop = targetRect.bottom + gap;
+    // 最终兜底：放目标下方，钳制到视口内
+    let fallbackTop = targetRect.bottom + gap;
     let fallbackLeft = targetRect.left + targetRect.width / 2 - tooltipSize.width / 2;
-    fallbackLeft = Math.max(padding, Math.min(viewportW - tooltipSize.width - padding, fallbackLeft));
     // 如果下方空间不够，改为上方
     if (fallbackTop + tooltipSize.height > viewportH - padding) {
         const topPos = targetRect.top - tooltipSize.height - gap;
         if (topPos > padding) {
-            return {
-                position: 'top',
-                coords: { top: topPos, left: fallbackLeft },
-            };
+            fallbackTop = topPos;
+        } else {
+            // 极端情况：上下空间都不够，紧贴目标下方但限制高度
+            fallbackTop = targetRect.bottom + gap;
         }
     }
-    return { position: 'bottom', coords: { top: fallbackTop, left: fallbackLeft } };
+    const clamped = clampPos(fallbackTop, fallbackLeft);
+    const isAbove = clamped.top < targetRect.top;
+    return {
+        position: isAbove ? 'top' : 'bottom',
+        coords: clamped,
+        maxHeight: calcMaxHeight(clamped.top, isAbove ? 'top' : 'bottom'),
+    };
 }
 
 // ============================================================
