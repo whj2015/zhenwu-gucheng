@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '1.0.0';
+export const CURRENT_VERSION = '1.1.0';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '1.1.0',
+    date: '2026-06-04',
+    type: 'minor',
+    changes: [
+      '📖 新增剧情系统：5幕17章完整叙事（镇武纪），从风雪夜归人到镇武新城，支持分支选择和里程碑触发推进；🎓 新增新手引导系统：4阶段13步分步引导（基础认知→经济运营→战斗探险→进阶技巧），含高亮目标、进度追踪、步骤奖励；📝 新增StoryPanel剧情面板组件（章节列表/阅读模式/分支选择/奖励展示）；🎯 新增TutorialOverlay引导覆盖组件（步骤卡片/高亮目标/进度条/奖励领取）；🔧 store新增8个剧情actions和4个引导actions'
+    ]
+  },
   {
     version: '1.0.0',
     date: '2026-06-04',

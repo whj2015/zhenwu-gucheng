@@ -98,7 +98,8 @@ export default function CityPanel() {
                              </div>
                          </div>
                          <button
-                             onClick={() => upgradeBuilding('houseLevel', houseCost)}
+                            data-tutorial-target="upgrade-house-btn"
+                            onClick={() => upgradeBuilding('houseLevel', houseCost)}
                              disabled={!canAfford(houseCost)}
                              className={cn("w-full py-2 sm:py-2 rounded font-bold tracking-widest text-[10px] sm:text-sm transition-all mobile-touch-target", canAfford(houseCost) ? "bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_15px_rgba(79,70,229,0.3)]" : "bg-white/5 text-slate-500 cursor-not-allowed border border-white/10")}
                          >
@@ -133,7 +134,8 @@ export default function CityPanel() {
                              </div>
                          </div>
                          <button
-                             onClick={() => upgradeBuilding('farmLevel', farmCost)}
+                            data-tutorial-target="upgrade-farm-btn"
+                            onClick={() => upgradeBuilding('farmLevel', farmCost)}
                              disabled={!canAfford(farmCost)}
                              className={cn("w-full py-2 sm:py-2 rounded font-bold tracking-widest text-[10px] sm:text-sm transition-all mobile-touch-target", canAfford(farmCost) ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]" : "bg-white/5 text-slate-500 cursor-not-allowed border border-white/10")}
                          >
