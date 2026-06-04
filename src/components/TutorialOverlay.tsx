@@ -362,24 +362,28 @@ function calculateTooltipPosition(
     const PADDING = 16;
     const GAP = 16;
     const CARD_W = 380;
-    const EXPECT_H = 420; // 用于重叠检测的预估高度（接近卡片自然尺寸）
+    const EXPECT_H = 420;
 
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
     type Dir = 'bottom' | 'top' | 'right' | 'left';
 
-    /** 检测放置在 (top, left) 高度为 h 的卡片是否与目标重叠 */
+    /**
+     * 检测放置在 (top, left) 高度为 h 的卡片是否与目标重叠。
+     * 矩形不重叠的条件是：在水平或垂直方向上完全分离（含 GAP 间距）。
+     * 使用 >= 判断边界相等的情况也算分离。
+     */
     function overlaps(top: number, left: number, h: number): boolean {
-        return !(
-            left + CARD_W + GAP < targetRect.left ||
-            left - GAP > targetRect.right ||
-            top + h + GAP < targetRect.top ||
-            top - GAP > targetRect.bottom
-        );
+        const sepLeft = left + CARD_W + GAP <= targetRect.left;   // 卡片整体在目标左侧
+        const sepRight = left - GAP >= targetRect.right;          // 卡片整体在目标右侧
+        const sepAbove = top + h + GAP <= targetRect.top;         // 卡片整体在目标上方
+        const sepBelow = top - GAP >= targetRect.bottom;          // 卡片整体在目标下方
+        // 只要在任一方向上完全分离，就不算重叠
+        return !(sepLeft || sepRight || sepAbove || sepBelow);
     }
 
-    /** 尝试一个方向：返回钳制后的位置、可用最大高度、是否重叠 */
+    /** 尝试一个方向 */
     function tryDir(dir: Dir): {
         top: number; left: number; usableMaxH: number; overlaps: boolean;
     } {
@@ -408,14 +412,14 @@ function calculateTooltipPosition(
             }
         }
 
-        // 钳制到视口内（用 EXPECT_H 做高度预估）
+        // 钳制到视口内
         const clampedTop = Math.max(PADDING, Math.min(vh - PADDING - EXPECT_H, idealTop));
         const clampedLeft = Math.max(PADDING, Math.min(vw - PADDING - CARD_W, idealLeft));
 
         // 实际可用最大高度 = 从卡片顶部到底部视口边缘的距离
         const usableMaxH = Math.max(120, vh - clampedTop - PADDING);
 
-        // 重叠检测用固定预估高度，不用 usableMaxH（后者可能远超实际渲染尺寸）
+        // 重叠检测用固定预估高度
         return {
             top: clampedTop,
             left: clampedLeft,
@@ -426,7 +430,7 @@ function calculateTooltipPosition(
 
     const dirs: Dir[] = ['bottom', 'top', 'right', 'left'];
 
-    // 第一轮：不重叠且空间 >= 200px
+    // 第一轮：不重叠且空间足够
     for (const dir of dirs) {
         const r = tryDir(dir);
         if (!r.overlaps && r.usableMaxH >= 200) {
@@ -434,7 +438,7 @@ function calculateTooltipPosition(
         }
     }
 
-    // 第二轮：不重叠即可（空间可能较紧）
+    // 第二轮：不重叠即可
     for (const dir of dirs) {
         const r = tryDir(dir);
         if (!r.overlaps) {
@@ -442,7 +446,7 @@ function calculateTooltipPosition(
         }
     }
 
-    // 兜底：选可用空间最大的方向
+    // 兜底
     let best = tryDir('bottom');
     for (const dir of dirs) {
         const r = tryDir(dir);
