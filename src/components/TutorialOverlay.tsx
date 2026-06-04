@@ -1,43 +1,42 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useGameStore } from '../store';
 import { TUTORIAL_STEPS, TUTORIAL_PHASES, type TutorialStepId } from '../data/tutorial';
-import { X, ChevronRight, SkipForward, Sparkles, RotateCcw } from 'lucide-react';
+import { X, ChevronRight, SkipForward, Sparkles, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
 
 interface TutorialOverlayProps {
-  /** 外部可控制是否显示 */
   forceVisible?: boolean;
 }
 
+// ============================================================
+// 主组件：带镂空遮罩的引导覆盖层
+// ============================================================
 export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) {
     const tutorialState = useGameStore((s) => s.tutorialState);
     const completeTutorialStep = useGameStore((s) => s.completeTutorialStep);
     const skipTutorial = useGameStore((s) => s.skipTutorial);
-    const setCurrentTutorialStep = useGameStore((s) => s.setCurrentTutorialStep);
 
     const [stepIndex, setStepIndex] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
 
-    // 获取所有步骤（按顺序）
-    const orderedSteps = useMemo(() => {
-        return Object.values(TUTORIAL_STEPS).sort((a, b) => a.order - b.order);
-    }, []);
+    // 所有步骤（按顺序）
+    const orderedSteps = useMemo(() =>
+        Object.values(TUTORIAL_STEPS).sort((a, b) => a.order - b.order), []
+    );
 
-    // 过滤出未完成且满足前置条件的步骤
-    const availableSteps = useMemo(() => {
-        return orderedSteps.filter(step => {
+    // 过滤可用步骤
+    const availableSteps = useMemo(() =>
+        orderedSteps.filter(step => {
             if (tutorialState.completedSteps.includes(step.id)) return false;
-            if (step.trigger.requireCompletedStep && !tutorialState.completedSteps.includes(step.trigger.requireCompletedStep)) {
-                return false;
-            }
+            if (step.trigger.requireCompletedStep && !tutorialState.completedSteps.includes(step.trigger.requireCompletedStep)) return false;
             return true;
-        });
-    }, [orderedSteps, tutorialState.completedSteps]);
+        }), [orderedSteps, tutorialState.completedSteps]
+    );
 
-    // 当前应显示的步骤
+    // 当前步骤
     const currentStep: typeof TUTORIAL_STEPS[TutorialStepId] | null = useMemo(() => {
         if (!tutorialState.isTutorialActive && !forceVisible) return null;
         if (availableSteps.length === 0) return null;
-        // 显示第一个可用步骤
         if (stepIndex >= availableSteps.length) {
             setStepIndex(Math.max(0, availableSteps.length - 1));
             return availableSteps[availableSteps.length - 1] || null;
@@ -45,32 +44,37 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
         return availableSteps[stepIndex] || null;
     }, [tutorialState.isTutorialActive, forceVisible, availableSteps, stepIndex]);
 
-    // 总进度
+    // 进度
     const totalSteps = orderedSteps.length;
     const completedCount = tutorialState.completedSteps.length;
     const progressPercent = Math.round((completedCount / totalSteps) * 100);
 
-    // 处理"下一步"
+    // 目标元素位置
+    const targetRect = useTargetRect(currentStep?.highlightTarget);
+
+    // 提示框最佳位置
+    const tooltipPlacement = useMemo(() => {
+        if (!targetRect) return { position: 'bottom' as const, coords: { top: 0, left: 0 } };
+        return calculateTooltipPosition(targetRect);
+    }, [targetRect]);
+
     const handleNext = useCallback(() => {
         if (!currentStep) return;
         setIsAnimating(true);
         setTimeout(() => {
             completeTutorialStep(currentStep.id);
-            setStepIndex(0); // 重置索引，因为完成一步后列表会变化
+            setStepIndex(0);
             setIsAnimating(false);
-        }, 300);
+        }, 350);
     }, [currentStep, completeTutorialStep]);
 
-    // 处理跳过
-    const handleSkip = useCallback(() => {
-        skipTutorial();
-    }, [skipTutorial]);
+    const handleSkip = useCallback(() => skipTutorial(), [skipTutorial]);
 
-    // 不显示的条件
+    // 不显示条件
     if (!forceVisible && !tutorialState.isTutorialActive) return null;
     if (!currentStep && !forceVisible) return null;
 
-    // 全部完成时的展示
+    // 全部完成
     if (availableSteps.length === 0 && completedCount > 0) {
         return (
             <div className="fixed inset-0 z-[90] pointer-events-none flex items-center justify-center">
@@ -87,19 +91,126 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
     const phaseInfo = currentStep?.phase ? TUTORIAL_PHASES[currentStep.phase] : null;
 
     return (
-        <div className={`fixed inset-0 z-[90] transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
-            {/* 暗色遮罩 */}
-            <div className="absolute inset-0 bg-black/50 pointer-events-auto" onClick={(e) => e.stopPropagation()} />
+        <div
+            ref={containerRef}
+            className={`fixed inset-0 z-[90] transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}
+        >
+            {/* ====== 镂空遮罩层 (SVG clip-path) ====== */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-auto" style={{ zIndex: 1 }}>
+                <defs>
+                    {/* 遮罩：默认全黑，目标区域透明 */}
+                    <mask id="tutorial-mask">
+                        {/* 白色 = 可见区域，黑色 = 遮罩区域 */}
+                        <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                        {targetRect && (
+                            <>
+                                {/* 目标区域镂空（黑色 = 透明） */}
+                                <rect
+                                    x={targetRect.left - 8}
+                                    y={targetRect.top - 8}
+                                    width={targetRect.width + 16}
+                                    height={targetRect.height + 16}
+                                    rx={12}
+                                    fill="black"
+                                    className={`transition-all duration-400 ease-out ${isAnimating ? 'opacity-0' : 'opacity-100'}`}
+                                />
+                            </>
+                        )}
+                    </mask>
+                    {/* 聚光灯光晕渐变 */}
+                    {targetRect && (
+                        <radialGradient id="spotlight-glow" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stopColor="#f97316" stopOpacity="0.15" />
+                            <stop offset="70%" stopColor="#f97316" stopOpacity="0.05" />
+                            <stop offset="100%" stopColor="#f97316" stopOpacity="0" />
+                        </radialGradient>
+                    )}
+                </defs>
 
-            {/* 高亮区域指示器 */}
-            {currentStep?.highlightTarget && (
-                <HighlightTarget target={currentStep.highlightTarget} />
-            )}
+                {/* 半透明暗色背景（被遮罩镂空） */}
+                <rect x="0" y="0" width="100%" height="100%"
+                    fill="rgba(0, 0, 0, 0.65)"
+                    mask="url(#tutorial-mask)"
+                    style={{ backdropFilter: 'blur(2px)' }}
+                />
 
-            {/* 引导卡片 */}
-            <div className="absolute bottom-6 left-4 right-4 sm:left-auto sm:right-8 sm:w-[420px] pointer-events-auto animate-in slide-in-from-bottom-4 duration-300">
-                <div className="bg-[#131820]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden relative">
-                    {/* 顶部装饰线 - 根据阶段变色 */}
+                {/* 聚光灯光晕 */}
+                {targetRect && (
+                    <ellipse
+                        cx={targetRect.left + targetRect.width / 2}
+                        cy={targetRect.top + targetRect.height / 2}
+                        rx={Math.max(targetRect.width, targetRect.height) * 0.8}
+                        ry={Math.max(targetRect.width, targetRect.height) * 0.6}
+                        fill="url(#spotlight-glow)"
+                        className={`transition-all duration-500 ${isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
+                    />
+                )}
+
+                {/* 高亮边框（围绕目标元素） */}
+                {targetRect && (
+                    <rect
+                        x={targetRect.left - 6}
+                        y={targetRect.top - 6}
+                        width={targetRect.width + 12}
+                        height={targetRect.height + 12}
+                        rx={10}
+                        fill="none"
+                        stroke="#f97316"
+                        strokeWidth={2}
+                        className={`transition-all duration-400 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}
+                        style={{
+                            filter: 'drop-shadow(0 0 8px rgba(249,115,22,0.5)) drop-shadow(0 0 16px rgba(249,115,22,0.2))',
+                        }}
+                    >
+                        {/* 边框流动动画 */}
+                        <animate
+                            attributeName="stroke-opacity"
+                            values="1;0.5;1"
+                            dur="2s"
+                            repeatCount="indefinite"
+                        />
+                    </rect>
+                )}
+
+                {/* 四角装饰 */}
+                {targetRect && (
+                    <>
+                        {/* 左上角 */}
+                        <path d={`M${targetRect.left - 12},${targetRect.top + 4} L${targetRect.left - 12},${targetRect.top - 12} L${targetRect.left + 4},${targetRect.top - 12}`}
+                            fill="none" stroke="#fbbf24" strokeWidth={2.5} strokeLinecap="round"
+                            className={`transition-all duration-400 ${isAnimating ? 'opacity-0' : 'opacity-100'}`} />
+                        {/* 右上角 */}
+                        <path d={`M${targetRect.right - 4},${targetRect.top - 12} L${targetRect.right + 12},${targetRect.top - 12} L${targetRect.right + 12},${targetRect.top + 4}`}
+                            fill="none" stroke="#fbbf24" strokeWidth={2.5} strokeLinecap="round"
+                            className={`transition-all duration-400 ${isAnimating ? 'opacity-0' : 'opacity-100'}`} />
+                        {/* 左下角 */}
+                        <path d={`M${targetRect.left - 12},${targetRect.bottom - 4} L${targetRect.left - 12},${targetRect.bottom + 12} L${targetRect.left + 4},${targetRect.bottom + 12}`}
+                            fill="none" stroke="#fbbf24" strokeWidth={2.5} strokeLinecap="round"
+                            className={`transition-all duration-400 ${isAnimating ? 'opacity-0' : 'opacity-100'}`} />
+                        {/* 右下角 */}
+                        <path d={`M${targetRect.right - 4},${targetRect.bottom + 12} L${targetRect.right + 12},${targetRect.bottom + 12} L${targetRect.right + 12},${targetRect.bottom - 4}`}
+                            fill="none" stroke="#fbbf24" strokeWidth={2.5} strokeLinecap="round"
+                            className={`transition-all duration-400 ${isAnimating ? 'opacity-0' : 'opacity-100'}`} />
+                    </>
+                )}
+            </svg>
+
+            {/* ====== 提示框卡片（智能定位） ====== */}
+            <div
+                className="pointer-events-auto z-[92] transition-all duration-400 ease-out"
+                style={{
+                    position: 'absolute',
+                    ...tooltipPlacement.coords,
+                    ...(isAnimating ? { opacity: 0, transform: 'translateY(8px)' } : { opacity: 1, transform: 'translateY(0)' }),
+                }}
+            >
+                {/* 指向箭头 */}
+                {targetRect && (
+                    <ArrowIndicator placement={tooltipPlacement.position} targetRect={targetRect} />
+                )}
+
+                <div className="bg-[#131820]/98 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden relative w-[380px] max-w-[calc(100vw-32px)]">
+                    {/* 顶部装饰线 */}
                     <div className={`h-1 ${
                         currentStep?.phase === 'basics' ? 'bg-indigo-500' :
                         currentStep?.phase === 'economy' ? 'bg-emerald-500' :
@@ -107,105 +218,85 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
                         'bg-purple-500'
                     }`} />
 
-                    <div className="p-5 space-y-4">
-                        {/* 头部：阶段 + 步骤名 + 关闭 */}
+                    <div className="p-5 space-y-3.5">
+                        {/* 头部 */}
                         <div className="flex items-start justify-between gap-3">
-                            <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className={`text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full ${
-                                        currentStep?.phase === 'basics' ? 'bg-indigo-500/20 text-indigo-300' :
-                                        currentStep?.phase === 'economy' ? 'bg-emerald-500/20 text-emerald-300' :
-                                        currentStep?.phase === 'combat' ? 'bg-orange-500/20 text-orange-300' :
-                                        'bg-purple-500/20 text-purple-300'
-                                    }`}>
-                                        {phaseInfo?.icon} {phaseInfo?.name}
-                                    </span>
-                                </div>
-                                <h3 className="text-base font-serif font-bold text-slate-100">
-                                    {currentStep?.title}
-                                </h3>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full ${
+                                    currentStep?.phase === 'basics' ? 'bg-indigo-500/20 text-indigo-300' :
+                                    currentStep?.phase === 'economy' ? 'bg-emerald-500/20 text-emerald-300' :
+                                    currentStep?.phase === 'combat' ? 'bg-orange-500/20 text-orange-300' :
+                                    'bg-purple-500/20 text-purple-300'
+                                }`}>
+                                    {phaseInfo?.icon} {phaseInfo?.name}
+                                </span>
+                                <span className="text-[10px] text-slate-600">
+                                    {completedCount + 1}/{totalSteps}
+                                </span>
                             </div>
-                            <button
-                                onClick={handleSkip}
-                                className="shrink-0 p-1.5 hover:bg-white/10 rounded-lg transition-colors text-slate-500 hover:text-red-400 group"
-                                title="跳过引导"
-                            >
+                            <button onClick={handleSkip}
+                                className="shrink-0 p-1.5 hover:bg-white/10 rounded-lg transition-colors text-slate-500 hover:text-red-400"
+                                title="跳过引导">
                                 <SkipForward className="w-4 h-4" />
                             </button>
                         </div>
 
+                        {/* 标题 */}
+                        <h3 className="text-base font-serif font-bold text-slate-100 leading-tight">
+                            {currentStep?.title}
+                        </h3>
+
                         {/* 进度条 */}
                         <div className="space-y-1">
-                            <div className="flex justify-between text-[10px] text-slate-500">
-                                <span>进度</span>
-                                <span>{completedCount}/{totalSteps} ({progressPercent}%)</span>
-                            </div>
                             <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-gradient-to-r from-indigo-500 to-orange-500 rounded-full transition-all duration-500"
-                                    style={{ width: `${progressPercent}%` }}
-                                />
+                                <div className="h-full bg-gradient-to-r from-indigo-500 to-orange-500 rounded-full transition-all duration-500"
+                                    style={{ width: `${progressPercent}%` }} />
                             </div>
                         </div>
 
                         {/* 内容文本 */}
-                        <div className="max-h-[35vh] overflow-y-auto custom-scrollbar pr-1 space-y-2">
-                            {currentStep?.content.map((text, idx) => (
+                        <div className="max-h-[28vh] overflow-y-auto custom-scrollbar pr-1 space-y-2">
+                            {currentStep?.content.map((text, idx) =>
                                 text === '' ? (
                                     <div key={idx} className="h-2" />
                                 ) : (
                                     <p key={idx} className={`text-sm leading-relaxed ${
                                         idx === 0 ? 'text-slate-200 font-medium' : 'text-slate-400'
-                                    }`}>
-                                        {text}
-                                    </p>
+                                    }`}>{text}</p>
                                 )
-                            ))}
+                            )}
                         </div>
 
-                        {/* 奖励提示 */}
+                        {/* 奖励 */}
                         {currentStep?.rewards && Object.keys(currentStep.rewards).length > 0 && (
-                            <div className="flex flex-wrap gap-2 text-xs">
+                            <div className="flex flex-wrap gap-1.5 pt-1">
                                 {Object.entries(currentStep.rewards).map(([key, val]) => (
-                                    <span key={key} className="px-2 py-1 bg-amber-500/10 text-amber-300 rounded border border-amber-500/20">
+                                    <span key={key} className="px-2 py-0.5 bg-amber-500/10 text-amber-300 text-xs rounded border border-amber-500/20">
                                         +{val as number} {resourceLabel(key)}
                                     </span>
                                 ))}
                             </div>
                         )}
 
-                        {/* 底部操作栏 */}
-                        <div className="flex items-center gap-3 pt-2">
+                        {/* 操作按钮 */}
+                        <div className="flex items-center gap-2.5 pt-1">
                             {currentStep?.skippable ? (
                                 <>
                                     <button
-                                        onClick={() => {
-                                            if (stepIndex < availableSteps.length - 1) {
-                                                setStepIndex(stepIndex + 1);
-                                            } else {
-                                                handleNext();
-                                            }
-                                        }}
+                                        onClick={() => stepIndex < availableSteps.length - 1 ? setStepIndex(stepIndex + 1) : handleNext()}
                                         disabled={availableSteps.length <= 1}
-                                        className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 font-medium rounded-lg transition-all text-sm"
-                                    >
+                                        className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 font-medium rounded-lg transition-all text-sm disabled:opacity-30 disabled:cursor-not-allowed">
                                         下一步
                                     </button>
-                                    <button
-                                        onClick={handleNext}
-                                        className="flex-1 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg transition-all shadow-[0_4px_15px_rgba(234,88,12,0.3)] text-sm flex items-center justify-center gap-2"
-                                    >
-                                        完成并领取奖励
-                                        <ChevronRight className="w-4 h-4" />
+                                    <button onClick={handleNext}
+                                        className="flex-1 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg transition-all shadow-[0_4px_15px_rgba(234,88,12,0.3)] text-sm flex items-center justify-center gap-2">
+                                        完成并领取奖励 <ChevronRight className="w-4 h-4" />
                                     </button>
                                 </>
                             ) : (
-                                <button
-                                    onClick={handleNext}
-                                    className="w-full py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg transition-all shadow-[0_4px_15px_rgba(234,88,12,0.3)] text-sm flex items-center justify-center gap-2"
-                                >
-                                    我知道了
-                                    <ChevronRight className="w-4 h-4" />
+                                <button onClick={handleNext}
+                                    className="w-full py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg transition-all shadow-[0_4px_15px_rgba(234,88,12,0.3)] text-sm flex items-center justify-center gap-2">
+                                    我知道了 <ChevronRight className="w-4 h-4" />
                                 </button>
                             )}
                         </div>
@@ -216,71 +307,193 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
     );
 }
 
-/** 高亮目标区域 */
-function HighlightTarget({ target }: { target: NonNullable<typeof TUTORIAL_STEPS[TutorialStepId]>['highlightTarget'] }) {
-    const [position, setPosition] = useState<DOMRect | null>(null);
+// ============================================================
+// Hook: 获取目标元素的屏幕位置
+// ============================================================
+function useTargetRect(
+    highlightTarget?: NonNullable<typeof TUTORIAL_STEPS[TutorialStepId]>['highlightTarget']
+): DOMRect | null {
+    const [rect, setRect] = useState<DOMRect | null>(null);
 
     useEffect(() => {
+        if (!highlightTarget) {
+            setRect(null);
+            return;
+        }
+
         let el: Element | null = null;
-        if (target.type === 'tab') {
-            // 查找导航按钮
-            el = document.querySelector(`[data-tab-id="${target.id}"]`);
-        } else if (target.type === 'element') {
-            el = document.querySelector(`[data-tutorial-target="${target.id}"]`) ||
-                 document.querySelector(`#${target.id}`);
-        } else if (target.type === 'area') {
-            el = document.querySelector(`[data-tutorial-area="${target.id}"]`);
+
+        switch (highlightTarget.type) {
+            case 'tab':
+                el = document.querySelector(`[data-tab-id="${highlightTarget.id}"]`);
+                break;
+            case 'element':
+                el = document.querySelector(`[data-tutorial-target="${highlightTarget.id}"]`)
+                    || document.getElementById(highlightTarget.id)
+                    || document.querySelector(`[aria-label="${highlightTarget.id}"]`);
+                break;
+            case 'area':
+                el = document.querySelector(`[data-tutorial-area="${highlightTarget.id}"]`);
+                break;
         }
 
         if (el) {
-            const rect = el.getBoundingClientRect();
-            setPosition(rect);
+            const r = el.getBoundingClientRect();
+            setRect(r);
         } else {
-            setPosition(null);
+            setRect(null);
         }
-    }, [target]);
+    }, [highlightTarget]);
 
-    if (!position) return null;
-
-    return (
-        <>
-            {/* 高亮框 */}
-            <div
-                className="absolute pointer-events-none border-2 border-orange-400 rounded-lg shadow-[0_0_20px_rgba(251,146,60,0.4)] transition-all duration-300 z-[91]"
-                style={{
-                    top: position.top - 4,
-                    left: position.left - 4,
-                    width: position.width + 8,
-                    height: position.height + 8,
-                }}
-            />
-            {/* 标签 */}
-            {target.label && (
-                <div
-                    className="absolute z-[92] px-3 py-1.5 bg-orange-500 text-white text-xs font-bold rounded-lg shadow-lg whitespace-nowrap animate-bounce"
-                    style={{
-                        top: position.bottom + 12,
-                        left: position.left + position.width / 2,
-                        transform: 'translateX(-50%)',
-                    }}
-                >
-                    {target.label}
-                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-orange-500 rotate-45" />
-                </div>
-            )}
-        </>
-    );
+    return rect;
 }
 
-/** 资源名称映射 */
+// ============================================================
+// 计算提示框最佳位置（避开目标元素）
+// ============================================================
+function calculateTooltipPosition(targetRect: DOMRect): {
+    position: 'top' | 'bottom' | 'left' | 'right';
+    coords: { top: number; left: number };
+} {
+    const padding = 16;
+    const tooltipWidth = 380;
+    const tooltipHeight = 420; // 近似高度
+    const gap = 16; // 与目标的间距
+
+    const viewportW = window.innerWidth;
+    const viewportH = window.innerHeight;
+
+    // 计算四个方向的可行性
+    const spaceAbove = targetRect.top;
+    const spaceBelow = viewportH - targetRect.bottom;
+    const spaceLeft = targetRect.left;
+    const spaceRight = viewportW - targetRect.right;
+
+    // 优先级：下方 > 上方 > 右方 > 左方
+    if (spaceBelow > tooltipHeight + gap) {
+        return {
+            position: 'bottom',
+            coords: {
+                top: targetRect.bottom + gap,
+                left: Math.max(padding, Math.min(viewportW - tooltipWidth - padding,
+                    targetRect.left + targetRect.width / 2 - tooltipWidth / 2)),
+            },
+        };
+    }
+
+    if (spaceAbove > tooltipHeight + gap) {
+        return {
+            position: 'top',
+            coords: {
+                top: targetRect.top - tooltipHeight - gap,
+                left: Math.max(padding, Math.min(viewportW - tooltipWidth - padding,
+                    targetRect.left + targetRect.width / 2 - tooltipWidth / 2)),
+            },
+        };
+    }
+
+    if (spaceRight > tooltipWidth + gap) {
+        return {
+            position: 'right',
+            coords: {
+                top: Math.max(padding, Math.min(viewportH - tooltipHeight - padding,
+                    targetRect.top + targetRect.height / 2 - tooltipHeight / 2)),
+                left: targetRect.right + gap,
+            },
+        };
+    }
+
+    if (spaceLeft > tooltipWidth + gap) {
+        return {
+            position: 'left',
+            coords: {
+                top: Math.max(padding, Math.min(viewportH - tooltipHeight - padding,
+                    targetRect.top + targetRect.height / 2 - tooltipHeight / 2)),
+                left: targetRect.left - tooltipWidth - gap,
+            },
+        };
+    }
+
+    // 兜底：放下方（可能需要滚动）
+    return {
+        position: 'bottom',
+        coords: {
+            top: targetRect.bottom + gap,
+            left: Math.max(padding, viewportW - tooltipWidth - padding),
+        },
+    };
+}
+
+// ============================================================
+// 箭头指示器组件
+// ============================================================
+function ArrowIndicator({
+    placement,
+    targetRect,
+}: {
+    placement: 'top' | 'bottom' | 'left' | 'right';
+    targetRect: DOMRect;
+}) {
+    const arrowSize = 10;
+    const color = '#131820'; // 卡片背景色
+    const borderColor = 'rgba(255,255,255,0.1)';
+
+    // 根据位置计算箭头位置
+    const getArrowStyle = (): React.CSSProperties => {
+        const base: React.CSSProperties = {
+            position: 'absolute',
+            width: 0,
+            height: 0,
+            borderStyle: 'solid',
+        };
+
+        switch (placement) {
+            case 'bottom':
+                return {
+                    ...base,
+                    top: -arrowSize,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    borderWidth: `${arrowSize}px ${arrowSize}px 0`,
+                    borderColor: `${color} transparent transparent transparent`,
+                };
+            case 'top':
+                return {
+                    ...base,
+                    bottom: -arrowSize,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    borderWidth: `0 ${arrowSize}px ${arrowSize}px`,
+                    borderColor: `transparent transparent ${color} transparent`,
+                };
+            case 'left':
+                return {
+                    ...base,
+                    right: -arrowSize,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    borderWidth: `${arrowSize}px 0 ${arrowSize}px ${arrowSize}px`,
+                    borderColor: `transparent transparent transparent ${color}`,
+                };
+            case 'right':
+                return {
+                    ...base,
+                    left: -arrowSize,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    borderWidth: `${arrowSize}px ${arrowSize}px ${arrowSize}px 0`,
+                    borderColor: `transparent ${color} transparent transparent`,
+                };
+        }
+    };
+
+    return <div style={getArrowStyle()} />;
+}
+
+/** 资源名称 */
 function resourceLabel(key: string): string {
     const labels: Record<string, string> = {
-        bingxiang: '兵饷',
-        iron: '铁锭',
-        food: '粮草',
-        wood: '木材',
-        meteorite: '陨铁',
-        population: '人口',
+        bingxiang: '兵饷', iron: '铁锭', food: '粮草', wood: '木材', meteorite: '陨铁', population: '人口',
     };
     return labels[key] || key;
 }

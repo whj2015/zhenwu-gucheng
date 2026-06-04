@@ -13,18 +13,21 @@ export const TabButton = memo(function TabButton({
     t,
     isActive,
     onClick,
-    variant = 'sidebar'
+    variant = 'sidebar',
+    dataTabId,
 }: {
     t: TabItem;
     isActive: boolean;
     onClick: () => void;
     variant?: 'sidebar' | 'mobile';
+    dataTabId?: string;
 }) {
     const Icon = t.icon;
 
     if (variant === 'mobile') {
         return (
             <button
+                data-tab-id={dataTabId}
                 onClick={onClick}
                 className={cn(
                     "flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 rounded-lg transition-all min-w-0 flex-1 max-w-[16%] mobile-touch-target",
@@ -44,6 +47,7 @@ export const TabButton = memo(function TabButton({
 
     return (
         <button
+            data-tab-id={dataTabId}
             key={t.id}
             onClick={onClick}
             className={cn(

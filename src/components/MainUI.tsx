@@ -153,16 +153,17 @@ const handleAchievementModal = useCallback(() => {
                             t={t}
                             isActive={activeTab === t.id}
                             onClick={() => handleTabChange(t.id)}
+                            dataTabId={t.id}
                         />
                     ))}
                 </nav>
                 <div className="p-4 border-t border-white/5 text-[10px] text-slate-600 font-mono tracking-widest uppercase flex justify-between items-center">
                     <span>Project Zhenwu</span>
                     <div className="flex items-center gap-2">
-<button onClick={handleStoryModalOpen} className="hover:text-orange-400 transition-colors p-1 relative" title="镇武纪">
+<button onClick={handleStoryModalOpen} data-tutorial-target="story-panel-btn" className="hover:text-orange-400 transition-colors p-1 relative" title="镇武纪">
                             <BookOpen className="w-4 h-4" />
                         </button>
-<button onClick={handleQuestBoardOpen} className="hover:text-emerald-500 transition-colors p-1" title="查看任务">
+<button onClick={handleQuestBoardOpen} data-tutorial-target="quest-board-btn" className="hover:text-emerald-500 transition-colors p-1" title="查看任务">
                             <ClipboardList className="w-4 h-4" />
                         </button>
                         <button onClick={handleAchievementModal} className="hover:text-amber-500 transition-colors p-1" title="查看功勋簿">
@@ -192,13 +193,13 @@ const handleAchievementModal = useCallback(() => {
                       </div>
                       <TopResourceBar />
                       <div className="flex items-center gap-1.5">
-<button onClick={handleStoryModalOpen} className="text-slate-500 hover:text-orange-400 transition-colors p-1.5 shrink-0" title="镇武纪">
+<button onClick={handleStoryModalOpen} data-tutorial-target="story-panel-btn" className="text-slate-500 hover:text-orange-400 transition-colors p-1.5 shrink-0" title="镇武纪">
                               <BookOpen className="w-4 h-4" />
                           </button>
-                          <button onClick={handleQuestBoardOpen} className="text-slate-500 hover:text-emerald-500 transition-colors p-1.5 shrink-0" title="查看任务">
+                          <button onClick={handleQuestBoardOpen} data-tutorial-target="quest-board-btn" className="text-slate-500 hover:text-emerald-500 transition-colors p-1.5 shrink-0" title="查看任务">
                               <ClipboardList className="w-4 h-4" />
                           </button>
-                          <button onClick={handleAchievementModal} className="text-slate-500 hover:text-amber-500 transition-colors p-1.5 shrink-0" title="查看功勋簿">
+                          <button onClick={handleAchievementModal} data-tutorial-target="achievement-btn" className="text-slate-500 hover:text-amber-500 transition-colors p-1.5 shrink-0" title="查看功勋簿">
                               <Trophy className="w-4 h-4" />
                           </button>
                           <button onClick={handleUpdateLogModal} className="text-slate-500 hover:text-orange-500 transition-colors p-1.5 shrink-0" title="查看更新公告">
@@ -234,6 +235,7 @@ const handleAchievementModal = useCallback(() => {
                                   isActive={activeTab === t.id}
                                   onClick={() => handleTabChange(t.id)}
                                   variant="mobile"
+                                  dataTabId={t.id}
                               />
                           ))}
                       </div>
@@ -337,7 +339,7 @@ function TopResourceBar() {
     }, [population, houseLevel, farmLevel, lumberCampLevel]);
 
     return (
-        <div className="flex items-center gap-1 sm:gap-2 lg:gap-6 lg:overflow-visible overflow-x-auto">
+        <div data-tutorial-area="top-resource-bar" className="flex items-center gap-1 sm:gap-2 lg:gap-6 lg:overflow-visible overflow-x-auto">
             <ResourceItem label="人口" value={`${resourceData.pop}/${resourceData.maxPop}`} color="text-indigo-200" dotColor="bg-indigo-500" icon="👤" />
             <ResourceItem label="粮草" value={food} color="text-emerald-200" dotColor="bg-emerald-500" sub={`+${resourceData.foodRate}/m`} icon="🌾" />
             <ResourceItem label="木材" value={wood} color="text-orange-200" dotColor="bg-orange-700" sub={`+${resourceData.woodRate}/m`} icon="🪵" />
