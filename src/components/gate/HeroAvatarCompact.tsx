@@ -12,6 +12,7 @@ const HeroAvatarCompact: React.FC<{ heroId: string | null }> = ({ heroId }) => {
     const h = heroes.find(x => x.id === heroId);
     if (!h) return null;
     const t = HERO_TEMPLATES[h.templateId];
+    if (!t) return null;
     const maxHp = t.attributes.physique * 10;
     const hpPct = Math.max(0, (h.hp / maxHp) * 100);
 

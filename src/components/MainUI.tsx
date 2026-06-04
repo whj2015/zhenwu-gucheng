@@ -97,6 +97,7 @@ const [achievementModal, setAchievementModal] = useState(false);
     const handleConfirmReset = useCallback(() => {
         useGameStore.getState().resetGame();
         setResetModal(false);
+        setActiveTab('city');
     }, []);
 
     const handleCloseUpdateLog = useCallback(() => {

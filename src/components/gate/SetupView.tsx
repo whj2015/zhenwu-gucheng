@@ -227,6 +227,7 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                     <div className="lg:hidden flex gap-1.5 overflow-x-auto overflow-y-hidden min-h-0 pt-0.5">
                         {heroes.map(h => {
                             const t = HERO_TEMPLATES[h.templateId];
+                            if (!t) return null;
                             const d = deployedIds.has(h.id);
                             return (
                                 <div key={h.id} className={cn(
@@ -248,6 +249,7 @@ export default function SetupView({ missionId, onCancel, onDeploy }: { missionId
                     <div className="hidden lg:block flex-1 overflow-y-auto custom-scrollbar space-y-1 pr-0.5 pt-1">
                         {heroes.map(h => {
                             const t = HERO_TEMPLATES[h.templateId];
+                            if (!t) return null;
                             const d = deployedIds.has(h.id);
                             return (
                                 <div key={h.id} className={cn(
