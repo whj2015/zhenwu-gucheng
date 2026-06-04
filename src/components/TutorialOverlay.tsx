@@ -54,7 +54,10 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
 
     // 提示框最佳位置（避免遮挡目标）
     const tooltipPlacement = useMemo(() => {
-        if (!targetRect) return { position: 'bottom' as const, coords: { top: 0, left: 0 }, maxHeight: window.innerHeight - 32 };
+        if (!targetRect) {
+            console.warn('[Tutorial] targetRect 为 null! highlightTarget:', currentStep?.highlightTarget);
+            return { position: 'bottom' as const, coords: { top: 80, left: 16 }, maxHeight: window.innerHeight - 128 };
+        }
         return calculateTooltipPosition(targetRect);
     }, [targetRect]);
 
@@ -362,98 +365,94 @@ function calculateTooltipPosition(
     const PADDING = 16;
     const GAP = 16;
     const CARD_W = 380;
-    const MAX_CARD_H = 500; // 卡片自然高度上限
 
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    type Dir = 'bottom' | 'top' | 'right' | 'left';
+    // 每个方向：[位置计算函数, 方向名]
+    type Dir = 'right' | 'bottom' | 'left' | 'top';
+
+    /** 检测矩形是否重叠（含 GAP 间距缓冲） */
+    function rectsOverlap(
+        t: { top: number; left: number; w: number; h: number },
+        r: DOMRect
+    ): boolean {
+        // 不重叠 = 任一方向完全分离
+        const separated =
+            t.left + t.w + GAP <= r.left ||   // 卡片在目标左侧
+            t.left - GAP >= r.right ||         // 卡片在目标右侧
+            t.top + t.h + GAP <= r.top ||      // 卡片在目标上方
+            t.top - GAP >= r.bottom;           // 卡片在目标下方
+        return !separated;
+    }
 
     /**
-     * 检测放置在 (top, left) 高度为 h 的卡片是否与目标重叠。
-     * 矩形不重叠的条件：在水平或垂直方向上完全分离（含 GAP 间距）。
+     * 计算某个方向的位置和可用高度。
+     * 返回 null 表示该方向不可行（空间不够或超出视口）。
      */
-    function overlaps(top: number, left: number, h: number): boolean {
-        const sepLeft = left + CARD_W + GAP <= targetRect.left;
-        const sepRight = left - GAP >= targetRect.right;
-        const sepAbove = top + h + GAP <= targetRect.top;
-        const sepBelow = top - GAP >= targetRect.bottom;
-        return !(sepLeft || sepRight || sepAbove || sepBelow);
-    }
-
-    /** 尝试一个方向，返回位置、实际渲染高度（检测和返回值一致）、是否重叠 */
-    function tryDir(dir: Dir): {
-        top: number; left: number; effectiveH: number; overlaps: boolean;
-    } {
-        let idealTop: number, idealLeft: number;
+    function calcDir(dir: Dir): {
+        top: number; left: number; maxH: number;
+    } | null {
+        let top: number, left: number;
 
         switch (dir) {
-            case 'bottom': {
-                idealTop = targetRect.bottom + GAP;
-                idealLeft = targetRect.left + targetRect.width / 2 - CARD_W / 2;
+            case 'right':
+                left = targetRect.right + GAP;
+                top = targetRect.top + targetRect.height / 2 - 250; // 先按 250 居中估算
                 break;
-            }
-            case 'top': {
-                idealTop = targetRect.top - MAX_CARD_H - GAP;
-                idealLeft = targetRect.left + targetRect.width / 2 - CARD_W / 2;
+            case 'left':
+                left = targetRect.left - CARD_W - GAP;
+                top = targetRect.top + targetRect.height / 2 - 250;
                 break;
-            }
-            case 'right': {
-                idealLeft = targetRect.right + GAP;
-                idealTop = targetRect.top + targetRect.height / 2 - MAX_CARD_H / 2;
+            case 'bottom':
+                top = targetRect.bottom + GAP;
+                left = targetRect.left + targetRect.width / 2 - CARD_W / 2;
                 break;
-            }
-            case 'left': {
-                idealLeft = targetRect.left - CARD_W - GAP;
-                idealTop = targetRect.top + targetRect.height / 2 - MAX_CARD_H / 2;
+            case 'top':
+                top = targetRect.top - 500 - GAP;
+                left = targetRect.left + targetRect.width / 2 - CARD_W / 2;
                 break;
-            }
         }
 
-        // 钳制到视口内（用 MAX_CARD_H 做高度预估）
-        const clampedTop = Math.max(PADDING, Math.min(vh - PADDING - MAX_CARD_H, idealTop));
-        const clampedLeft = Math.max(PADDING, Math.min(vw - PADDING - CARD_W, idealLeft));
+        // 钳制到视口内
+        top = Math.max(PADDING, Math.min(vh - PADDING - 100, top));   // 至少留 100px 高度
+        left = Math.max(PADDING, Math.min(vw - PADDING - CARD_W, left));
 
-        // 实际可用高度 = 从卡片顶部到底部视口边缘的距离
-        const availableH = vh - clampedTop - PADDING;
+        // 实际可用高度 = 从卡片顶部到底部视口边缘
+        const maxH = Math.max(150, vh - top - PADDING);
 
-        // 有效渲染高度 = min(可用空间, 自然上限)，这就是卡片实际会渲染的高度
-        const effectiveH = Math.max(120, Math.min(MAX_CARD_H, availableH));
-
-        // 重叠检测使用与实际渲染一致的高度
-        return {
-            top: clampedTop,
-            left: clampedLeft,
-            effectiveH,
-            overlaps: overlaps(clampedTop, clampedLeft, effectiveH),
-        };
+        return { top, left, maxH };
     }
 
-    const dirs: Dir[] = ['bottom', 'top', 'right', 'left'];
+    // 按优先级尝试：右 > 下 > 左 > 上
+    const dirOrder: Dir[] = ['right', 'bottom', 'left', 'top'];
 
-    // 第一轮：不重叠且空间足够
-    for (const dir of dirs) {
-        const r = tryDir(dir);
-        if (!r.overlaps && r.effectiveH >= 200) {
-            return { position: dir, coords: { top: r.top, left: r.left }, maxHeight: r.effectiveH };
+    for (const dir of dirOrder) {
+        const pos = calcDir(dir);
+        if (!pos) continue;
+
+        const cardRect = { top: pos.top, left: pos.left, w: CARD_W, h: pos.maxH };
+        if (!rectsOverlap(cardRect, targetRect)) {
+            console.log('[Tutorial] 选方向:', dir, 'pos:', pos, 'target:', {
+                t: targetRect.top, l: targetRect.left,
+                r: targetRect.right, b: targetRect.bottom,
+                w: targetRect.width, h: targetRect.height
+            });
+            return { position: dir, coords: { top: pos.top, left: pos.left }, maxHeight: pos.maxH };
         }
     }
 
-    // 第二轮：不重叠即可
-    for (const dir of dirs) {
-        const r = tryDir(dir);
-        if (!r.overlaps) {
-            return { position: dir, coords: { top: r.top, left: r.left }, maxHeight: r.effectiveH };
-        }
-    }
+    // 兜底：强制放右侧，限制高度避免遮挡
+    const fallbackLeft = Math.max(PADDING, targetRect.right + GAP);
+    const fallbackMaxH = Math.max(150, vh - PADDING * 2);
+    const fallbackTop = Math.max(PADDING, vh - PADDING - fallbackMaxH);
 
-    // 兜底：选有效高度最大的方向
-    let best = tryDir('bottom');
-    for (const dir of dirs) {
-        const r = tryDir(dir);
-        if (r.effectiveH > best.effectiveH) best = r;
-    }
-    return { position: 'bottom', coords: { top: best.top, left: best.left }, maxHeight: best.effectiveH };
+    console.warn('[Tutorial] 所有方向均重叠，使用兜底位置');
+    return {
+        position: 'right',
+        coords: { top: fallbackTop, left: fallbackLeft },
+        maxHeight: fallbackMaxH,
+    };
 }
 
 // ============================================================
