@@ -359,78 +359,74 @@ function calculateTooltipPosition(
     coords: { top: number; left: number };
     maxHeight: number;
 } {
-    const padding = 16;
-    const gap = 16;
-    const cardW = 380;
-    const maxCardH = 500;
+    const PADDING = 16;
+    const GAP = 16;
+    const CARD_W = 380;
+    const EXPECT_H = 420; // 用于重叠检测的预估高度（接近卡片自然尺寸）
 
-    const viewportW = window.innerWidth;
-    const viewportH = window.innerHeight;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
 
     type Dir = 'bottom' | 'top' | 'right' | 'left';
 
+    /** 检测放置在 (top, left) 高度为 h 的卡片是否与目标重叠 */
     function overlaps(top: number, left: number, h: number): boolean {
         return !(
-            left + cardW + gap < targetRect.left ||
-            left - gap > targetRect.right ||
-            top + h + gap < targetRect.top ||
-            top - gap > targetRect.bottom
+            left + CARD_W + GAP < targetRect.left ||
+            left - GAP > targetRect.right ||
+            top + h + GAP < targetRect.top ||
+            top - GAP > targetRect.bottom
         );
     }
 
-    /** 尝试一个方向：返回位置、实际可用最大高度、是否重叠 */
+    /** 尝试一个方向：返回钳制后的位置、可用最大高度、是否重叠 */
     function tryDir(dir: Dir): {
         top: number; left: number; usableMaxH: number; overlaps: boolean;
     } {
-        // 第一步：计算理想位置（未钳制）
         let idealTop: number, idealLeft: number;
 
         switch (dir) {
             case 'bottom': {
-                idealTop = targetRect.bottom + gap;
-                idealLeft = Math.max(padding, Math.min(viewportW - cardW - padding,
-                    targetRect.left + targetRect.width / 2 - cardW / 2));
+                idealTop = targetRect.bottom + GAP;
+                idealLeft = targetRect.left + targetRect.width / 2 - CARD_W / 2;
                 break;
             }
             case 'top': {
-                idealTop = targetRect.top - maxCardH - gap;
-                idealLeft = Math.max(padding, Math.min(viewportW - cardW - padding,
-                    targetRect.left + targetRect.width / 2 - cardW / 2));
+                idealTop = targetRect.top - EXPECT_H - GAP;
+                idealLeft = targetRect.left + targetRect.width / 2 - CARD_W / 2;
                 break;
             }
             case 'right': {
-                idealLeft = targetRect.right + gap;
-                idealTop = Math.max(padding, Math.min(viewportH - maxCardH - padding,
-                    targetRect.top + targetRect.height / 2 - maxCardH / 2));
+                idealLeft = targetRect.right + GAP;
+                idealTop = targetRect.top + targetRect.height / 2 - EXPECT_H / 2;
                 break;
             }
             case 'left': {
-                idealLeft = targetRect.left - cardW - gap;
-                idealTop = Math.max(padding, Math.min(viewportH - maxCardH - padding,
-                    targetRect.top + targetRect.height / 2 - maxCardH / 2));
+                idealLeft = targetRect.left - CARD_W - GAP;
+                idealTop = targetRect.top + targetRect.height / 2 - EXPECT_H / 2;
                 break;
             }
         }
 
-        // 第二步：钳制到视口内（用 maxCardH 作为预估高度）
-        const clampedTop = Math.max(padding, Math.min(viewportH - padding - maxCardH, idealTop));
-        const clampedLeft = Math.max(padding, Math.min(viewportW - padding - cardW, idealLeft));
+        // 钳制到视口内（用 EXPECT_H 做高度预估）
+        const clampedTop = Math.max(PADDING, Math.min(vh - PADDING - EXPECT_H, idealTop));
+        const clampedLeft = Math.max(PADDING, Math.min(vw - PADDING - CARD_W, idealLeft));
 
-        // 第三步：根据**最终位置**计算实际可用高度（确保不超出视口）
-        // 可用空间 = 从卡片顶部到底部视口边缘的距离
-        const usableMaxH = Math.max(120, viewportH - clampedTop - padding);
+        // 实际可用最大高度 = 从卡片顶部到底部视口边缘的距离
+        const usableMaxH = Math.max(120, vh - clampedTop - PADDING);
 
+        // 重叠检测用固定预估高度，不用 usableMaxH（后者可能远超实际渲染尺寸）
         return {
             top: clampedTop,
             left: clampedLeft,
             usableMaxH,
-            overlaps: overlaps(clampedTop, clampedLeft, usableMaxH),
+            overlaps: overlaps(clampedTop, clampedLeft, EXPECT_H),
         };
     }
 
     const dirs: Dir[] = ['bottom', 'top', 'right', 'left'];
 
-    // 第一轮：找不重叠且空间足够的
+    // 第一轮：不重叠且空间 >= 200px
     for (const dir of dirs) {
         const r = tryDir(dir);
         if (!r.overlaps && r.usableMaxH >= 200) {
@@ -438,7 +434,7 @@ function calculateTooltipPosition(
         }
     }
 
-    // 第二轮：只要不重叠即可
+    // 第二轮：不重叠即可（空间可能较紧）
     for (const dir of dirs) {
         const r = tryDir(dir);
         if (!r.overlaps) {
