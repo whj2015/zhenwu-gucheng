@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.7.3';
+export const CURRENT_VERSION = '0.7.4';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.7.4',
+    date: '2026-06-04',
+    type: 'patch',
+    changes: [
+      '🐛 修复告示板不显示任务：BoardView现在同时读取可用池+活跃列表'
+    ]
+  },
   {
     version: '0.7.3',
     date: '2026-06-04',

@@ -44,25 +44,30 @@ export default function BoardView() {
         checkAndRefreshQuests();
     }, []);
 
-    // Get active quests (randomly selected)
-    const getActiveDailyQuests = (): [string, QuestTemplate][] => {
+    // Get quests from both available pool and active list
+    const getDailyQuests = (): [string, QuestTemplate][] => {
+        // 优先显示活跃任务，再显示可用池
         const activeIds = questState.activeDailyIds || [];
-        return activeIds
+        const availableIds = questState.availableDailyIds || [];
+        const allIds = [...activeIds, ...availableIds];
+        return allIds
             .map(id => [id, QUEST_TEMPLATES[id]] as [string, QuestTemplate])
             .filter(([, t]) => t !== undefined)
             .sort((a, b) => a[1].difficulty - b[1].difficulty);
     };
 
-    const getActiveWeeklyQuests = (): [string, QuestTemplate][] => {
+    const getWeeklyQuests = (): [string, QuestTemplate][] => {
         const activeIds = questState.activeWeeklyIds || [];
-        return activeIds
+        const availableIds = questState.availableWeeklyIds || [];
+        const allIds = [...activeIds, ...availableIds];
+        return allIds
             .map(id => [id, QUEST_TEMPLATES[id]] as [string, QuestTemplate])
             .filter(([, t]) => t !== undefined)
             .sort((a, b) => a[1].difficulty - b[1].difficulty);
     };
 
-    const dailyQuests = getActiveDailyQuests();
-    const weeklyQuests = getActiveWeeklyQuests();
+    const dailyQuests = getDailyQuests();
+    const weeklyQuests = getWeeklyQuests();
 
     const getQuestProgressInfo = (questId: string, template: QuestTemplate) => {
         if (template.requireType === 'resource' && template.resourceKey) {
