@@ -82,14 +82,14 @@ export default function BoardView() {
         const isCompleted = template.category === 'daily'
             ? questState.completedDailyIds.includes(questId)
             : questState.completedWeeklyIds.includes(questId);
-        
+
         const isAccepted = questState.acceptedIds?.includes(questId) || false;
-        const isResourceQuest = template.requireType === 'resource';
         const typeConfig = QUEST_TYPE_CONFIG[template.requireType as keyof typeof QUEST_TYPE_CONFIG];
-        
-        const progress = getQuestProgressInfo(questId, template);
-        const canTurnIn = !isCompleted && (isResourceQuest || isAccepted) && progress >= template.amount;
-        const progressPct = Math.min(100, (progress / template.amount) * 100);
+
+        // 所有任务都需要接取后才显示进度
+        const progress = isAccepted ? getQuestProgressInfo(questId, template) : 0;
+        const canTurnIn = !isCompleted && isAccepted && progress >= template.amount;
+        const progressPct = isAccepted ? Math.min(100, (progress / template.amount) * 100) : 0;
 
         return (
             <div key={questId} className={cn(
@@ -126,35 +126,40 @@ export default function BoardView() {
                     <span className="px-1.5 py-0.5 bg-slate-700/30 rounded text-slate-300 font-mono">
                         {typeConfig?.label || template.requireType}
                     </span>
-                    {isResourceQuest && template.resourceKey && (
+                    {template.resourceKey && (
                         <span className="text-slate-500">
                             ({RESOURCE_LABELS[template.resourceKey]})
                         </span>
                     )}
-                    {!isResourceQuest && typeConfig?.needsAcceptance && !isAccepted && (
+                    {!isAccepted && !isCompleted && (
                         <span className="text-orange-400 animate-pulse">需接取</span>
                     )}
                 </div>
 
                 <div className="mb-2.5 sm:mb-3 relative z-10">
                     <div className="flex justify-between text-[9px] sm:text-[10px] font-mono mb-1">
-                        <span className="text-slate-400">
-                            {REQUIRE_TYPE_LABELS[template.requireType] || template.requireType}
-                            {template.resourceKey && `(${RESOURCE_LABELS[template.resourceKey]})`}
+                        <span className={cn(
+                            "text-slate-400",
+                            !isAccepted && "text-slate-600"
+                        )}>
+                            {isAccepted
+                                ? `${REQUIRE_TYPE_LABELS[template.requireType] || template.requireType}${template.resourceKey ? `(${RESOURCE_LABELS[template.resourceKey]})` : ''}`
+                                : '待接取'
+                            }
                         </span>
                         <span className={cn(
                             progress >= template.amount && !isCompleted
                                 ? "text-emerald-400 font-bold"
                                 : "text-slate-500"
                         )}>
-                            {Math.floor(progress)}/{template.amount}
+                            {isAccepted ? `${Math.floor(progress)}/${template.amount}` : `-/${template.amount}`}
                         </span>
                     </div>
                     <div className="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-white/5">
                         <div
                             className={cn(
                                 "h-full transition-all duration-500 rounded-full",
-                                isCompleted ? "bg-emerald-500" : progress >= template.amount ? "bg-indigo-500 animate-pulse" : "bg-slate-600"
+                                isCompleted ? "bg-emerald-500" : !isAccepted ? "bg-slate-700" : progress >= template.amount ? "bg-indigo-500 animate-pulse" : "bg-slate-600"
                             )}
                             style={{ width: `${progressPct}%` }}
                         ></div>
@@ -181,10 +186,6 @@ export default function BoardView() {
                         >
                             提交任务
                         </button>
-                    ) : isResourceQuest ? (
-                        <span className="text-[10px] sm:text-[11px] text-slate-500 font-mono flex items-center gap-1">
-                            库存不足
-                        </span>
                     ) : isAccepted ? (
                         <span className="text-[10px] sm:text-[11px] text-slate-500 font-mono flex items-center gap-1">
                             <Target className="w-3 h-3" /> 进行中...

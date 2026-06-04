@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.7.4';
+export const CURRENT_VERSION = '0.7.5';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.7.5',
+    date: '2026-06-04',
+    type: 'patch',
+    changes: [
+      '🔧 告示板所有任务统一需手动接取：未接取不显示进度、不可提交'
+    ]
+  },
   {
     version: '0.7.4',
     date: '2026-06-04',
