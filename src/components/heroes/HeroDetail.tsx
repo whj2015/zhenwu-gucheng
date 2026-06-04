@@ -85,20 +85,6 @@ const setBonuses = detectSetBonuses(hero);
                             )}
                        </div>
 
-                       {(t as any).positionBonus && (t as any).positionBonus.length > 0 && (
-                           <div className="mt-2 p-2 bg-indigo-500/5 rounded-lg border border-indigo-500/15">
-                               <div className="flex items-center gap-1.5 mb-1.5">
-                                   <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">位置加成</span>
-                               </div>
-                               <div className="flex flex-wrap gap-1.5">
-                                   {(t as any).positionBonus.map((bonus: any, i: number) => (
-                                       <span key={i} className="text-[9px] sm:text-[10px] px-1.5 py-0.5 bg-indigo-500/10 rounded text-indigo-300 font-mono">
-                                           {bonus.pos}: +{Object.values(bonus.bonus).join('/')}
-                                       </span>
-                                   ))}
-                               </div>
-                           </div>
-                       )}
                   </div>
              </div>
 

@@ -10,8 +10,6 @@ export interface PositionEffect {
     tag: string;
     tagColor: string;
     desc: string;
-    mainStat: StatType;
-    modValue: number;
     hitRate: number;
     isRear: boolean;
 }
