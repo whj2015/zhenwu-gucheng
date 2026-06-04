@@ -54,10 +54,7 @@ export default function TutorialOverlay({ forceVisible }: TutorialOverlayProps) 
 
     // 提示框最佳位置（避免遮挡目标）
     const tooltipPlacement = useMemo(() => {
-        if (!targetRect) {
-            console.warn('[Tutorial] targetRect 为 null! highlightTarget:', currentStep?.highlightTarget);
-            return { position: 'bottom' as const, coords: { top: 80, left: 16 }, maxHeight: window.innerHeight - 128 };
-        }
+        if (!targetRect) return { position: 'bottom' as const, coords: { top: 80, left: 16 }, maxHeight: window.innerHeight - 128 };
         return calculateTooltipPosition(targetRect);
     }, [targetRect]);
 
@@ -369,7 +366,6 @@ function calculateTooltipPosition(
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    // 每个方向：[位置计算函数, 方向名]
     type Dir = 'right' | 'bottom' | 'left' | 'top';
 
     /** 检测矩形是否重叠（含 GAP 间距缓冲） */
@@ -377,48 +373,55 @@ function calculateTooltipPosition(
         t: { top: number; left: number; w: number; h: number },
         r: DOMRect
     ): boolean {
-        // 不重叠 = 任一方向完全分离
         const separated =
-            t.left + t.w + GAP <= r.left ||   // 卡片在目标左侧
-            t.left - GAP >= r.right ||         // 卡片在目标右侧
-            t.top + t.h + GAP <= r.top ||      // 卡片在目标上方
-            t.top - GAP >= r.bottom;           // 卡片在目标下方
+            t.left + t.w + GAP <= r.left ||
+            t.left - GAP >= r.right ||
+            t.top + t.h + GAP <= r.top ||
+            t.top - GAP >= r.bottom;
         return !separated;
     }
 
-    /**
-     * 计算某个方向的位置和可用高度。
-     * 返回 null 表示该方向不可行（空间不够或超出视口）。
-     */
+    /** 计算某个方向的位置和可用高度 */
     function calcDir(dir: Dir): {
         top: number; left: number; maxH: number;
-    } | null {
-        let top: number, left: number;
+    } {
+        let left: number;
+        // 先确定水平位置（左右方向固定，上下方向居中）
+        switch (dir) {
+            case 'right':  left = targetRect.right + GAP; break;
+            case 'left':   left = targetRect.left - CARD_W - GAP; break;
+            case 'bottom': left = targetRect.left + targetRect.width / 2 - CARD_W / 2; break;
+            case 'top':    left = targetRect.left + targetRect.width / 2 - CARD_W / 2; break;
+        }
+        left = Math.max(PADDING, Math.min(vw - PADDING - CARD_W, left));
+
+        // 垂直位置：先按方向算理想值，再确保卡片完全在视口内
+        let idealTop: number;
+        const EST_H = 450; // 卡片预估高度，用于垂直居中计算
 
         switch (dir) {
             case 'right':
-                left = targetRect.right + GAP;
-                top = targetRect.top + targetRect.height / 2 - 250; // 先按 250 居中估算
-                break;
             case 'left':
-                left = targetRect.left - CARD_W - GAP;
-                top = targetRect.top + targetRect.height / 2 - 250;
+                // 左右放置：尝试让卡片垂直中心与目标中心对齐
+                idealTop = targetRect.top + targetRect.height / 2 - EST_H / 2;
                 break;
             case 'bottom':
-                top = targetRect.bottom + GAP;
-                left = targetRect.left + targetRect.width / 2 - CARD_W / 2;
+                idealTop = targetRect.bottom + GAP;
                 break;
             case 'top':
-                top = targetRect.top - 500 - GAP;
-                left = targetRect.left + targetRect.width / 2 - CARD_W / 2;
+                idealTop = targetRect.top - EST_H - GAP;
                 break;
         }
 
-        // 钳制到视口内
-        top = Math.max(PADDING, Math.min(vh - PADDING - 100, top));   // 至少留 100px 高度
-        left = Math.max(PADDING, Math.min(vw - PADDING - CARD_W, left));
+        // 钳制：确保顶部不超出视口顶部
+        let top = Math.max(PADDING, idealTop);
+        // 确保底部不超出视口底部（用预估高度反推最大允许的 top）
+        const maxTopForBottomFit = vh - PADDING - EST_H;
+        if (top > maxTopForBottomFit) top = maxTopForBottomFit;
+        // 再次保证最小值
+        top = Math.max(PADDING, top);
 
-        // 实际可用高度 = 从卡片顶部到底部视口边缘
+        // 实际可用高度 = 从最终位置到底部视口边缘的距离
         const maxH = Math.max(150, vh - top - PADDING);
 
         return { top, left, maxH };
@@ -429,30 +432,17 @@ function calculateTooltipPosition(
 
     for (const dir of dirOrder) {
         const pos = calcDir(dir);
-        if (!pos) continue;
-
         const cardRect = { top: pos.top, left: pos.left, w: CARD_W, h: pos.maxH };
         if (!rectsOverlap(cardRect, targetRect)) {
-            console.log('[Tutorial] 选方向:', dir, 'pos:', pos, 'target:', {
-                t: targetRect.top, l: targetRect.left,
-                r: targetRect.right, b: targetRect.bottom,
-                w: targetRect.width, h: targetRect.height
-            });
             return { position: dir, coords: { top: pos.top, left: pos.left }, maxHeight: pos.maxH };
         }
     }
 
-    // 兜底：强制放右侧，限制高度避免遮挡
-    const fallbackLeft = Math.max(PADDING, targetRect.right + GAP);
-    const fallbackMaxH = Math.max(150, vh - PADDING * 2);
-    const fallbackTop = Math.max(PADDING, vh - PADDING - fallbackMaxH);
-
-    console.warn('[Tutorial] 所有方向均重叠，使用兜底位置');
-    return {
-        position: 'right',
-        coords: { top: fallbackTop, left: fallbackLeft },
-        maxHeight: fallbackMaxH,
-    };
+    // 兜底：强制放右侧，紧贴目标但不超出屏幕
+    const fbLeft = Math.max(PADDING, targetRect.right + GAP);
+    const fbMaxH = Math.max(150, vh - PADDING * 2);
+    const fbTop = Math.max(PADDING, vh - PADDING - fbMaxH);
+    return { position: 'right', coords: { top: fbTop, left: fbLeft }, maxHeight: fbMaxH };
 }
 
 // ============================================================
