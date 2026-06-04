@@ -117,7 +117,7 @@ const handleAchievementModal = useCallback(() => {
 
     const handleCloseQuestBoard = useCallback(() => {
         setQuestBoardOpen(false);
-    });
+    }, []);
     return (
         <div className="flex w-full h-screen bg-[#0d0f12] text-slate-200 font-sans overflow-hidden relative select-none">
              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,#1e293b_0%,transparent_70%)] opacity-40 pointer-events-none"></div>

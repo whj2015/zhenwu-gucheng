@@ -976,6 +976,16 @@ export const useGameStore = create<GameState & {
               newActiveWeeklyIds = [];
           }
 
+          // === 最终安全网：确保可用池永远不为空 ===
+          if (newAvailableDailyIds.length === 0 && newActiveDailyIds.length === 0) {
+              newAvailableDailyIds = Array.from(generateDailyQuests(QUEST_TEMPLATES, 6).keys());
+              if (!newLastDailyReset) newLastDailyReset = now;
+          }
+          if (newAvailableWeeklyIds.length === 0 && newActiveWeeklyIds.length === 0) {
+              newAvailableWeeklyIds = Array.from(generateWeeklyQuests(QUEST_TEMPLATES, 3).keys());
+              if (!newLastWeeklyReset) newLastWeeklyReset = now;
+          }
+
           return {
               questState: {
                   ...qs,
@@ -1315,7 +1325,43 @@ export const useGameStore = create<GameState & {
     }),
     {
       name: 'ironecho-storage',
-      storage: createJSONStorage(() => safeStorage)
+      storage: createJSONStorage(() => safeStorage),
+      onRehydrateStorage: () => (state: any) => {
+          if (!state) return;
+          // 存档加载后，迁移旧数据：有活跃任务但没有可用池 → 移回可用池
+          const qs = state.questState;
+          let needsUpdate = false;
+          let newQuestState = { ...qs };
+
+          const hasAvailableDaily = (qs.availableDailyIds?.length || 0) > 0;
+          const hasActiveDaily = (qs.activeDailyIds?.length || 0) > 0;
+          if (!hasAvailableDaily && hasActiveDaily) {
+              newQuestState.availableDailyIds = [...qs.activeDailyIds];
+              newQuestState.activeDailyIds = [];
+              newQuestState.acceptedIds = [];
+              newQuestState.progress = {};
+              needsUpdate = true;
+          }
+
+          const hasAvailableWeekly = (qs.availableWeeklyIds?.length || 0) > 0;
+          const hasActiveWeekly = (qs.activeWeeklyIds?.length || 0) > 0;
+          if (!hasAvailableWeekly && hasActiveWeekly) {
+              newQuestState.availableWeeklyIds = [...qs.activeWeeklyIds];
+              newQuestState.activeWeeklyIds = [...(newQuestState.activeWeeklyIds || [])].filter(
+                  id => !qs.activeWeeklyIds.includes(id)
+              );
+              const weeklyProgress = { ...(newQuestState.progress || {}) };
+              for (const id of qs.activeWeeklyIds) {
+                  delete weeklyProgress[id];
+              }
+              newQuestState.progress = weeklyProgress;
+              needsUpdate = true;
+          }
+
+          if (needsUpdate) {
+              state.setState({ questState: newQuestState }, false);
+          }
+      }
     }
   )
 );

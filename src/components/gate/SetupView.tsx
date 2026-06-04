@@ -37,7 +37,6 @@ function savePresets(presets: SavedPreset[]) {
 }
 
 const COLS: PositionCol[] = ['left', 'center', 'right'];
-const ROW_LABELS: Record<PositionRow, string> = { front: '前', middle: '中', back: '后' };
 
 export default function SetupView({ missionId, onCancel, onDeploy }: { missionId: string; onCancel: () => void; onDeploy?: () => void }) {
     const { heroes, beginRun } = useGameStore();

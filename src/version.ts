@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.7.1';
+export const CURRENT_VERSION = '0.7.2';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.7.2',
+    date: '2026-06-04',
+    type: 'patch',
+    changes: [
+      '🐛 修复任务不显示：增加onRehydrateStorage迁移+安全网；恢复出征页面到原始版本'
+    ]
+  },
   {
     version: '0.7.1',
     date: '2026-06-04',

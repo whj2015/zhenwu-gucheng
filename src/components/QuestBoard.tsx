@@ -206,7 +206,6 @@ export default function QuestBoard({ isOpen, onClose }: QuestBoardProps) {
                             </div>
                             <div className="space-y-2.5">
                                 {questData.availableQuests.map(({ id, template }) => {
-                                    const config = QUEST_TYPE_CONFIG[template.requireType];
                                     const difficulty = DIFFICULTY_CONFIG[template.difficulty];
 
                                     return (
