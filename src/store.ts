@@ -112,7 +112,9 @@ const INITIAL_STATE: GameState = {
       progress: {},
       acceptedIds: [],
       activeDailyIds: [],
-      activeWeeklyIds: []
+      activeWeeklyIds: [],
+      availableDailyIds: [],
+      availableWeeklyIds: []
   } as QuestState,
   achievementState: {
       unlockedIds: [],
@@ -920,18 +922,12 @@ export const useGameStore = create<GameState & {
           let newAcceptedIds = qs.acceptedIds || [];
           let newActiveDailyIds = qs.activeDailyIds || [];
           let newActiveWeeklyIds = qs.activeWeeklyIds || [];
+          let newAvailableDailyIds = qs.availableDailyIds || [];
+          let newAvailableWeeklyIds = qs.availableWeeklyIds || [];
 
           // Initialize daily quests if empty (first-time or after reset)
-          if (newActiveDailyIds.length === 0) {
-              newActiveDailyIds = Array.from(generateDailyQuests(QUEST_TEMPLATES, 6).keys());
-              newActiveDailyIds.forEach((id) => {
-                  const template = QUEST_TEMPLATES[id];
-                  if (!template) return;
-                  if (template.requireType !== 'resource') {
-                      newProgress[id] = 0;
-                      newAcceptedIds.push(id);
-                  }
-              });
+          if (newAvailableDailyIds.length === 0 && newActiveDailyIds.length === 0) {
+              newAvailableDailyIds = Array.from(generateDailyQuests(QUEST_TEMPLATES, 6).keys());
               if (!newLastDailyReset) newLastDailyReset = now;
           }
 
@@ -943,29 +939,13 @@ export const useGameStore = create<GameState & {
               newLastDailyReset = now;
 
               const dailyPool = generateDailyQuests(QUEST_TEMPLATES, 6);
-              newActiveDailyIds = Array.from(dailyPool.keys());
-
-              dailyPool.forEach((template, id) => {
-                  if (template.requireType !== 'resource') {
-                      newProgress[id] = 0;
-                  }
-                  if (template.requireType !== 'resource') {
-                      newAcceptedIds.push(id);
-                  }
-              });
+              newAvailableDailyIds = Array.from(dailyPool.keys());
+              newActiveDailyIds = [];
           }
 
           // Initialize weekly quests if empty (first-time or after reset)
-          if (newActiveWeeklyIds.length === 0) {
-              newActiveWeeklyIds = Array.from(generateWeeklyQuests(QUEST_TEMPLATES, 3).keys());
-              newActiveWeeklyIds.forEach((id) => {
-                  const template = QUEST_TEMPLATES[id];
-                  if (!template) return;
-                  if (template.requireType !== 'resource') {
-                      newProgress[id] = 0;
-                      newAcceptedIds.push(id);
-                  }
-              });
+          if (newAvailableWeeklyIds.length === 0 && newActiveWeeklyIds.length === 0) {
+              newAvailableWeeklyIds = Array.from(generateWeeklyQuests(QUEST_TEMPLATES, 3).keys());
               if (!newLastWeeklyReset) newLastWeeklyReset = now;
           }
 
@@ -975,14 +955,8 @@ export const useGameStore = create<GameState & {
               newLastWeeklyReset = now;
 
               const weeklyPool = generateWeeklyQuests(QUEST_TEMPLATES, 3);
-              newActiveWeeklyIds = Array.from(weeklyPool.keys());
-
-              weeklyPool.forEach((template, id) => {
-                  if (template.requireType !== 'resource') {
-                      newProgress[id] = 0;
-                      newAcceptedIds.push(id);
-                  }
-              });
+              newAvailableWeeklyIds = Array.from(weeklyPool.keys());
+              newActiveWeeklyIds = [];
           }
 
           return {
@@ -995,7 +969,9 @@ export const useGameStore = create<GameState & {
                   progress: newProgress,
                   acceptedIds: newAcceptedIds,
                   activeDailyIds: newActiveDailyIds,
-                  activeWeeklyIds: newActiveWeeklyIds
+                  activeWeeklyIds: newActiveWeeklyIds,
+                  availableDailyIds: newAvailableDailyIds,
+                  availableWeeklyIds: newAvailableWeeklyIds
               }
           };
       }),
@@ -1004,14 +980,42 @@ export const useGameStore = create<GameState & {
           let success = false;
           set((state) => {
               const qs = state.questState;
+              // 检查是否已在活跃或已完成列表
               if (qs.acceptedIds?.includes(questId)) return state;
+              if (qs.activeDailyIds?.includes(questId)) return state;
+              if (qs.activeWeeklyIds?.includes(questId)) return state;
               if (qs.completedDailyIds.includes(questId)) return state;
               if (qs.completedWeeklyIds.includes(questId)) return state;
-              
+
+              // 确认任务在可用池中
+              const isAvailableDaily = qs.availableDailyIds?.includes(questId);
+              const isAvailableWeekly = qs.availableWeeklyIds?.includes(questId);
+              if (!isAvailableDaily && !isAvailableWeekly) return state;
+
               success = true;
+
+              // 判断是每日还是每周任务
+              const template = QUEST_TEMPLATES[questId];
+              const isDaily = template?.category === 'daily';
+
               return {
                   questState: {
                       ...qs,
+                      // 从可用池移除
+                      availableDailyIds: isDaily
+                          ? (qs.availableDailyIds || []).filter(id => id !== questId)
+                          : qs.availableDailyIds,
+                      availableWeeklyIds: !isDaily
+                          ? (qs.availableWeeklyIds || []).filter(id => id !== questId)
+                          : qs.availableWeeklyIds,
+                      // 添加到活跃列表
+                      activeDailyIds: isDaily
+                          ? [...(qs.activeDailyIds || []), questId]
+                          : qs.activeDailyIds,
+                      activeWeeklyIds: !isDaily
+                          ? [...(qs.activeWeeklyIds || []), questId]
+                          : qs.activeWeeklyIds,
+                      // 标记为已接取
                       acceptedIds: [...(qs.acceptedIds || []), questId]
                   }
               };
@@ -1061,8 +1065,16 @@ export const useGameStore = create<GameState & {
 
           if (matchingQuests.length === 0) return state;
 
+          // 只追踪已接取（在活跃列表中）的任务
+          const activeIds = new Set([
+              ...(state.questState.activeDailyIds || []),
+              ...(state.questState.activeWeeklyIds || [])
+          ]);
+
           const newProgress = { ...state.questState.progress };
           for (const [qid] of matchingQuests) {
+              // 跳过未接取和已完成的任务
+              if (!activeIds.has(qid)) continue;
               if (state.questState.completedDailyIds.includes(qid)) continue;
               if (state.questState.completedWeeklyIds.includes(qid)) continue;
               newProgress[qid] = Math.min(

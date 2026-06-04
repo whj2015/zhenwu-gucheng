@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.6.27';
+export const CURRENT_VERSION = '0.7.0';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.7.0',
+    date: '2026-06-04',
+    type: 'minor',
+    changes: [
+      '✨ 任务看板新增手动接取机制：任务需手动接取后才开始追踪进度'
+    ]
+  },
   {
     version: '0.6.27',
     date: '2026-06-03',

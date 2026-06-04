@@ -107,8 +107,10 @@ export interface QuestState {
     lastWeeklyReset: number;
     progress: Record<string, number>;
     acceptedIds: string[];
-activeDailyIds: string[];
+    activeDailyIds: string[];
     activeWeeklyIds: string[];
+    availableDailyIds: string[];   // 可用任务池（未接取）
+    availableWeeklyIds: string[];  // 可用任务池（未接取）
 }
 
 export interface AchievementState {
