@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useGameStore } from '../store';
-import { Building, Hammer, Map, Users, Tent, HeartPulse, Store, Settings, Package, ScrollText, Trophy, ClipboardList } from 'lucide-react';
+import { Building, Hammer, Map, Users, Tent, HeartPulse, Store, Settings, Package, ScrollText, Trophy, ClipboardList, BookOpen } from 'lucide-react';
 import UpdateLog from './UpdateLog';
 import AchievementPanel from './AchievementPanel';
 import QuestBoard from './QuestBoard';
+import StoryPanel from './StoryPanel';
+import TutorialOverlay from './TutorialOverlay';
 import { ResourceItem } from './ResourceItem';
 import { TabButton } from './TabButton';
 import { getVersionDisplay } from '../version';
@@ -42,6 +44,7 @@ export default function MainUI() {
     const [updateLogModal, setUpdateLogModal] = useState(false);
 const [achievementModal, setAchievementModal] = useState(false);
     const [questBoardOpen, setQuestBoardOpen] = useState(false);
+    const [storyModalOpen, setStoryModalOpen] = useState(false);
 
     const tickRef = useRef(tick);
     tickRef.current = tick;
@@ -119,6 +122,14 @@ const handleAchievementModal = useCallback(() => {
     const handleCloseQuestBoard = useCallback(() => {
         setQuestBoardOpen(false);
     }, []);
+
+    const handleStoryModalOpen = useCallback(() => {
+        setStoryModalOpen(true);
+    }, []);
+
+    const handleCloseStoryModal = useCallback(() => {
+        setStoryModalOpen(false);
+    }, []);
     return (
         <div className="flex w-full h-screen bg-[#0d0f12] text-slate-200 font-sans overflow-hidden relative select-none">
              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,#1e293b_0%,transparent_70%)] opacity-40 pointer-events-none"></div>
@@ -148,6 +159,9 @@ const handleAchievementModal = useCallback(() => {
                 <div className="p-4 border-t border-white/5 text-[10px] text-slate-600 font-mono tracking-widest uppercase flex justify-between items-center">
                     <span>Project Zhenwu</span>
                     <div className="flex items-center gap-2">
+<button onClick={handleStoryModalOpen} className="hover:text-orange-400 transition-colors p-1 relative" title="镇武纪">
+                            <BookOpen className="w-4 h-4" />
+                        </button>
 <button onClick={handleQuestBoardOpen} className="hover:text-emerald-500 transition-colors p-1" title="查看任务">
                             <ClipboardList className="w-4 h-4" />
                         </button>
@@ -178,7 +192,10 @@ const handleAchievementModal = useCallback(() => {
                       </div>
                       <TopResourceBar />
                       <div className="flex items-center gap-1.5">
-<button onClick={handleQuestBoardOpen} className="text-slate-500 hover:text-emerald-500 transition-colors p-1.5 shrink-0" title="查看任务">
+<button onClick={handleStoryModalOpen} className="text-slate-500 hover:text-orange-400 transition-colors p-1.5 shrink-0" title="镇武纪">
+                              <BookOpen className="w-4 h-4" />
+                          </button>
+                          <button onClick={handleQuestBoardOpen} className="text-slate-500 hover:text-emerald-500 transition-colors p-1.5 shrink-0" title="查看任务">
                               <ClipboardList className="w-4 h-4" />
                           </button>
                           <button onClick={handleAchievementModal} className="text-slate-500 hover:text-amber-500 transition-colors p-1.5 shrink-0" title="查看功勋簿">
@@ -281,6 +298,12 @@ const handleAchievementModal = useCallback(() => {
 
              {/* Quest Board Modal */}
              <QuestBoard isOpen={questBoardOpen} onClose={handleCloseQuestBoard} />
+
+             {/* Story Panel Modal */}
+             <StoryPanel isOpen={storyModalOpen} onClose={handleCloseStoryModal} />
+
+             {/* Tutorial Overlay */}
+             <TutorialOverlay />
         </div>
     );
 }

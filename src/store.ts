@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { GameState, HeroState, Equipment, PositionKey, WOUNDED_NATURAL_RECOVER_RATE, getWarehouseResourceCap, QuestState, CraftingState, RuinsNode, ManualBattleState, SkillActionType } from './types';
-import { HERO_TEMPLATES, FORGE_UPGRADE_COSTS, CRAFTING_TEMPLATES, QUEST_TEMPLATES } from './data';
+import { GameState, HeroState, Equipment, PositionKey, WOUNDED_NATURAL_RECOVER_RATE, getWarehouseResourceCap, QuestState, CraftingState, RuinsNode, ManualBattleState, SkillActionType, StoryState, TutorialState } from './types';
+import { HERO_TEMPLATES, FORGE_UPGRADE_COSTS, CRAFTING_TEMPLATES, QUEST_TEMPLATES, STORY_CHAPTERS, getChapter, getNextChapter, createInitialStoryState, createInitialTutorialState } from './data';
 import { RESOURCE_CONFIG, BATTLE_CONFIG } from './gameConfig';
 import { generateId } from './utils';
 import {
@@ -123,7 +123,23 @@ const INITIAL_STATE: GameState = {
       totalPoints: 0
   },
   manualBattle: null as ManualBattleState | null,
-  activeBattle: null as GameState['activeBattle']
+  activeBattle: null as GameState['activeBattle'],
+  storyState: {
+    currentChapterId: 'prologue',
+    completedChapterIds: [],
+    unlockedChapterIds: ['prologue'],
+    storyFlags: {},
+    readChoices: {},
+    lastReadTime: 0,
+    unreadChapterIds: ['prologue'],
+  } as StoryState,
+  tutorialState: {
+    completedSteps: [],
+    currentStep: 'welcome',
+    isTutorialActive: true,
+    skipTutorial: false,
+    lastShownTime: 0,
+  } as TutorialState,
 };
 
 export const useGameStore = create<GameState & {
@@ -167,6 +183,16 @@ export const useGameStore = create<GameState & {
   clearManualBattle: () => void;
   setActiveBattle: (node: RuinsNode | null, enemies: Array<{ id: string; name: string; hp: number; maxHp: number; isAlive: boolean }>) => void;
   clearActiveBattle: () => void;
+  // 剧情系统
+  readStoryChapter: (chapterId: string) => void;
+  makeStoryChoice: (chapterId: string, choiceId: string) => void;
+  checkStoryProgress: () => void;
+  dismissStoryNotification: (chapterId: string) => void;
+  // 新手引导系统
+  completeTutorialStep: (stepId: string) => void;
+  skipTutorial: () => void;
+  setCurrentTutorialStep: (stepId: string | null) => void;
+  setTutorialActive: (active: boolean) => void;
 }>()(
   persist(
     (set) => ({
@@ -1335,7 +1361,262 @@ export const useGameStore = create<GameState & {
           activeBattle: { node, enemies }
       })),
 
-      clearActiveBattle: () => set(() => ({ activeBattle: null }))
+      clearActiveBattle: () => set(() => ({ activeBattle: null })),
+
+      // ==================== 剧情系统 Actions ====================
+
+      /** 阅读章节（标记已读，发放奖励） */
+      readStoryChapter: (chapterId: string) => set((state) => {
+          const chapter = STORY_CHAPTERS[chapterId];
+          if (!chapter) return state;
+          const ss = state.storyState;
+
+          // 已完成的不重复处理
+          if (ss.completedChapterIds.includes(chapterId)) return state;
+
+          const completedIds = [...ss.completedChapterIds, chapterId];
+          const unreadIds = ss.unreadChapterIds.filter(id => id !== chapterId);
+
+          // 解锁下一章
+          const nextId = getNextChapter(chapterId, ss);
+          let unlockedIds = [...ss.unlockedChapterIds];
+          if (nextId && !unlockedIds.includes(nextId)) {
+              unlockedIds = [...unlockedIds, nextId];
+              if (!unreadIds.includes(nextId)) {
+                  unreadIds.push(nextId);
+              }
+          }
+
+          // 发放章节奖励
+          const rewardResources: Partial<GameState['resources']> = {};
+          if (chapter.rewards) {
+              const cap = getWarehouseResourceCap(state.buildings.warehouseLevel);
+              const clamp = (val: number) => Math.max(0, Math.min(cap, val));
+              if (chapter.rewards.bingxiang) rewardResources.bingxiang = clamp(state.resources.bingxiang + chapter.rewards.bingxiang);
+              if (chapter.rewards.iron) rewardResources.iron = clamp(state.resources.iron + chapter.rewards.iron);
+              if (chapter.rewards.meteorite) rewardResources.meteorite = clamp(state.resources.meteorite + (chapter.rewards.meteorite || 0));
+              if (chapter.rewards.food) rewardResources.food = clamp(state.resources.food + (chapter.rewards.food || 0));
+              if (chapter.rewards.wood) rewardResources.wood = clamp(state.resources.wood + (chapter.rewards.wood || 0));
+              if (chapter.rewards.population) rewardResources.population = Math.max(0, (state.resources.population || 100) + (chapter.rewards.population || 0));
+          }
+
+          return {
+              storyState: {
+                  ...ss,
+                  currentChapterId: nextId || chapterId,
+                  completedChapterIds: completedIds,
+                  unlockedChapterIds: unlockedIds,
+                  unreadChapterIds: unreadIds,
+                  lastReadTime: Date.now(),
+              },
+              ...(Object.keys(rewardResources).length > 0 ? { resources: { ...state.resources, ...rewardResources } } : {}),
+          };
+      }),
+
+      /** 做出剧情选择 */
+      makeStoryChoice: (chapterId: string, choiceId: string) => set((state) => {
+          const chapter = STORY_CHAPTERS[chapterId];
+          if (!chapter?.choices) return state;
+          const choice = chapter.choices.find(c => c.id === choiceId);
+          if (!choice) return state;
+
+          const ss = state.storyState;
+          const newReadChoices = { ...ss.readChoices, [`${chapterId}_choice`]: choiceId };
+
+          // 处理选择效果
+          let newResources = { ...state.resources };
+          let newUnlockedIds = [...ss.unlockedChapterIds];
+          let newUnreadIds = [...ss.unreadChapterIds];
+          let newFlags = { ...ss.storyFlags };
+
+          if (choice.effect) {
+              // 解锁英雄
+              if (choice.effect.unlockHero && !state.tavernPool.includes(choice.effect.unlockHero)) {
+                  newUnlockedIds = [...newUnlockedIds];
+              }
+              // 设置剧情标记
+              if (choice.effect.storyFlag) {
+                  newFlags = { ...newFlags, [choice.effect.storyFlag]: true };
+              }
+              // 资源奖励
+              if (choice.effect.resources) {
+                  const cap = getWarehouseResourceCap(state.buildings.warehouseLevel);
+                  const clamp = (val: number) => Math.max(0, Math.min(cap, val));
+                  if (choice.effect.resources.bingxiang) newResources.bingxiang = clamp(newResources.bingxiang + choice.effect.resources.bingxiang);
+                  if (choice.effect.resources.iron) newResources.iron = clamp(newResources.iron + choice.effect.resources.iron);
+                  if (choice.effect.resources.food) newResources.food = clamp(newResources.food + choice.effect.resources.food);
+                  if (choice.effect.resources.wood) newResources.wood = clamp(newResources.wood + choice.effect.resources.wood);
+                  if (choice.effect.resources.population) newResources.population = Math.max(0, (newResources.population || 100) + choice.effect.resources.population);
+              }
+
+              // 解锁下一章
+              if (!newUnlockedIds.includes(choice.nextChapterId)) {
+                  newUnlockedIds = [...newUnlockedIds, choice.nextChapterId];
+                  if (!newUnreadIds.includes(choice.nextChapterId)) {
+                      newUnreadIds.push(choice.nextChapterId);
+                  }
+              }
+          }
+
+          return {
+              storyState: {
+                  ...ss,
+                  readChoices: newReadChoices,
+                  storyFlags: newFlags,
+                  unlockedChapterIds: newUnlockedIds,
+                  unreadChapterIds: newUnreadIds,
+              },
+              resources: newResources,
+          };
+      }),
+
+      /** 检查并推进剧情（由里程碑触发） */
+      checkStoryProgress: () => set((state) => {
+          const ss = state.storyState;
+          let changed = false;
+          let newUnlockedIds = [...ss.unlockedChapterIds];
+          let newUnreadIds = [...ss.unreadChapterIds];
+
+          // 遍历所有未解锁的章节，检查是否满足触发条件
+          for (const [id, chapter] of Object.entries(STORY_CHAPTERS)) {
+              if (ss.completedChapterIds.includes(id) || newUnlockedIds.includes(id)) continue;
+              if (chapter.trigger.type !== 'milestone') continue;
+
+              let shouldUnlock = false;
+              const { milestoneType, milestoneValue } = chapter.trigger;
+
+              switch (milestoneType) {
+                  case 'hero_count':
+                      shouldUnlock = state.heroes.length >= (milestoneValue || 0);
+                      break;
+                  case 'first_battle':
+                      shouldUnlock = state.achievementState.unlockedIds.includes('first_blood');
+                      break;
+                  case 'first_boss':
+                      shouldUnlock = state.achievementState.unlockedIds.includes('boss_slayer_1');
+                      break;
+                  case 'explore_floor':
+                      shouldUnlock = (state.ruinsRun?.currentFloor || 0) >= (milestoneValue || 0);
+                      break;
+                  case 'forge_count':
+                      shouldUnlock = state.crafting.totalCrafted >= (milestoneValue || 0);
+                      break;
+                  case 'total_level': {
+                      const totalLvl = state.heroes.reduce((sum, h) => sum + h.level, 0);
+                      shouldUnlock = totalLvl >= (milestoneValue || 0);
+                      break;
+                  }
+                  case 'boss_kill': {
+                      const bossAchievement = state.achievementState.unlockedIds.filter(id => id.startsWith('boss_slayer_'));
+                      // 根据value判断击败BOSS数量对应的成就
+                      const bossCount = milestoneValue === 1 ? 1 : milestoneValue === 5 ? 10 : milestoneValue === 10 ? 50 : 0;
+                      shouldUnlock = bossAchievement.length >= (bossCount > 0 ? (bossCount <= 1 ? 1 : bossCount <= 10 ? 2 : 3) : 0);
+                      break;
+                  }
+                  case 'achievement':
+                      shouldUnlock = state.achievementState.totalPoints >= (milestoneValue || 0);
+                      break;
+              }
+
+              if (shouldUnlock) {
+                  newUnlockedIds = [...newUnlockedIds, id];
+                  if (!newUnreadIds.includes(id)) {
+                      newUnreadIds.push(id);
+                  }
+                  changed = true;
+              }
+          }
+
+          if (!changed) return state;
+
+          return {
+              storyState: {
+                  ...ss,
+                  unlockedChapterIds: newUnlockedIds,
+                  unreadChapterIds: newUnreadIds,
+              },
+          };
+      }),
+
+      /** 标记章节为已通知（移除未读标记） */
+      dismissStoryNotification: (chapterId: string) => set((state) => ({
+          storyState: {
+              ...state.storyState,
+              unreadChapterIds: state.storyState.unreadChapterIds.filter(id => id !== chapterId),
+          },
+      })),
+
+      // ==================== 新手引导系统 Actions ====================
+
+      /** 完成引导步骤 */
+      completeTutorialStep: (stepId: string) => set((state) => {
+          const ts = state.tutorialState;
+          if (ts.completedSteps.includes(stepId)) return state;
+
+          const step = Object.values(require('../data/tutorial').TUTORIAL_STEPS).find(
+              (s: any) => s.id === stepId
+          ) as any;
+
+          const newCompleted = [...ts.completedSteps, stepId as any];
+
+          // 发放步骤奖励
+          let newResources = { ...state.resources };
+          if (step?.rewards) {
+              const cap = getWarehouseResourceCap(state.buildings.warehouseLevel);
+              const clamp = (val: number) => Math.max(0, Math.min(cap, val));
+              if (step.rewards.bingxiang) newResources.bingxiang = clamp(newResources.bingxiang + step.rewards.bingxiang);
+              if (step.rewards.iron) newResources.iron = clamp(newResources.iron + step.rewards.iron);
+              if (step.rewards.food) newResources.food = clamp(newResources.food + step.rewards.food);
+              if (step.rewards.wood) newResources.wood = clamp(newResources.wood + step.rewards.wood);
+              if (step.rewards.meteorite) newResources.meteorite = clamp(newResources.meteorite + step.rewards.meteorite);
+          }
+
+          // 找下一步
+          const { getNextTutorialStep } = require('../data/tutorial');
+          const nextState: TutorialState = {
+              ...ts,
+              completedSteps: newCompleted,
+              currentStep: null,
+              lastShownTime: Date.now(),
+          };
+          const nextStep = getNextTutorialStep(nextState);
+
+          return {
+              tutorialState: {
+                  ...nextState,
+                  currentStep: nextStep?.id || null,
+                  isTutorialActive: nextStep !== null,
+              },
+              resources: newResources,
+          };
+      }),
+
+      /** 跳过引导 */
+      skipTutorial: () => set((state) => ({
+          tutorialState: {
+              ...state.tutorialState,
+              skipTutorial: true,
+              isTutorialActive: false,
+              currentStep: null,
+          },
+      })),
+
+      /** 设置当前引导步骤 */
+      setCurrentTutorialStep: (stepId: string | null) => set((state) => ({
+          tutorialState: {
+              ...state.tutorialState,
+              currentStep: stepId,
+              lastShownTime: stepId ? Date.now() : state.tutorialState.lastShownTime,
+          },
+      })),
+
+      /** 暂停/恢复引导 */
+      setTutorialActive: (active: boolean) => set((state) => ({
+          tutorialState: {
+              ...state.tutorialState,
+              isTutorialActive: active,
+          },
+      })),
     }),
     {
       name: 'ironecho-storage',

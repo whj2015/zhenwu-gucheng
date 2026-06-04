@@ -4,6 +4,10 @@ import missionsRaw from './missions.json';
 import craftingRaw from './crafting.json';
 import questsRaw from './quests.json';
 import positionsRaw from './positions.json';
+export { STORY_CHAPTERS, ACTS, getChapter, getActChapters, getNextChapter, createInitialStoryState } from './storyline';
+export type { StoryChapter, StoryChoice, StoryState } from './storyline';
+export { TUTORIAL_STEPS, TUTORIAL_PHASES, getNextTutorialStep, createInitialTutorialState } from './tutorial';
+export type { TutorialStep, TutorialState, TutorialStepId } from './tutorial';
 
 export type SkillEffect =
     | { type: 'damage_reduction'; trigger: 'position'; targetPositions: string[]; value: number; desc: string }

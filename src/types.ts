@@ -158,6 +158,8 @@ export interface GameState {
     node: RuinsNode | null;
     enemies: Array<{ id: string; name: string; hp: number; maxHp: number; isAlive: boolean }>;
   } | null;
+  storyState: StoryState;
+  tutorialState: TutorialState;
 }
 
 export function getWarehouseResourceCap(warehouseLevel: number): number {
@@ -217,10 +219,43 @@ export type SkillActionType =
     | { type: 'skip' };
 
 export interface ManualBattleState {
-    mode: BattleMode;
-    heroEnergy: Record<string, EnergyState>;
-    pendingActions: Record<string, SkillActionType | null>;
-    turnTimeLimit: number; // seconds
-    turnTimeRemaining: number;
-    isPaused: boolean;
+  mode: BattleMode;
+  heroEnergy: Record<string, EnergyState>;
+  pendingActions: Record<string, SkillActionType | null>;
+  turnTimeLimit: number; // seconds
+  turnTimeRemaining: number;
+  isPaused: boolean;
+}
+
+// ============================================================
+// 剧情系统类型
+// ============================================================
+
+export interface StoryState {
+  currentChapterId: string;
+  completedChapterIds: string[];
+  unlockedChapterIds: string[];
+  storyFlags: Record<string, boolean>;
+  readChoices: Record<string, string>;
+  lastReadTime: number;
+  unreadChapterIds: string[];   // 已解锁但未阅读的章节
+}
+
+// ============================================================
+// 新手引导系统类型
+// ============================================================
+
+export type TutorialStepId =
+  | 'welcome' | 'ui_overview' | 'resources_basic'
+  | 'building_house' | 'building_farm' | 'tavern_recruit'
+  | 'equip_forge' | 'gate_expedition' | 'battle_basics'
+  | 'quest_board' | 'achievement_intro'
+  | 'market_trade' | 'hospital_heal' | 'tips_daily';
+
+export interface TutorialState {
+  completedSteps: TutorialStepId[];
+  currentStep: TutorialStepId | null;
+  isTutorialActive: boolean;
+  skipTutorial: boolean;
+  lastShownTime: number;
 }
