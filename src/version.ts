@@ -5,9 +5,17 @@ export interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
-export const CURRENT_VERSION = '0.7.0';
+export const CURRENT_VERSION = '0.7.1';
 
 export const CHANGELOG: VersionInfo[] = [
+  {
+    version: '0.7.1',
+    date: '2026-06-04',
+    type: 'patch',
+    changes: [
+      '🐛 修复旧存档兼容性问题：旧版存档的任务现在能正确显示在可接取列表'
+    ]
+  },
   {
     version: '0.7.0',
     date: '2026-06-04',

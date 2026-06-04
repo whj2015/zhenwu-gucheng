@@ -925,6 +925,23 @@ export const useGameStore = create<GameState & {
           let newAvailableDailyIds = qs.availableDailyIds || [];
           let newAvailableWeeklyIds = qs.availableWeeklyIds || [];
 
+          // === 旧存档迁移：有活跃任务但没有可用池 → 移回可用池 ===
+          if (newAvailableDailyIds.length === 0 && newActiveDailyIds.length > 0) {
+              newAvailableDailyIds = [...newActiveDailyIds];
+              newActiveDailyIds = [];
+              newAcceptedIds = [];
+              newProgress = {};
+          }
+          if (newAvailableWeeklyIds.length === 0 && newActiveWeeklyIds.length > 0) {
+              newAvailableWeeklyIds = [...newActiveWeeklyIds];
+              newActiveWeeklyIds = [];
+              newAcceptedIds = newAcceptedIds.filter(id => !newAvailableWeeklyIds.includes(id));
+              // 清除每周任务的进度
+              for (const id of newAvailableWeeklyIds) {
+                  delete newProgress[id];
+              }
+          }
+
           // Initialize daily quests if empty (first-time or after reset)
           if (newAvailableDailyIds.length === 0 && newActiveDailyIds.length === 0) {
               newAvailableDailyIds = Array.from(generateDailyQuests(QUEST_TEMPLATES, 6).keys());
